@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Expert Embeddings</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Generate Expert Embeddings</h1>
+    <button onclick="generateEmbeddings()">Generate All Embeddings</button>
+    <div id="status"></div>
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://wznevejkaefokgibkknt.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6bmV2ZWprYWVmb2tnaWJra250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEzODg5NTksImV4cCI6MjA2Njk2NDk1OX0.0dIljYfGdZxzhCFMgZETAv55d0b5-amfddX4axdMGg4';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function generateEmbeddings() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+
+            statusDiv.innerHTML = 'Generating embeddings...';
+
+            try {
+                // First, let's check current state
+                const { data: currentEmbeddings, error: queryError } = await supabase
+                    .from('expert_embeddings')
+                    .select(`
+                        expert_id,
+                        profiles!inner(first_name, expert_specialties)
+                    `);
+
+                if (queryError) {
+                    throw queryError;
+                }
+
+                resultsDiv.innerHTML = '<h3>Current Embeddings:</h3>' +
+                    currentEmbeddings.map(e =>
+                        `<div>- ${e.profiles.first_name}: ${e.profiles.expert_specialties?.join(', ') || 'No specialties'}</div>`
+                    ).join('');
+
+                statusDiv.innerHTML += '<br>Current embeddings loaded. Now calling generation function...';
+
+                // Call the embedding generation function
+                const { data, error } = await supabase.functions.invoke('generate_expert_embeddings', {
+                    body: { regenerate_all: true }
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                statusDiv.innerHTML += '<br>Generation function called successfully!';
+                resultsDiv.innerHTML += '<h3>Generation Result:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+
+                // Check updated state
+                const { data: updatedEmbeddings, error: updatedError } = await supabase
+                    .from('expert_embeddings')
+                    .select(`
+                        expert_id,
+                        profiles!inner(first_name, expert_specialties),
+                        created_at
+                    `);
+
+                if (!updatedError) {
+                    resultsDiv.innerHTML += '<h3>Updated Embeddings:</h3>' +
+                        updatedEmbeddings.map(e =>
+                            `<div>- ${e.profiles.first_name}: ${e.profiles.expert_specialties?.join(', ') || 'No specialties'} (${new Date(e.created_at).toLocaleString()})</div>`
+                        ).join('');
+                }
+
+            } catch (error) {
+                statusDiv.innerHTML += '<br>ERROR: ' + error.message;
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
