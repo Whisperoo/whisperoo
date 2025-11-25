@@ -21,9 +21,10 @@ import {
 interface ProfileEditModalProps {
   isOpen: boolean
   onClose: () => void
+  onChildrenChange?: () => void
 }
 
-const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose }) => {
+const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, onChildrenChange }) => {
   const { profile, updateProfile } = useAuth()
   const [formData, setFormData] = useState({
     first_name: '',
@@ -219,7 +220,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose }) 
               <CardTitle className="text-lg">Children</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChildrenManager />
+              <ChildrenManager onDataChange={onChildrenChange} />
             </CardContent>
           </Card>
 

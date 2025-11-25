@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { ArrowRight, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveExpectingBaby, validateDueDate, formatDueDate } from '../../utils/auth';
+import { saveExpectingBaby, validateDueDate, formatDueDate } from '../../utils/kids';
 import { Calendar as CalendarComponent } from '../../components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 import { cn } from '@/lib/utils';

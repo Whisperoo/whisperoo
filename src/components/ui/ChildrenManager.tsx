@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './card'
 import { Badge } from './badge'
 import { toast } from '@/hooks/use-toast'
 import { calculateAge, calculateAgeInYears, validateBirthDate } from '@/utils/age'
-import { validateDueDate, formatDueDate } from '@/utils/auth'
+import { validateDueDate, formatDueDate } from '@/utils/kids'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -175,7 +175,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
   }
 
   const addNewChild = () => {
-    setChildren([...children, { first_name: '', birth_date: '' }])
+    setChildren([...children, { first_name: '', birth_date: '', is_expecting: false }])
   }
 
   const addExpectingBaby = () => {
@@ -292,7 +292,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
                       />
                       {child.due_date && (
                         <p className="text-xs text-gray-600 mt-1">
-                          Due: {formatDueDate(new Date(child.due_date))}
+                          Due: {formatDueDate(child.due_date)}
                         </p>
                       )}
                     </div>

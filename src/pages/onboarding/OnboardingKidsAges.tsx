@@ -5,7 +5,7 @@ import OnboardingLayout from '../../components/layouts/OnboardingLayout';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveKidsData } from '../../utils/auth';
+import { saveKidsData } from '../../utils/kids';
 import PrivacyNotice from '../../components/ui/PrivacyNotice';
 
 const OnboardingKidsAges: React.FC = () => {
@@ -18,7 +18,14 @@ const OnboardingKidsAges: React.FC = () => {
 
   // Auto-save when kids data changes
   useEffect(() => {
-    const validKids = kidsData.filter(kid => kid.name.trim() !== '' && kid.birthdate.trim() !== '');
+    // Only save kids with both name and a valid birth date
+    const validKids = kidsData.filter(kid => {
+      const hasName = kid.name.trim() !== '';
+      const hasBirthdate = kid.birthdate.trim() !== '';
+      const isValidDate = hasBirthdate && !isNaN(Date.parse(kid.birthdate));
+      return hasName && isValidDate;
+    });
+
     if (validKids.length > 0) {
       const saveData = async () => {
         await saveKidsData(validKids);
@@ -102,9 +109,10 @@ const OnboardingKidsAges: React.FC = () => {
                       className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-colors duration-200"
                     />
                     <Input
+                      type="date"
                       value={kidsData[index]?.birthdate || ''}
                       onChange={(e) => handleAgeChange(index, e.target.value)}
-                      placeholder="Age (e.g., 5 yr, 18 months)"
+                      max={new Date().toISOString().split('T')[0]}
                       className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-colors duration-200"
                     />
                   </div>
