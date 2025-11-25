@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './avatar'
 import { Separator } from './separator'
 import { supabase } from '@/lib/supabase'
 import { calculateAge } from '@/utils/age'
-import { formatDueDate } from '@/utils/auth'
+import { formatDueDate } from '@/utils/kids'
 import ProfileEditModal from './ProfileEditModal'
 import {
   Dialog,
@@ -99,6 +99,8 @@ const ProfileViewModal: React.FC<ProfileViewModalProps> = ({ isOpen, onClose }) 
 
   const handleEditModalClose = () => {
     setIsEditModalOpen(false)
+    // Refetch children data to show any changes made in edit modal
+    fetchChildren()
     // Don't automatically reopen view modal - let user click profile again if needed
   }
 
@@ -238,7 +240,7 @@ const ProfileViewModal: React.FC<ProfileViewModalProps> = ({ isOpen, onClose }) 
                               </p>
                               {baby.due_date && (
                                 <p className="text-sm text-gray-600">
-                                  Due: {formatDueDate(new Date(baby.due_date))}
+                                  Due: {formatDueDate(baby.due_date)}
                                 </p>
                               )}
                             </div>

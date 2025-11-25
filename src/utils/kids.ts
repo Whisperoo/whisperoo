@@ -1,22 +1,23 @@
-
 import { supabase } from '@/lib/supabase'
+import { calculateAgeInYears } from '@/utils/age'
 
-// Temporary utility to get user data - will be replaced by useAuth hook
-export const getUserFirstName = (): string => {
-  // Try to get from localStorage first (for backward compatibility)
-  const localName = localStorage.getItem('userFirstName')
-  if (localName) return localName
-  
-  // In components, use the useAuth hook instead
-  return 'User'
+// Kids data types
+export interface KidData {
+  name: string
+  birthdate: string
 }
 
-export const setUserFirstName = (firstName: string): void => {
-  localStorage.setItem('userFirstName', firstName)
+// Kids validation utilities
+export const isValidKid = (kid: KidData): boolean => {
+  const hasName = kid.name.trim() !== '';
+  const hasBirthdate = kid.birthdate.trim() !== '';
+  const isValidDate = hasBirthdate && !isNaN(Date.parse(kid.birthdate));
+  return hasName && isValidDate;
 }
 
-// Note: Onboarding step tracking has been removed.
-// We now use only the profiles.onboarded boolean field to track completion.
+export const getValidKids = (kidsData: KidData[]): KidData[] => {
+  return kidsData.filter(isValidKid);
+}
 
 // Kids management utilities with duplicate prevention
 let saveInProgress = false;
@@ -84,6 +85,7 @@ export const saveKidsData = async (kidsData: { name: string; birthdate: string }
       parent_id: user.user.id,
       first_name: kid.name.trim(),
       birth_date: kid.birthdate.trim(),
+      age: calculateAgeInYears(kid.birthdate.trim()),
       is_expecting: false
     }));
 
@@ -92,11 +94,9 @@ export const saveKidsData = async (kidsData: { name: string; birthdate: string }
       .insert(kidsToInsert);
 
     if (insertError) {
-      console.error('Error saving kids data:', insertError);
+      console.error('Error saving kids:', insertError);
       return { success: false, error: insertError };
     }
-
-    console.log('Kids data saved successfully');
     return { success: true, error: null };
   } catch (error) {
     console.error('Error saving kids data:', error);
@@ -162,8 +162,18 @@ export const validateDueDate = (date: Date): { isValid: boolean; error?: string 
   return { isValid: true }
 }
 
-export const formatDueDate = (date: Date): string => {
-  return date.toLocaleDateString('en-US', {
+export const formatDueDate = (date: Date | string): string => {
+  // If date is a string (from database), parse it without timezone conversion
+  let dateObj: Date;
+  if (typeof date === 'string') {
+    // Parse YYYY-MM-DD format without timezone conversion
+    const [year, month, day] = date.split('-').map(Number);
+    dateObj = new Date(year, month - 1, day);
+  } else {
+    dateObj = date;
+  }
+
+  return dateObj.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'

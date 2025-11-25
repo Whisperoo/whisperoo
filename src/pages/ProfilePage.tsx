@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { supabase } from '@/lib/supabase'
 import { calculateAge } from '@/utils/age'
-import { formatDueDate } from '@/utils/auth'
+import { formatDueDate } from '@/utils/kids'
 import ProfileEditModal from '@/components/ui/ProfileEditModal'
 
 interface Child {
@@ -87,6 +87,8 @@ const ProfilePage: React.FC = () => {
 
   const handleEditModalClose = () => {
     setIsEditModalOpen(false)
+    // Refetch children data when modal closes to show any changes
+    fetchChildren()
   }
 
   if (!profile) {
@@ -231,7 +233,7 @@ const ProfilePage: React.FC = () => {
                             </p>
                             {baby.due_date && (
                               <p className="text-sm text-gray-600">
-                                Due: {formatDueDate(new Date(baby.due_date))}
+                                Due: {formatDueDate(baby.due_date)}
                               </p>
                             )}
                           </div>
@@ -312,9 +314,10 @@ const ProfilePage: React.FC = () => {
       </div>
 
       {/* Edit Modal */}
-      <ProfileEditModal 
+      <ProfileEditModal
         isOpen={isEditModalOpen}
         onClose={handleEditModalClose}
+        onChildrenChange={fetchChildren}
       />
     </div>
   )

@@ -5,19 +5,45 @@ import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, MessageCircle, Shield, Clock, Users, Star, User, Calendar, Monitor, MessageSquare } from 'lucide-react';
 import productHero from '@/assets/product-hero.png';
 import marthaHammond from '@/assets/martha-hammond.jpg';
+import { useAuth } from '@/contexts/AuthContext';
+
 const Splash: React.FC = () => {
   const navigate = useNavigate();
+  const { user, profile, loading } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
+
   useEffect(() => {
     console.log('Splash component mounted');
     setIsVisible(true);
   }, []);
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!loading && user && profile?.onboarded === true) {
+      navigate('/dashboard', { replace: true });
+    } else if (!loading && user && profile && !profile.onboarded) {
+      navigate('/onboarding/role', { replace: true });
+    }
+  }, [loading, user, profile, navigate]);
   const handleGetStarted = () => {
     navigate('/auth/create');
   };
   const handleLogin = () => {
     navigate('/auth/login');
   };
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return <div className="min-h-screen bg-gray-50">
       {/* Navigation Header */}
       <nav className="bg-white shadow-sm px-6 py-4">

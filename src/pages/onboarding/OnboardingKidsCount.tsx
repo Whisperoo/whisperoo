@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { ArrowRight, Plus, Minus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveKidsData } from '../../utils/auth';
+import { saveKidsData, getValidKids } from '../../utils/kids';
 import PrivacyNotice from '../../components/ui/PrivacyNotice';
 import { calculateAge, validateBirthDate } from '../../utils/age';
 
@@ -43,13 +43,14 @@ const OnboardingKidsCount: React.FC = () => {
 
   // Auto-save kids data with debouncing to prevent duplicates
   useEffect(() => {
-    const validKids = kidsData.filter(kid => kid.name.trim() !== '' && kid.birthdate.trim() !== '');
+    const validKids = getValidKids(kidsData);
+
     if (validKids.length > 0) {
       // Debounce the save operation to prevent rapid-fire saves
       const timeoutId = setTimeout(async () => {
         await saveKidsData(validKids);
       }, 1000); // Wait 1 second after user stops typing
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [kidsData]);
@@ -60,7 +61,7 @@ const OnboardingKidsCount: React.FC = () => {
     } else if (hasKids === 'yes' && !showKidsDetails) {
       setShowKidsDetails(true);
     } else if (showKidsDetails) {
-      const validKids = kidsData.filter(kid => kid.name.trim() !== '' && kid.birthdate.trim() !== '');
+      const validKids = getValidKids(kidsData);
       if (validKids.length === kidsCount) {
         navigate('/onboarding/parenting-styles');
       }
@@ -234,7 +235,7 @@ const OnboardingKidsCount: React.FC = () => {
         </div>
 
         {/* Next Button */}
-        {((hasKids === 'no') || (hasKids === 'yes' && !showKidsDetails) || (showKidsDetails && kidsData.filter(kid => kid.name.trim() !== '' && kid.birthdate.trim() !== '').length === kidsCount)) && (
+        {((hasKids === 'no') || (hasKids === 'yes' && !showKidsDetails) || (showKidsDetails && getValidKids(kidsData).length === kidsCount)) && (
           <div className="flex justify-center">
             <Button
               onClick={handleNext}
