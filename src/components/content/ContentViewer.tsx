@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +39,15 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   const [productFiles, setProductFiles] = useState<ProductFile[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const isMobile = useIsMobile();
+
+  // Reset states when modal closes
+  useEffect(() => {
+    if (!open) {
+      setPdfLoaded(false);
+      setProductFiles([]);
+      setLoadingFiles(false);
+    }
+  }, [open]);
 
   // Initialize files from product if available, otherwise load them
   useEffect(() => {
@@ -77,10 +87,23 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   const getContentUrl = () => {
     // First check primary_file_url, then file_url
     const url = product.primary_file_url || product.file_url;
-    if (!url) return null;
-    
+
+    console.log('Product content URLs:', {
+      primary_file_url: product.primary_file_url,
+      file_url: product.file_url,
+      product_id: product.id,
+      product_type: product.product_type
+    });
+
+    if (!url) {
+      console.warn('No file URL found for product:', product.id);
+      return null;
+    }
+
     // Convert relative path to public URL if needed
-    return productService.getPublicFileUrl(url);
+    const publicUrl = productService.getPublicFileUrl(url);
+    console.log('Generated public URL:', publicUrl);
+    return publicUrl;
   };
 
   const handleDownloadFile = (file: ProductFile) => {
@@ -145,12 +168,28 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
     
     if (!contentUrl) {
       return (
-        <div className="flex flex-col items-center justify-center h-96 text-center">
+        <div className="flex flex-col items-center justify-center h-96 text-center px-6">
           <FileText className="h-16 w-16 text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Content Not Available</h3>
-          <p className="text-gray-500">
+          <p className="text-gray-500 mb-4">
             This content is currently being processed or the file is not available.
           </p>
+          <div className="text-left bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-md">
+            <p className="text-sm text-gray-700 mb-2 font-medium">Possible reasons:</p>
+            <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+              <li>The file hasn't been uploaded yet</li>
+              <li>The file is still being processed</li>
+              <li>There was an error during upload</li>
+              <li>The storage URL is not configured correctly</li>
+            </ul>
+          </div>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="mt-6"
+          >
+            Close
+          </Button>
         </div>
       );
     }
@@ -295,19 +334,22 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
               <DialogTitle className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
                 {product.title}
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                View {product.product_type} content for {product.title}
+              </DialogDescription>
               <div className="flex items-center gap-2 flex-wrap text-xs">
                 {product.file_size_mb && (
                   <span className="text-gray-500">
                     {formatFileSize(product.file_size_mb)}
                   </span>
                 )}
-                
+
                 {product.duration_minutes && (
                   <span className="text-gray-500">
                     {formatDuration(product.duration_minutes)}
                   </span>
                 )}
-                
+
                 {product.page_count && (
                   <span className="text-gray-500">
                     {product.page_count} pages
@@ -315,7 +357,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                 )}
               </div>
             </div>
-            
+
             <Button
               variant="ghost"
               size="icon"

@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { ContentViewer } from '@/components/content/ContentViewer';
 import { ProductContentPreview } from '@/components/products/ProductContentPreview';
 import { ProductPreviewModal } from '@/components/products/ProductPreviewModal';
+import { toast } from '@/components/ui/sonner';
 export const ProductDetailPage: React.FC = () => {
   const {
     productId
@@ -29,6 +30,7 @@ export const ProductDetailPage: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [purchaseInfo, setPurchaseInfo] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const {
     data: product,
     isLoading,
@@ -48,11 +50,13 @@ export const ProductDetailPage: React.FC = () => {
         if (purchased) {
           // Get the purchase details including amount paid
           const {
-            data: purchase
-          } = await supabase.from('purchases').select('amount, currency, created_at').eq('user_id', user.id).eq('product_id', productId).eq('status', 'completed').order('created_at', {
+            data: purchase,
+            error: purchaseError
+          } = await supabase.from('purchases').select('amount, currency, purchased_at').eq('user_id', user.id).eq('product_id', productId).eq('status', 'completed').order('purchased_at', {
             ascending: false
-          }).limit(1).single();
-          if (purchase) {
+          }).limit(1).maybeSingle();
+
+          if (!purchaseError && purchase) {
             setPurchaseInfo(purchase);
           }
         }
@@ -82,6 +86,18 @@ export const ProductDetailPage: React.FC = () => {
     };
     loadProductFiles();
   }, [product]);
+
+  // Reset processing state when returning to the page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setIsProcessing(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
   const handlePurchase = () => {
     if (!user) {
       navigate('/auth/login');
@@ -103,21 +119,30 @@ export const ProductDetailPage: React.FC = () => {
         user_id: user.id,
         product_id: productId,
         amount: 0,
-        currency: 'usd',
+        currency: 'USD',
         status: 'completed'
       });
       if (error) {
         console.error('Error saving free content:', error);
-        alert('Failed to save content. Please try again.');
+        toast.error('Failed to save content', {
+          description: 'There was an error saving the content. Please try again.',
+          duration: 4000,
+        });
         return;
       }
 
       // Update local state
       setIsPurchased(true);
-      alert('Free content saved to your library!');
+      toast.success('Content saved successfully!', {
+        description: 'Free content has been added to your library.',
+        duration: 4000,
+      });
     } catch (error) {
       console.error('Error saving free content:', error);
-      alert('Failed to save content. Please try again.');
+      toast.error('Failed to save content', {
+        description: 'An unexpected error occurred. Please try again.',
+        duration: 4000,
+      });
     }
   };
   const handleViewContent = () => {
@@ -125,6 +150,8 @@ export const ProductDetailPage: React.FC = () => {
       navigate('/auth/login');
       return;
     }
+
+    if (isProcessing) return;
 
     // If purchased, show full content
     if (isPurchased) {
@@ -140,6 +167,9 @@ export const ProductDetailPage: React.FC = () => {
       navigate('/auth/login');
       return;
     }
+
+    if (isProcessing) return;
+
     setShowPreviewModal(true);
   };
   const isFreeProduct = product?.price === 0;
@@ -325,7 +355,7 @@ export const ProductDetailPage: React.FC = () => {
                         {formatCurrency(purchaseInfo.amount)}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Purchased on {new Date(purchaseInfo.created_at).toLocaleDateString()}
+                        Purchased on {new Date(purchaseInfo.purchased_at).toLocaleDateString()}
                       </div>
                     </div> : <div className="text-3xl font-bold">
                       {isCourse ? '' : isFreeProduct ? 'Free' : formatCurrency(product.price)}
@@ -373,10 +403,16 @@ export const ProductDetailPage: React.FC = () => {
         </div>
 
         {/* Content Viewer Modal (Full Access) */}
-        {product && <ContentViewer open={showPreview} onClose={() => setShowPreview(false)} product={product} />}
+        {product && <ContentViewer open={showPreview} onClose={() => {
+          setShowPreview(false);
+          setIsProcessing(false);
+        }} product={product} />}
 
         {/* Product Preview Modal (Limited Access) */}
-        {product && <ProductPreviewModal open={showPreviewModal} onClose={() => setShowPreviewModal(false)} product={product} productFiles={productFiles} onPurchase={handlePurchase} isPurchased={isPurchased} />}
+        {product && <ProductPreviewModal open={showPreviewModal} onClose={() => {
+          setShowPreviewModal(false);
+          setIsProcessing(false);
+        }} product={product} productFiles={productFiles} onPurchase={handlePurchase} isPurchased={isPurchased} />}
       </div>
     </div>;
 };
