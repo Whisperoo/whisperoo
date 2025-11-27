@@ -213,7 +213,9 @@ export const ProductFilesDisplay: React.FC<ProductFilesDisplayProps> = ({
                 {getFileIcon(file.file_type)}
               </div>
               <div>
-                <h3 className="font-medium text-lg">{file.file_name}</h3>
+                <h3 className="font-medium text-lg">
+                  {file.display_title || file.file_name.replace(/\.[^/.]+$/, "")}
+                </h3>
                 {file.description && (
                   <p className="text-sm text-muted-foreground mt-1">
                     {file.description}
@@ -298,61 +300,6 @@ export const ProductFilesDisplay: React.FC<ProductFilesDisplayProps> = ({
         </CardContent>
       </Card>
 
-      {/* Primary File (if exists) */}
-      {primaryFile && (
-        <Card className="border-primary">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className={cn(
-                  "p-2 rounded",
-                  getFileTypeColor(primaryFile.file_type)
-                )}>
-                  {getFileIcon(primaryFile.file_type)}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{primaryFile.file_name}</span>
-                    <Badge variant="default" className="text-xs">
-                      <Star className="w-3 h-3 mr-1 fill-current" />
-                      Primary
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                    <span>{formatFileSize(primaryFile.file_size_mb)}</span>
-                    {primaryFile.duration_minutes && (
-                      <span>{formatDuration(primaryFile.duration_minutes)}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              {isPurchased && (
-                <div className="flex gap-2">
-                  {onPreview && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onPreview(primaryFile)}
-                    >
-                      <Play className="w-4 h-4" />
-                    </Button>
-                  )}
-                  {onDownload && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDownload(primaryFile)}
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Files by Type */}
       <Card>
         <CardContent className="p-0">
@@ -397,15 +344,23 @@ export const ProductFilesDisplay: React.FC<ProductFilesDisplayProps> = ({
                 {isExpanded && (
                   <div className="px-4 pb-4">
                     <div className="space-y-2 pl-11">
-                      {typeFiles
-                        .filter(f => !f.is_primary) // Primary file is shown separately
-                        .map((file) => (
+                      {typeFiles.map((file) => (
                           <div
                             key={file.id}
                             className="flex items-center justify-between py-2"
                           >
                             <div className="flex-1">
-                              <p className="text-sm">{file.file_name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm">
+                                  {file.display_title || file.file_name.replace(/\.[^/.]+$/, "")}
+                                </p>
+                                {file.is_primary && (
+                                  <Badge variant="default" className="text-xs">
+                                    <Star className="w-3 h-3 mr-1 fill-current" />
+                                    Primary
+                                  </Badge>
+                                )}
+                              </div>
                               {file.description && (
                                 <p className="text-xs text-muted-foreground mt-0.5">
                                   {file.description}

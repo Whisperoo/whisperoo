@@ -33,7 +33,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Upload, FileText, Video, Image, Loader2, X, Download, Star, Plus } from 'lucide-react';
+import { Upload, FileText, Video, Image, Loader2, X, Download, Star, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { productService, ProductWithDetails } from '@/services/products';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -191,6 +191,32 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
     })));
   };
 
+  const updateExistingFileTitle = (fileId: string, title: string) => {
+    setExistingFiles(prev => prev.map(f =>
+      f.id === fileId ? { ...f, display_title: title } : f
+    ));
+  };
+
+  const moveExistingFile = (index: number, direction: 'up' | 'down') => {
+    setExistingFiles(prev => {
+      const newFiles = [...prev];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+      if (targetIndex < 0 || targetIndex >= newFiles.length) {
+        return prev;
+      }
+
+      // Swap files
+      [newFiles[index], newFiles[targetIndex]] = [newFiles[targetIndex], newFiles[index]];
+
+      // Update sort_order for both files
+      newFiles[index] = { ...newFiles[index], sort_order: index };
+      newFiles[targetIndex] = { ...newFiles[targetIndex], sort_order: targetIndex };
+
+      return newFiles;
+    });
+  };
+
   const getFileIcon = (fileType: string) => {
     if (fileType.includes('video')) return <Video className="w-4 h-4" />;
     if (fileType.includes('image')) return <Image className="w-4 h-4" />;
@@ -286,6 +312,20 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
       await productService.updateProduct(product.id, updateData);
 
       setUploadProgress(90);
+
+      // Update display titles and sort order for existing files
+      for (let i = 0; i < existingFiles.length; i++) {
+        const file = existingFiles[i];
+        if (!filesToDelete.includes(file.id)) {
+          await supabase
+            .from('product_files')
+            .update({
+              display_title: file.display_title,
+              sort_order: i
+            })
+            .eq('id', file.id);
+        }
+      }
 
       // Update category mappings
       // First, delete existing mappings
@@ -576,51 +616,114 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
               {existingFiles.length > 0 && (
                 <Card>
                   <CardContent className="p-4">
-                    <h4 className="text-sm font-medium mb-3">Current Files</h4>
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="text-sm font-medium">Current Files</h4>
+                      {existingFiles.length > 1 && (
+                        <p className="text-xs text-gray-500">
+                          Use arrows to reorder files
+                        </p>
+                      )}
+                    </div>
                     <div className="space-y-2">
-                      {existingFiles.map((file) => (
-                        <div key={file.id} className="flex items-center justify-between p-2 border rounded">
-                          <div className="flex items-center space-x-3">
-                            <div className={cn(
-                              "p-2 rounded",
-                              file.file_type === 'video' ? "bg-action-primary" :
-                              file.file_type === 'document' ? "bg-orange-100" :
-                              "bg-gray-100"
-                            )}>
-                              {getFileIcon(file.file_type)}
+                      {existingFiles.map((file, index) => (
+                        <div key={file.id} className="p-3 border rounded space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3 flex-1">
+                              <div className={cn(
+                                "p-2 rounded",
+                                file.file_type === 'video' ? "bg-action-primary" :
+                                file.file_type === 'document' ? "bg-orange-100" :
+                                "bg-gray-100"
+                              )}>
+                                {getFileIcon(file.file_type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {file.file_name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatFileSize(file.file_size_mb)}
+                                  {file.is_primary && (
+                                    <Badge variant="default" className="ml-2 text-xs">
+                                      Primary
+                                    </Badge>
+                                  )}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium">{file.file_name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatFileSize(file.file_size_mb)}
-                                {file.is_primary && (
-                                  <Badge variant="default" className="ml-2 text-xs">
-                                    Primary
-                                  </Badge>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {!file.is_primary && existingFiles.length > 1 && (
+                            <div className="flex items-center space-x-1">
+                              {/* Reorder Buttons */}
+                              {existingFiles.length > 1 && (
+                                <>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => moveExistingFile(index, 'up')}
+                                    disabled={index === 0}
+                                    className="p-1"
+                                  >
+                                    <ChevronUp className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => moveExistingFile(index, 'down')}
+                                    disabled={index === existingFiles.length - 1}
+                                    className="p-1"
+                                  >
+                                    <ChevronDown className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
+                              {/* Primary Star */}
+                              {!file.is_primary && existingFiles.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setPrimaryFile(file.id)}
+                                  className={cn("p-1")}
+                                >
+                                  <Star className="w-4 h-4" />
+                                </Button>
+                              )}
+                              {file.is_primary && existingFiles.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled
+                                  className="p-1 text-yellow-500"
+                                >
+                                  <Star className="w-4 h-4 fill-current" />
+                                </Button>
+                              )}
+                              {/* Delete Button */}
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => setPrimaryFile(file.id)}
+                                onClick={() => markFileForDeletion(file.id)}
+                                className="p-1 text-red-500 hover:text-red-700"
                               >
-                                <Star className="w-4 h-4" />
+                                <X className="w-4 h-4" />
                               </Button>
-                            )}
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => markFileForDeletion(file.id)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
+                            </div>
+                          </div>
+
+                          {/* Editable Display Title */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-700">
+                              Display Title
+                            </label>
+                            <Input
+                              value={file.display_title || ''}
+                              onChange={(e) => updateExistingFileTitle(file.id, e.target.value)}
+                              placeholder="Enter display title..."
+                              className="text-sm"
+                            />
                           </div>
                         </div>
                       ))}
