@@ -172,6 +172,18 @@ export const ExpertDashboard: React.FC = () => {
     setPreviewModalOpen(true);
   };
 
+  const handleClosePreview = () => {
+    setPreviewModalOpen(false);
+    setSelectedProduct(null);
+
+    // Force cleanup of any lingering modal styles that may block interactions
+    // This is especially important in production builds
+    setTimeout(() => {
+      document.body.style.pointerEvents = '';
+      document.body.style.overflow = '';
+    }, 100);
+  };
+
   const handleDeleteProduct = (productId: string) => {
     setDeleteProductId(productId);
   };
@@ -634,10 +646,7 @@ export const ExpertDashboard: React.FC = () => {
       {selectedProduct && (
         <ContentViewer
           open={previewModalOpen}
-          onClose={() => {
-            setPreviewModalOpen(false);
-            setSelectedProduct(null);
-          }}
+          onClose={handleClosePreview}
           product={selectedProduct}
         />
       )}
