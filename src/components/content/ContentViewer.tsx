@@ -46,8 +46,31 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
       setPdfLoaded(false);
       setProductFiles([]);
       setLoadingFiles(false);
+
+      // Force cleanup of any lingering modal styles that may block interactions
+      // This is especially important in production builds
+      setTimeout(() => {
+        document.body.style.pointerEvents = '';
+        document.body.style.overflow = '';
+      }, 100);
     }
   }, [open]);
+
+  // Reset processing state when user returns to the page after opening file in new tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setPdfLoaded(false);
+        setLoadingFiles(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Initialize files from product if available, otherwise load them
   useEffect(() => {
