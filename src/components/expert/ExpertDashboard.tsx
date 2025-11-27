@@ -48,6 +48,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productService, ProductWithDetails } from '@/services/products';
 import { ProductUploadModal } from '@/components/products/ProductUploadModal';
 import { ProductEditModal } from '@/components/products/ProductEditModal';
+import { ContentViewer } from '@/components/content/ContentViewer';
 import { formatCurrency } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
@@ -57,6 +58,7 @@ export const ExpertDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductWithDetails | null>(null);
   const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
 
@@ -165,13 +167,18 @@ export const ExpertDashboard: React.FC = () => {
     }
   };
 
+  const handleViewProduct = (product: ProductWithDetails) => {
+    setSelectedProduct(product);
+    setPreviewModalOpen(true);
+  };
+
   const handleDeleteProduct = (productId: string) => {
     setDeleteProductId(productId);
   };
 
   const confirmDeleteProduct = async () => {
     if (!deleteProductId) return;
-    
+
     try {
       await productService.deleteProduct(deleteProductId);
       refetchProducts();
@@ -370,9 +377,9 @@ export const ExpertDashboard: React.FC = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleViewProduct(product)}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                Preview Content
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditProduct(product)}>
                                 <Edit className="mr-2 h-4 w-4" />
@@ -619,6 +626,18 @@ export const ExpertDashboard: React.FC = () => {
             setSelectedProduct(null);
           }}
           onSuccess={handleProductEditSuccess}
+          product={selectedProduct}
+        />
+      )}
+
+      {/* Preview Content Modal */}
+      {selectedProduct && (
+        <ContentViewer
+          open={previewModalOpen}
+          onClose={() => {
+            setPreviewModalOpen(false);
+            setSelectedProduct(null);
+          }}
           product={selectedProduct}
         />
       )}
