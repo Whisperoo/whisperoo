@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -246,6 +247,9 @@ export const ProductPreviewModal: React.FC<ProductPreviewModalProps> = ({
               <DialogTitle className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">
                 {product.title}
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                Preview {product.product_type} - {product.title}
+              </DialogDescription>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 {product.expert && (
                   <span>by {product.expert.first_name}</span>
