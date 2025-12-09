@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onView,
 }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -165,7 +167,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }
   };
 
-  const handlePurchaseClick = () => {
+  const handlePurchaseClick = async () => {
     if (isFreeProduct) {
       handleSaveFreeContent();
       return;
@@ -179,7 +181,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       });
       return;
     }
-    setShowPurchaseModal(true);
+
+    // If already purchased and NOT a consultation, view content instead
+    const isConsultation = product.product_type === 'consultation';
+    if (isPurchased && !isConsultation) {
+      handleViewContent();
+      return;
+    }
+
+    navigate(`/products/${product.id}/purchase`);
   };
 
   const handlePurchaseSuccess = (purchaseId: string) => {
@@ -396,24 +406,30 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           
           {/* Buttons Section - Full Width on Mobile */}
           <div className="flex flex-col sm:flex-row gap-2 w-full">
-            {/* Preview Button - show for all products with content */}
-            
-            {(product.product_type === 'video' && !isFreeProduct) || isCourse ? (
-              <div className="w-full text-sm text-muted-foreground py-2 px-4 text-center">
-                Email contact@whisperoo.app to purchase
-              </div>
-            ) : (
-              <Button 
-                size="sm" 
-                onClick={handlePurchaseClick}
-                disabled={isFreeProduct && (isSaved || isCheckingStatus)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 font-medium rounded-md h-9 whitespace-nowrap disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {isFreeProduct ? (
-                  isCheckingStatus ? 'Checking...' : (isSaved ? 'Saved' : 'Save')
-                ) : 'Purchase'}
-              </Button>
-            )}
+            <Button
+              size="sm"
+              onClick={handlePurchaseClick}
+              disabled={isFreeProduct && (isSaved || isCheckingStatus)}
+              className={`w-full px-6 font-medium rounded-md h-9 whitespace-nowrap disabled:bg-gray-400 disabled:cursor-not-allowed ${
+                !isFreeProduct && isPurchased && product.product_type !== 'consultation'
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+            >
+              {isFreeProduct ? (
+                isCheckingStatus ? 'Checking...' : (isSaved ? 'Saved' : 'Save')
+              ) : (
+                // Show "View" if purchased and NOT a consultation
+                isCheckingPurchase ? 'Checking...' : (
+                  isPurchased && product.product_type !== 'consultation' ? (
+                    <span className="flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      View
+                    </span>
+                  ) : 'Purchase'
+                )
+              )}
+            </Button>
           </div>
         </div>
       </CardFooter>

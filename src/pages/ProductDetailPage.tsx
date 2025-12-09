@@ -361,12 +361,10 @@ export const ProductDetailPage: React.FC = () => {
                       {isCourse ? '' : isFreeProduct ? 'Free' : formatCurrency(product.price)}
                     </div>}
 
-                  {isPurchased ? <Button onClick={handleViewContent} className="w-full gap-2" size="lg">
+                  {isPurchased && product.product_type !== 'consultation' ? <Button onClick={handleViewContent} className="w-full gap-2 bg-green-600 hover:bg-green-700" size="lg">
                       <Eye className="h-4 w-4" />
                       View Content
-                    </Button> : product.product_type === 'video' && !isFreeProduct || isCourse ? <div className="w-full text-center py-3 px-4 text-muted-foreground border border-border rounded-lg">
-                      Email contact@whisperoo.app to purchase
-                    </div> : <Button onClick={isFreeProduct ? handleSaveFreeContent : handlePurchase} className="w-full" size="lg">
+                    </Button> : <Button onClick={isFreeProduct ? handleSaveFreeContent : handlePurchase} className="w-full" size="lg">
                       {isFreeProduct ? 'Save' : 'Purchase Now'}
                     </Button>}
                 </div>

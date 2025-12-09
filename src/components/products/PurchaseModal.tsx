@@ -13,10 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { X, CreditCard, Shield, FileText, Video, Loader2 } from 'lucide-react';
 import { ProductWithDetails } from '@/services/products';
 import { formatCurrency } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import { PaymentForm } from './PaymentForm';
-import { usePayments } from '@/hooks/usePayments';
-import { supabase } from '@/lib/supabase';
+import { StripeCheckout } from '@/components/payments/StripeCheckout';
 
 interface PurchaseModalProps {
   isOpen: boolean;
@@ -37,119 +34,30 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   product,
   onPurchaseSuccess,
 }) => {
-  const { user, profile } = useAuth();
-  const { createPurchaseAsync, isCreatingPurchase } = usePayments();
   const [purchaseState, setPurchaseState] = useState<PurchaseState>({ step: 'details' });
   const navigate = useNavigate();
 
-  const handleConsultationBooking = async () => {
-    if (!user || !product) return;
+  const handlePaymentSuccess = (purchaseId: string) => {
+    setPurchaseState({
+      step: 'success',
+      purchaseId,
+    });
 
-    setPurchaseState({ step: 'processing' });
-
-    try {
-      // Create consultation booking directly without payment
-      const { data: purchase, error: purchaseError } = await supabase
-        .from('purchases')
-        .insert({
-          user_id: user.id,
-          product_id: product.id,
-          expert_id: product.expert_id,
-          amount: product.price, // Record actual consultation rate for reference
-          currency: 'USD',
-          payment_method: 'arranged_separately',
-          status: 'completed',
-          purchased_at: new Date().toISOString(),
-          metadata: {
-            booking_type: 'consultation',
-            payment_status: 'arranged_separately',
-            consultation_rate: product.price
-          }
-        })
-        .select('id')
-        .single();
-
-      if (purchaseError) {
-        console.error('Database error creating consultation booking:', purchaseError);
-        throw new Error('Failed to create consultation booking');
-      }
-
-      setPurchaseState({
-        step: 'success',
-        purchaseId: purchase.id
+    // Navigate to success page after a brief delay
+    setTimeout(() => {
+      onPurchaseSuccess?.(purchaseId);
+      onClose();
+      navigate(`/purchase-success/${product.id}`, {
+        state: { purchaseId },
       });
-
-      // Navigate to success page after a brief delay
-      setTimeout(() => {
-        onPurchaseSuccess?.(purchase.id);
-        onClose();
-        navigate(`/purchase-success/${product.id}`, {
-          state: { purchaseId: purchase.id }
-        });
-      }, 1500);
-
-    } catch (error: unknown) {
-      console.error('Consultation booking error:', error);
-      setPurchaseState({
-        step: 'error',
-        error: (error as Error)?.message || 'Failed to book consultation. Please try again.',
-      });
-    }
+    }, 1500);
   };
 
-  const handlePaymentSubmit = async (paymentData: {
-    email: string;
-    paymentMethod: 'card';
-    cardNumber: string;
-    expiryDate: string;
-    cvc: string;
-    nameOnCard: string;
-    billingAddress: {
-      line1: string;
-      city: string;
-      state: string;
-      postalCode: string;
-      country: string;
-    };
-  }) => {
-    if (!user || !product) return;
-
-    setPurchaseState({ step: 'processing' });
-
-    try {
-      const result = await createPurchaseAsync({
-        product,
-        paymentData,
-      });
-
-      if (result.success && result.purchaseId) {
-        setPurchaseState({
-          step: 'success',
-          purchaseId: result.purchaseId
-        });
-
-        // Navigate to success page after a brief delay
-        setTimeout(() => {
-          onPurchaseSuccess?.(result.purchaseId!);
-          onClose();
-          navigate(`/purchase-success/${product.id}`, {
-            state: { purchaseId: result.purchaseId }
-          });
-        }, 1500);
-      } else {
-        setPurchaseState({
-          step: 'error',
-          error: result.error || 'Payment processing failed. Please try again.',
-        });
-      }
-
-    } catch (error: unknown) {
-      console.error('Payment processing error:', error);
-      setPurchaseState({
-        step: 'error',
-        error: (error as Error)?.message || 'Payment processing failed. Please try again.',
-      });
-    }
+  const handlePaymentError = (error: string) => {
+    setPurchaseState({
+      step: 'error',
+      error,
+    });
   };
 
   const handleClose = () => {
@@ -159,10 +67,6 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
     }
   };
 
-  const isConsultation = product.product_type === 'consultation';
-  // All consultations bypass payment regardless of price - payment arranged separately with expert
-  const shouldBypassPayment = isConsultation;
-
   const renderContent = () => {
     switch (purchaseState.step) {
       case 'details':
@@ -171,13 +75,10 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-3">
                 <CreditCard className="h-6 w-6 text-blue-600" />
-                {isConsultation ? 'Book Your Consultation' : 'Complete Your Purchase'}
+                Complete Your Purchase
               </DialogTitle>
               <DialogDescription>
-                {isConsultation
-                  ? `You're about to book a consultation with ${product.expert?.first_name || 'this expert'}`
-                  : `You're about to purchase ${product.title}`
-                }
+                You're about to purchase {product.title}
               </DialogDescription>
             </DialogHeader>
 
@@ -213,46 +114,29 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                 </div>
               </div>
 
-              {/* Pricing Breakdown - Only show for non-consultation products */}
-              {!isConsultation && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">{product.title}</span>
-                    <span className="font-medium">{formatCurrency(product.price)}</span>
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex justify-between items-center text-lg font-semibold">
-                    <span>Total</span>
-                    <span>{formatCurrency(product.price)}</span>
-                  </div>
+              {/* Pricing Breakdown */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700">{product.title}</span>
+                  <span className="font-medium">{formatCurrency(product.price)}</span>
                 </div>
-              )}
 
-              {/* Consultation Info - All consultations bypass payment */}
-              {isConsultation && (
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <div className="flex items-center gap-3 text-blue-800">
-                    <Shield className="h-5 w-5" />
-                    <div>
-                      <p className="font-medium">Book Consultation</p>
-                      <p className="text-sm">Payment will be arranged directly with the expert. They will contact you within 24 hours to schedule your session.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                <Separator />
 
-              {/* Security Notice - Only for non-consultation products */}
-              {!isConsultation && (
-                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                  <Shield className="h-5 w-5 text-green-600" />
-                  <div className="text-sm text-green-800">
-                    <p className="font-medium">Secure Payment</p>
-                    <p>Your payment information is encrypted and secure.</p>
-                  </div>
+                <div className="flex justify-between items-center text-lg font-semibold">
+                  <span>Total</span>
+                  <span>{formatCurrency(product.price)}</span>
                 </div>
-              )}
+              </div>
+
+              {/* Security Notice */}
+              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                <Shield className="h-5 w-5 text-green-600" />
+                <div className="text-sm text-green-800">
+                  <p className="font-medium">Secure Payment</p>
+                  <p>Your payment information is encrypted and secure.</p>
+                </div>
+              </div>
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
@@ -260,10 +144,10 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                   Cancel
                 </Button>
                 <Button
-                  onClick={shouldBypassPayment ? handleConsultationBooking : () => setPurchaseState({ step: 'payment' })}
+                  onClick={() => setPurchaseState({ step: 'payment' })}
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                 >
-                  {shouldBypassPayment ? 'Book Consultation' : 'Continue to Payment'}
+                  Continue to Payment
                 </Button>
               </div>
             </div>
@@ -274,17 +158,22 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
         return (
           <>
             <DialogHeader>
-              <DialogTitle>Payment Information</DialogTitle>
+              <DialogTitle className="flex items-center gap-3">
+                <CreditCard className="h-6 w-6 text-blue-600" />
+                Payment Information
+              </DialogTitle>
               <DialogDescription>
-                Enter your payment details to complete the purchase
+                Complete your purchase securely with Stripe
               </DialogDescription>
             </DialogHeader>
 
-            <PaymentForm
-              onSubmit={handlePaymentSubmit}
+            <StripeCheckout
+              productId={product.id}
+              productTitle={product.title}
+              amount={product.price}
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
               onCancel={() => setPurchaseState({ step: 'details' })}
-              product={product}
-              defaultEmail={profile?.email || ''}
             />
           </>
         );
@@ -317,13 +206,10 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
               </svg>
             </div>
             <h3 className="text-xl font-semibold mb-2">
-              {isConsultation ? 'Consultation Booked!' : 'Purchase Successful!'}
+              Purchase Successful!
             </h3>
             <p className="text-gray-600 mb-6">
-              {isConsultation
-                ? 'Your consultation has been booked. The expert will contact you within 24 hours.'
-                : 'Redirecting you to view your new purchase...'
-              }
+              Your payment has been processed successfully. Redirecting...
             </p>
             <div className="flex items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
@@ -342,7 +228,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
               {purchaseState.error || 'There was an error processing your payment.'}
             </p>
             <div className="space-y-3">
-              <Button 
+              <Button
                 onClick={() => setPurchaseState({ step: 'payment' })}
                 className="w-full"
               >
