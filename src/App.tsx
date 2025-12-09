@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -26,6 +26,7 @@ import ExpertProfiles from "./pages/ExpertProfiles";
 import ExpertDetails from "./pages/ExpertDetails";
 import { ProductsPage } from "./pages/ProductsPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
+import { ProductPurchasePage } from "./pages/ProductPurchasePage";
 import { MyPurchasesPage } from "./pages/MyPurchasesPage";
 import { PurchaseSuccessPage } from "./pages/PurchaseSuccessPage";
 import { AdminProductsPage } from "./pages/AdminProductsPage";
@@ -135,6 +136,13 @@ const App = () => {
                 <ProtectedRoute requireAuth={true} requireOnboarding={true}>
                   <AppLayout>
                     <ProductDetailPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/products/:productId/purchase" element={
+                <ProtectedRoute requireAuth={true} requireOnboarding={true}>
+                  <AppLayout>
+                    <ProductPurchasePage />
                   </AppLayout>
                 </ProtectedRoute>
               } />
