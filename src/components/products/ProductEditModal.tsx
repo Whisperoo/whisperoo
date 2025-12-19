@@ -147,23 +147,25 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
     }
   }, [product, form]);
 
-  const handleNewFilesChange = (files: any) => {
+  const handleNewFilesChange = (filesWithTitles: { file: File; displayTitle: string }[]) => {
+    // Extract the File objects from FileWithTitle wrapper objects
+    const files = filesWithTitles.map(ft => ft.file);
     setNewFiles(files);
-    
+
     // Auto-detect content type
     const totalFiles = existingFiles.filter(f => !filesToDelete.includes(f.id)).length + files.length;
     if (totalFiles > 1) {
       form.setValue('contentType', 'bundle');
-      
+
       // Check for mixed file types
       const allFiles = [...files, ...existingFiles.map(f => ({ type: f.mime_type || '' }))];
       const hasVideo = allFiles.some(f => f.type?.startsWith('video/'));
-      const hasDocument = allFiles.some(f => 
-        f.type?.includes('pdf') || 
-        f.type?.includes('document') || 
+      const hasDocument = allFiles.some(f =>
+        f.type?.includes('pdf') ||
+        f.type?.includes('document') ||
         f.type?.includes('text')
       );
-      
+
       if (hasVideo && hasDocument) {
         form.setValue('productType', 'mixed');
       }
