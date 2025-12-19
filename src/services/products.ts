@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database.types';
 import { validateFile as validateFileUpload, getCurrentLimits, STORAGE_CONFIG } from '@/config/upload';
+import { uploadFile, getFileUrl, deleteFile, deleteFiles } from '@/services/cloudflare-storage';
+import { STORAGE_PATHS } from '@/config/cloudflare';
 
 type Product = Database['public']['Tables']['products']['Row'];
 type ProductInsert = Database['public']['Tables']['products']['Insert'];
@@ -252,14 +254,12 @@ export const productService = {
       .eq('product_id', productId);
 
     if (productFiles && productFiles.length > 0) {
-      // Delete storage files with proper path extraction
-      const filePaths = productFiles.map(f => this.extractStoragePath(f.file_url));
-      const { error: storageError } = await supabase.storage
-        .from('products')
-        .remove(filePaths);
-
-      if (storageError) {
-        console.error('Storage deletion error:', storageError);
+      // Delete storage files from Cloudflare R2
+      try {
+        const filePaths = productFiles.map(f => f.file_url);
+        await deleteFiles(filePaths);
+      } catch (storageError) {
+        console.error('Cloudflare R2 deletion error:', storageError);
         // Continue with database deletion even if storage deletion fails
       }
 
@@ -280,25 +280,19 @@ export const productService = {
       .single();
 
     if (product?.file_url) {
-      const legacyPath = this.extractStoragePath(product.file_url);
-      const { error: legacyStorageError } = await supabase.storage
-        .from('products')
-        .remove([legacyPath]);
-
-      if (legacyStorageError) {
-        console.error('Legacy storage deletion error:', legacyStorageError);
+      try {
+        await deleteFile(product.file_url);
+      } catch (legacyStorageError) {
+        console.error('Legacy Cloudflare R2 deletion error:', legacyStorageError);
       }
     }
 
     // Delete thumbnail if exists
     if (product?.thumbnail_url) {
-      const thumbnailPath = this.extractStoragePath(product.thumbnail_url);
-      const { error: thumbnailError } = await supabase.storage
-        .from('product-thumbnails')
-        .remove([thumbnailPath]);
-
-      if (thumbnailError) {
-        console.error('Thumbnail deletion error:', thumbnailError);
+      try {
+        await deleteFile(product.thumbnail_url);
+      } catch (thumbnailError) {
+        console.error('Thumbnail Cloudflare R2 deletion error:', thumbnailError);
       }
     }
 
@@ -317,34 +311,28 @@ export const productService = {
     expertId: string,
     productId: string
   ): Promise<string> {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${expertId}/${productId}.${fileExt}`;
+    const fileExt = file.name.split('.').pop() || 'bin';
+    const fileId = crypto.randomUUID();
+    const filePath = STORAGE_PATHS.productFile(expertId, productId, fileId, fileExt);
 
     // Calculate file size in MB
     const fileSizeMB = file.size / (1024 * 1024);
 
-    const { data, error } = await supabase.storage
-      .from('products')
-      .upload(fileName, file, {
-        contentType: file.type,
-        upsert: true, // Allow overwriting existing files
-      });
+    // Upload to Cloudflare R2
+    const uploadResult = await uploadFile({
+      filePath,
+      file,
+      contentType: file.type,
+    });
 
-    if (error) throw error;
-
-    // Get the public URL for the uploaded file
-    const { data: urlData } = supabase.storage
-      .from('products')
-      .getPublicUrl(fileName);
-
-    // Store file metadata in product_files table - use relative path for consistency
+    // Store file metadata in product_files table
     const fileType = file.type.startsWith('video/') ? 'video' :
                     file.type.startsWith('image/') ? 'image' :
                     file.type.includes('pdf') ? 'document' : 'other';
 
     await supabase.from('product_files').insert({
       product_id: productId,
-      file_url: fileName, // Store relative path instead of full URL for easier deletion
+      file_url: uploadResult.filePath, // Store relative path
       file_name: file.name,
       file_type: fileType,
       file_size_mb: fileSizeMB,
@@ -354,7 +342,7 @@ export const productService = {
     });
 
     // Return the public URL for frontend use
-    return urlData.publicUrl;
+    return uploadResult.publicUrl;
   },
 
   // Upload product thumbnail
@@ -363,23 +351,17 @@ export const productService = {
     expertId: string,
     productId: string
   ): Promise<string> {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${expertId}/${productId}-thumb.${fileExt}`;
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const filePath = STORAGE_PATHS.productThumbnail(expertId, productId, fileExt);
 
-    const { data, error } = await supabase.storage
-      .from('product-thumbnails')
-      .upload(fileName, file, {
-        contentType: file.type,
-        upsert: true,
-      });
+    // Upload to Cloudflare R2
+    const uploadResult = await uploadFile({
+      filePath,
+      file,
+      contentType: file.type,
+    });
 
-    if (error) throw error;
-
-    const { data: urlData } = supabase.storage
-      .from('product-thumbnails')
-      .getPublicUrl(fileName);
-
-    return urlData.publicUrl;
+    return uploadResult.publicUrl;
   },
 
   // Get all categories
@@ -545,107 +527,36 @@ export const productService = {
     const cleanFileName = STORAGE_CONFIG.cleanFileName(file.name);
     const fileName = `${productId}/${fileId}.${fileExt}`;
 
-    console.log(`Uploading file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) to ${fileName}`);
+    // Get expert ID from product for Cloudflare R2 path
+    const { data: product } = await supabase
+      .from('products')
+      .select('expert_id')
+      .eq('id', productId)
+      .single();
 
-    // Upload file to storage with retry logic and resumable uploads for large files
-    let uploadAttempts = 0;
-    const maxRetries = 3;
-    let uploadError: Error | null = null;
-
-    // Use resumable upload for files over 6MB as recommended by Supabase
-    const fileSizeMB = file.size / (1024 * 1024);
-    const useResumableUpload = fileSizeMB > 6;
-
-    while (uploadAttempts < maxRetries) {
-      let uploadResult;
-      
-      if (useResumableUpload) {
-        console.log(`Using resumable upload for large file: ${file.name} (${fileSizeMB.toFixed(2)}MB)`);
-        uploadResult = await supabase.storage
-          .from('products')
-          .createSignedUploadUrl(fileName, {
-            upsert: false,
-          });
-        
-        if (uploadResult.error) {
-          uploadError = uploadResult.error;
-        } else {
-          // Upload using the signed URL
-          try {
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            const response = await fetch(uploadResult.data.signedUrl, {
-              method: 'PUT',
-              body: file,
-              headers: {
-                'Content-Type': file.type,
-              },
-            });
-            
-            if (!response.ok) {
-              throw new Error(`Upload failed with status ${response.status}: ${response.statusText}`);
-            }
-            
-            uploadError = null;
-          } catch (fetchError) {
-            uploadError = fetchError as Error;
-          }
-        }
-      } else {
-        // Use standard upload for smaller files
-        uploadResult = await supabase.storage
-          .from('products')
-          .upload(fileName, file, {
-            contentType: file.type,
-            upsert: false,
-          });
-        
-        uploadError = uploadResult.error;
-      }
-
-      if (!uploadError) {
-        break;
-      }
-
-      uploadAttempts++;
-      
-      if (uploadAttempts < maxRetries) {
-        console.warn(`Upload attempt ${uploadAttempts} failed for ${file.name}, retrying...`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * uploadAttempts));
-      }
+    if (!product?.expert_id) {
+      throw new Error('Expert ID not found for product');
     }
 
-    if (uploadError) {
-      console.error(`Failed to upload ${file.name} after ${maxRetries} attempts:`, uploadError);
-      
-      // Provide more specific error messages for common issues
-      let errorMessage = uploadError.message;
-      const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
-      
-      if (uploadError.message.includes('exceeded the maximum allowed size') || 
-          uploadError.message.includes('file size limit') ||
-          uploadError.message.includes('413') ||
-          uploadError.message.includes('Payload too large') ||
-          (uploadError as any).status === 413) {
-        errorMessage = `File "${file.name}" (${fileSizeMB}MB) exceeds storage limits. The bucket is configured for 500MB max. This may be a temporary sync issue - please try again in a few minutes.`;
-      } else if (uploadError.message.includes('400') || (uploadError as any).status === 400) {
-        errorMessage = `Upload failed for "${file.name}" (${fileSizeMB}MB). ${uploadError.message}. The storage bucket has been reconfigured - please try again.`;
-      } else if (uploadError.message.includes('network') || uploadError.message.includes('timeout')) {
-        errorMessage = `Network error uploading "${file.name}" (${fileSizeMB}MB). Please check your connection and try again.`;
-      }
-      
-      throw new Error(errorMessage);
-    }
+    const filePath = STORAGE_PATHS.productFile(product.expert_id, productId, fileId, fileExt);
+
+    console.log(`Uploading file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) to Cloudflare R2`);
+
+    // Upload to Cloudflare R2 with automatic retry
+    const uploadResult = await uploadFile({
+      filePath,
+      file,
+      contentType: file.type,
+    });
 
     // Create file record with relative path for easier deletion
     const fileSizeInMB = Math.round((file.size / (1024 * 1024)) * 100) / 100; // Round to 2 decimal places
-    
+
     const { data, error } = await supabase
       .from('product_files')
       .insert({
         product_id: productId,
-        file_url: fileName, // Store relative path instead of full URL
+        file_url: uploadResult.filePath, // Store relative path
         file_name: file.name,
         file_type: this.detectFileType(file.type),
         file_size_mb: fileSizeInMB,
@@ -659,7 +570,7 @@ export const productService = {
     if (error) {
       // Cleanup uploaded file if database insert fails
       try {
-        await supabase.storage.from('products').remove([fileName]);
+        await deleteFile(uploadResult.filePath);
       } catch (cleanupError) {
         console.warn('Failed to cleanup file after database error:', cleanupError);
       }
@@ -766,16 +677,11 @@ export const productService = {
 
     if (fetchError) throw fetchError;
 
-    // Extract proper storage path
-    const storagePath = this.extractStoragePath(file.file_url);
-
-    // Delete from storage
-    const { error: deleteStorageError } = await supabase.storage
-      .from('products')
-      .remove([storagePath]);
-
-    if (deleteStorageError) {
-      console.error('Storage deletion error:', deleteStorageError);
+    // Delete from Cloudflare R2
+    try {
+      await deleteFile(file.file_url);
+    } catch (deleteStorageError) {
+      console.error('Cloudflare R2 deletion error:', deleteStorageError);
       // Continue with database deletion even if storage deletion fails
     }
 
@@ -858,40 +764,25 @@ export const productService = {
 
   // Helper: Get public URL for a file path
   getPublicFileUrl(filePath: string): string {
-    // If it's already a full URL, return as-is
-    if (filePath.startsWith('http')) {
-      return filePath;
-    }
-    
     // If path is empty or invalid, return empty string
     if (!filePath || filePath.trim() === '') {
       console.warn('Empty file path provided to getPublicFileUrl');
       return '';
     }
-    
-    // Handle paths that already include the bucket name
-    let storagePath = filePath;
-    if (filePath.startsWith('products/')) {
-      storagePath = filePath.substring('products/'.length);
-    }
-    
-    // Ensure we have a valid storage path
-    if (!storagePath || storagePath.trim() === '') {
-      console.error('Invalid storage path after processing:', filePath);
+
+    // If it's a Supabase Storage URL, ignore it (legacy files)
+    if (filePath.includes('supabase.co/storage')) {
+      console.warn('Ignoring legacy Supabase Storage URL:', filePath);
       return '';
     }
-    
-    try {
-      // Generate public URL from storage path
-      const { data } = supabase.storage
-        .from('products')
-        .getPublicUrl(storagePath);
-      
-      return data.publicUrl;
-    } catch (error) {
-      console.error('Error generating public URL for path:', storagePath, error);
-      return '';
+
+    // If it's already a Cloudflare R2 URL, return as-is
+    if (filePath.startsWith('http')) {
+      return filePath;
     }
+
+    // Use Cloudflare R2 URL generation for relative paths
+    return getFileUrl(filePath);
   },
 
   // Helper: Detect file type from MIME type

@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { Avatar, AvatarFallback, AvatarImage } from './avatar'
 import { Button } from './button'
 import { toast } from '@/hooks/use-toast'
+import { uploadFile } from '@/services/cloudflare-storage'
+import { STORAGE_PATHS } from '@/config/cloudflare'
 
 interface AvatarUploadProps {
   onImageUploaded?: (url: string) => void
@@ -43,30 +45,21 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({ onImageUploaded, className 
         throw new Error('User not authenticated')
       }
 
-      // Create unique filename
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${profile.id}/${Date.now()}.${fileExt}`
+      // Create file path for Cloudflare R2
+      const fileExt = file.name.split('.').pop() || 'jpg'
+      const timestamp = Date.now()
+      const filePath = STORAGE_PATHS.profileImage(profile.id, timestamp, fileExt)
 
-      // Upload to Supabase storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('profile-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        })
-
-      if (uploadError) {
-        throw uploadError
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-images')
-        .getPublicUrl(uploadData.path)
+      // Upload to Cloudflare R2
+      const uploadResult = await uploadFile({
+        filePath,
+        file,
+        contentType: file.type,
+      })
 
       // Update profile with new image URL
-      const { error: updateError } = await updateProfile({ 
-        profile_image_url: publicUrl 
+      const { error: updateError } = await updateProfile({
+        profile_image_url: uploadResult.publicUrl
       })
 
       if (updateError) {
@@ -78,7 +71,7 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({ onImageUploaded, className 
         description: "Your profile image has been successfully updated.",
       })
 
-      onImageUploaded?.(publicUrl)
+      onImageUploaded?.(uploadResult.publicUrl)
 
     } catch (error: any) {
       console.error('Error uploading image:', error)
