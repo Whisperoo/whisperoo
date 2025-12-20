@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  FileText, 
+import {
+  FileText,
   Image as ImageIcon,
-  ExternalLink,
-  Loader2,
-  Download
+  Loader2
 } from 'lucide-react';
 import { VideoPlayer } from './VideoPlayer';
 import { ProductFile, productService } from '@/services/products';
@@ -125,34 +123,6 @@ export const UnifiedMediaViewer: React.FC<UnifiedMediaViewerProps> = ({
             </div>
           )}
 
-          {/* Top controls bar */}
-          <div className="absolute top-2 right-2 flex gap-2 z-10">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => window.open(publicUrl, '_blank')}
-              className="bg-white/95 hover:bg-white shadow-sm text-xs px-2 py-1"
-            >
-              <ExternalLink className="h-3 w-3 mr-1" />
-              Full View
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                const link = document.createElement('a');
-                link.href = publicUrl;
-                link.download = file.file_name;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-              className="bg-white/95 hover:bg-white shadow-sm text-xs px-2 py-1"
-            >
-              <Download className="h-3 w-3 mr-1" />
-              Download
-            </Button>
-          </div>
 
           {/* Optional: Bottom info bar */}
           <div className="absolute bottom-2 left-2 right-2 bg-white/95 rounded px-3 py-2 text-xs text-gray-600 flex justify-between items-center">
@@ -215,32 +185,9 @@ export const UnifiedMediaViewer: React.FC<UnifiedMediaViewerProps> = ({
           </span>
         )}
       </p>
-      <p className="text-gray-500 mb-6">
+      <p className="text-gray-500">
         This file type cannot be previewed in the browser.
       </p>
-      <div className="flex gap-3">
-        <Button
-          onClick={() => window.open(file.file_url, '_blank')}
-          variant="outline"
-        >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Open in New Tab
-        </Button>
-        <Button 
-          onClick={() => {
-            const link = document.createElement('a');
-            link.href = file.file_url;
-            link.download = file.file_name;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            onComplete?.();
-          }}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Download
-        </Button>
-      </div>
     </div>
   );
 };

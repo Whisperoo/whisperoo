@@ -240,6 +240,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         poster={poster}
         autoPlay={autoPlay}
         crossOrigin="anonymous"
+        controlsList="nodownload"
+        onContextMenu={(e) => e.preventDefault()}
         className="w-full h-full object-contain"
         onClick={togglePlay}
       />
