@@ -51,7 +51,7 @@ const productSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   price: z.number().min(0, 'Price must be 0 or greater'),
-  productType: z.enum(['video', 'document', 'mixed', 'consultation']),
+  productType: z.enum(['video', 'document', 'audio', 'course', 'consultation']),
   contentType: z.enum(['single', 'bundle', 'course', 'collection']),
   categoryIds: z.array(z.string()),
   durationMinutes: z.number().optional(),
@@ -147,26 +147,15 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
     }
   }, [product, form]);
 
-  const handleNewFilesChange = (files: any) => {
+  const handleNewFilesChange = (filesWithTitles: { file: File; displayTitle: string }[]) => {
+    // Extract the File objects from FileWithTitle wrapper objects
+    const files = filesWithTitles.map(ft => ft.file);
     setNewFiles(files);
-    
-    // Auto-detect content type
+
+    // Auto-detect content type based on file count
     const totalFiles = existingFiles.filter(f => !filesToDelete.includes(f.id)).length + files.length;
     if (totalFiles > 1) {
       form.setValue('contentType', 'bundle');
-      
-      // Check for mixed file types
-      const allFiles = [...files, ...existingFiles.map(f => ({ type: f.mime_type || '' }))];
-      const hasVideo = allFiles.some(f => f.type?.startsWith('video/'));
-      const hasDocument = allFiles.some(f => 
-        f.type?.includes('pdf') || 
-        f.type?.includes('document') || 
-        f.type?.includes('text')
-      );
-      
-      if (hasVideo && hasDocument) {
-        form.setValue('productType', 'mixed');
-      }
     } else {
       form.setValue('contentType', 'single');
     }
@@ -470,7 +459,8 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                       <SelectContent>
                         <SelectItem value="document">Document</SelectItem>
                         <SelectItem value="video">Video</SelectItem>
-                        <SelectItem value="mixed">Mixed Content</SelectItem>
+                        <SelectItem value="audio">Audio</SelectItem>
+                        <SelectItem value="course">Course</SelectItem>
                         <SelectItem value="consultation">Consultation</SelectItem>
                       </SelectContent>
                     </Select>
@@ -744,6 +734,8 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                   onFilesChange={handleNewFilesChange}
                   maxFiles={limits.maxFiles}
                   acceptedFileTypes={['video/*', 'application/pdf', 'image/*', 'audio/*']}
+                  existingFilesCount={existingFiles.filter(f => !filesToDelete.includes(f.id)).length}
+                  hasPrimaryFile={existingFiles.some(f => f.is_primary && !filesToDelete.includes(f.id))}
                 />
               </div>
 

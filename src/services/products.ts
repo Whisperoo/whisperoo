@@ -558,7 +558,7 @@ export const productService = {
         product_id: productId,
         file_url: uploadResult.filePath, // Store relative path
         file_name: file.name,
-        file_type: this.detectFileType(file.type),
+        file_type: this.detectFileType(file.type, file.name),
         file_size_mb: fileSizeInMB,
         mime_type: file.type,
         display_title: fileData.display_title || file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "),
@@ -602,7 +602,15 @@ export const productService = {
 
     const uploadedFiles: ProductFile[] = [];
     const failedFiles: { file: File; error: string }[] = [];
-    
+
+    // Check if there's already a primary file
+    const { data: existingFiles } = await supabase
+      .from('product_files')
+      .select('id, is_primary')
+      .eq('product_id', productId);
+
+    const hasPrimaryFile = existingFiles?.some(f => f.is_primary) || false;
+
     // Validate all files before starting uploads
     for (const file of files) {
       const validation = this.validateFile(file);
@@ -610,32 +618,31 @@ export const productService = {
         failedFiles.push({ file, error: validation.error || 'File validation failed' });
       }
     }
-    
+
     if (failedFiles.length === files.length) {
       throw new Error(`All files failed validation: ${failedFiles.map(f => `${f.file.name}: ${f.error}`).join(', ')}`);
     }
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
+
       // Skip files that failed validation
       const failedFile = failedFiles.find(f => f.file === file);
       if (failedFile) {
         console.warn(`Skipping ${file.name}: ${failedFile.error}`);
         continue;
       }
-      
+
       const fileData: Partial<ProductFileInsert> = {
         sort_order: i,
-        is_primary: i === 0 && uploadedFiles.length === 0, // First successful file is primary
+        // Only set as primary if there's no existing primary file and this is the first file being uploaded
+        is_primary: !hasPrimaryFile && i === 0 && uploadedFiles.length === 0,
         display_title: titles?.[i] || file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "),
       };
 
       try {
         const uploadedFile = await this.addProductFile(productId, file, fileData);
         uploadedFiles.push(uploadedFile);
-        
-        console.log(`Successfully uploaded ${file.name}`);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error(`Failed to upload file ${file.name}:`, error);
@@ -785,18 +792,30 @@ export const productService = {
     return getFileUrl(filePath);
   },
 
-  // Helper: Detect file type from MIME type
-  detectFileType(mimeType: string): 'video' | 'document' | 'audio' | 'image' | 'other' {
-    if (mimeType.startsWith('video/')) return 'video';
-    if (mimeType.startsWith('audio/')) return 'audio';
-    if (mimeType.startsWith('image/')) return 'image';
+  // Helper: Detect file type from MIME type and optional filename
+  detectFileType(mimeType: string, fileName?: string): 'video' | 'document' | 'audio' | 'image' | 'other' {
+    const type = (mimeType || '').toLowerCase();
+    const name = (fileName || '').toLowerCase();
+
+    // Try MIME type first
+    if (type.startsWith('video/') || /\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(name)) return 'video';
+    if (type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|aac)$/i.test(name)) return 'audio';
+    if (type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(name)) return 'image';
     if (
-      mimeType.includes('pdf') ||
-      mimeType.includes('document') ||
-      mimeType.includes('text') ||
-      mimeType.includes('sheet') ||
-      mimeType.includes('presentation')
+      type.includes('pdf') ||
+      type.includes('document') ||
+      type.includes('text') ||
+      type.includes('sheet') ||
+      type.includes('presentation') ||
+      type.includes('msword') ||
+      type.includes('wordprocessingml') ||
+      type.includes('ms-excel') ||
+      type.includes('spreadsheetml') ||
+      type.includes('ms-powerpoint') ||
+      type.includes('presentationml') ||
+      /\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i.test(name)
     ) return 'document';
+
     return 'other';
   },
 

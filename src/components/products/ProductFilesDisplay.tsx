@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { File, Video, Image, FileText, Music, Download, Play, Eye, ChevronDown, ChevronUp, Star } from 'lucide-react';
+import { File, Video, Image, FileText, Music, Play, Eye, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,7 +28,6 @@ export const ProductFilesDisplay: React.FC<ProductFilesDisplayProps> = ({
   className,
 }) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-  const [isDownloading, setIsDownloading] = useState(false);
 
   // Handle edge cases for files array
   if (!files || !Array.isArray(files)) {
@@ -118,86 +117,6 @@ export const ProductFilesDisplay: React.FC<ProductFilesDisplayProps> = ({
     }));
   };
 
-  const handleBatchDownload = async (files: ProductFile[], productTitle: string) => {
-    if (!files || files.length === 0) {
-      console.warn('No files provided for batch download');
-      return;
-    }
-
-    setIsDownloading(true);
-    let successCount = 0;
-    let failureCount = 0;
-    
-    try {
-      // Create a delay between downloads to avoid overwhelming the browser
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // Validate file URL exists
-        if (!file.file_url || file.file_url.trim() === '') {
-          console.error(`File ${file.file_name} has no URL`);
-          failureCount++;
-          continue;
-        }
-
-        try {
-          // Generate public URL for the file
-          const fileUrl = productService.getPublicFileUrl(file.file_url);
-          
-          if (!fileUrl || fileUrl.trim() === '') {
-            console.error(`Failed to generate URL for file: ${file.file_name}`);
-            failureCount++;
-            continue;
-          }
-
-          // Create a temporary download link
-          const link = document.createElement('a');
-          link.href = fileUrl;
-          link.download = file.file_name || `file_${i + 1}`;
-          link.target = '_blank';
-          
-          // Add to DOM, click, and remove
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          successCount++;
-          
-          // Track download event
-          if (onDownload) {
-            onDownload(file);
-          }
-
-        } catch (fileError) {
-          console.error(`Failed to download file ${file.file_name}:`, fileError);
-          failureCount++;
-        }
-        
-        // Small delay between downloads to prevent browser blocking
-        if (i < files.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      }
-
-      // Show user feedback
-      if (failureCount > 0) {
-        const message = successCount > 0 
-          ? `Downloaded ${successCount} files successfully. ${failureCount} files failed.`
-          : `Failed to download all ${failureCount} files.`;
-        
-        // You could replace this with a toast notification
-        console.warn(message);
-      }
-
-    } catch (error) {
-      console.error('Batch download failed:', error);
-      // Show user-friendly error message
-      console.error('Failed to download files. Please try again or contact support.');
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
   // Single file display
   if (files.length === 1) {
     const file = files[0];
@@ -244,15 +163,6 @@ export const ProductFilesDisplay: React.FC<ProductFilesDisplayProps> = ({
                     Preview
                   </Button>
                 )}
-                {onDownload && (
-                  <Button
-                    size="sm"
-                    onClick={() => onDownload(file)}
-                  >
-                    <Download className="w-4 h-4 mr-1" />
-                    Download
-                  </Button>
-                )}
               </div>
             )}
           </div>
@@ -277,15 +187,6 @@ export const ProductFilesDisplay: React.FC<ProductFilesDisplayProps> = ({
                 {files.length} files • {formatFileSize(totalSize)}
               </p>
             </div>
-            {isPurchased && onDownload && (
-              <Button 
-                onClick={() => handleBatchDownload(files, productTitle)}
-                disabled={isDownloading}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                {isDownloading ? 'Downloading...' : 'Download All'}
-              </Button>
-            )}
           </div>
 
           {/* File Type Badges */}
@@ -385,15 +286,6 @@ export const ProductFilesDisplay: React.FC<ProductFilesDisplayProps> = ({
                                     onClick={() => onPreview(file)}
                                   >
                                     <Eye className="w-4 h-4" />
-                                  </Button>
-                                )}
-                                {onDownload && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onDownload(file)}
-                                  >
-                                    <Download className="w-4 h-4" />
                                   </Button>
                                 )}
                               </div>

@@ -108,53 +108,69 @@ export const getAllAcceptedTypes = (): string[] => {
 
 // File validation function
 export const validateFile = (file: File): { isValid: boolean; error?: string } => {
+  // Check if file is actually a File object
+  if (!file || typeof file !== 'object') {
+    console.error('Invalid file object:', file);
+    return {
+      isValid: false,
+      error: 'Invalid file object. Please try uploading the file again.',
+    };
+  }
+
   const limits = getCurrentLimits();
   const fileSizeMB = file.size / (1024 * 1024);
-  
+
+  // Ensure file.type and file.name exist
+  const fileType = file.type || '';
+  const fileName = (file.name || '').toLowerCase();
+
   // Determine file type and get appropriate limit
   let maxSize: number;
   let fileTypeName: string;
-  
-  if (file.type.startsWith('video/')) {
+  let isDetected = false;
+
+  // Try to detect by MIME type first, then by extension
+  if (fileType.startsWith('video/') || /\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(fileName)) {
     maxSize = limits.video;
     fileTypeName = 'video';
-  } else if (file.type.includes('pdf') || file.type.includes('document') || file.type.includes('word')) {
+    isDetected = true;
+  } else if (fileType.includes('pdf') || fileType.includes('document') || fileType.includes('word') ||
+             fileType.includes('msword') || fileType.includes('wordprocessingml') ||
+             fileType.includes('ms-excel') || fileType.includes('spreadsheetml') ||
+             fileType.includes('ms-powerpoint') || fileType.includes('presentationml') ||
+             /\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i.test(fileName)) {
     maxSize = limits.document;
     fileTypeName = 'document';
-  } else if (file.type.startsWith('image/')) {
+    isDetected = true;
+  } else if (fileType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(fileName)) {
     maxSize = limits.image;
     fileTypeName = 'image';
-  } else if (file.type.startsWith('audio/')) {
+    isDetected = true;
+  } else if (fileType.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|aac)$/i.test(fileName)) {
     maxSize = limits.audio;
     fileTypeName = 'audio';
-  } else {
+    isDetected = true;
+  }
+
+  if (!isDetected) {
     return {
       isValid: false,
-      error: `Unsupported file type: ${file.type}. Please upload videos, documents, images, or audio files.`,
+      error: `Unsupported file type: ${fileType || 'unknown'} (${fileName || 'no filename'}). Please upload videos, documents, images, or audio files.`,
     };
   }
-  
+
   // Check file size
   if (fileSizeMB > maxSize) {
-    const compressionHint = fileTypeName === 'video' && fileSizeMB > 100 
-      ? ' Consider compressing your video or using a lower resolution.' 
+    const compressionHint = fileTypeName === 'video' && fileSizeMB > 100
+      ? ' Consider compressing your video or using a lower resolution.'
       : '';
-    
+
     return {
       isValid: false,
       error: `File "${file.name}" is too large: ${fileSizeMB.toFixed(1)}MB. Maximum size for ${fileTypeName} files is ${maxSize}MB.${compressionHint}`,
     };
   }
-  
-  // Check if file type is explicitly supported
-  const allAcceptedTypes = getAllAcceptedTypes();
-  if (!allAcceptedTypes.includes(file.type)) {
-    return {
-      isValid: false,
-      error: `File type "${file.type}" is not supported. Please upload supported file formats.`,
-    };
-  }
-  
+
   return { isValid: true };
 };
 

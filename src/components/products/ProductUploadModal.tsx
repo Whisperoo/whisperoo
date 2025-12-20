@@ -45,7 +45,7 @@ const productSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   price: z.number().min(0, 'Price must be 0 or greater'),
-  productType: z.enum(['video', 'document', 'mixed', 'consultation']),
+  productType: z.enum(['video', 'document', 'audio', 'course', 'consultation']),
   contentType: z.enum(['single', 'bundle', 'course', 'collection']),
   categoryIds: z.array(z.string()).min(1, 'Select at least one category'),
   durationMinutes: z.number().optional(),
@@ -114,23 +114,19 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
 
   const handleMultipleFilesChange = (files: FileWithTitle[]) => {
     setProductFiles(files);
-    
+
     // Auto-detect content type based on number of files
     if (files.length > 1) {
       form.setValue('contentType', 'bundle');
-      
-      // Check if we have mixed file types
+
+      // Auto-detect product type based on file types
       const hasVideo = files.some(f => f.file.type.startsWith('video/'));
-      const hasDocument = files.some(f => 
-        f.file.type.includes('pdf') || 
-        f.file.type.includes('document') || 
-        f.file.type.includes('text')
-      );
-      
-      if (hasVideo && hasDocument) {
-        form.setValue('productType', 'mixed');
-      } else if (hasVideo) {
+      const hasAudio = files.some(f => f.file.type.startsWith('audio/'));
+
+      if (hasVideo) {
         form.setValue('productType', 'video');
+      } else if (hasAudio) {
+        form.setValue('productType', 'audio');
       } else {
         form.setValue('productType', 'document');
       }
@@ -330,7 +326,8 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
                       <SelectContent>
                         <SelectItem value="document">Document</SelectItem>
                         <SelectItem value="video">Video</SelectItem>
-                        <SelectItem value="mixed">Mixed Content</SelectItem>
+                        <SelectItem value="audio">Audio</SelectItem>
+                        <SelectItem value="course">Course</SelectItem>
                         <SelectItem value="consultation">Consultation</SelectItem>
                       </SelectContent>
                     </Select>

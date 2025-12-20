@@ -30,6 +30,8 @@ interface MultiFileUploaderProps {
   maxSizePerFile?: number; // in MB
   acceptedFileTypes?: string[];
   className?: string;
+  existingFilesCount?: number; // Number of files already uploaded
+  hasPrimaryFile?: boolean; // Whether a primary file already exists
 }
 
 export const MultiFileUploader: React.FC<MultiFileUploaderProps> = ({
@@ -38,6 +40,8 @@ export const MultiFileUploader: React.FC<MultiFileUploaderProps> = ({
   maxSizePerFile,
   acceptedFileTypes,
   className,
+  existingFilesCount = 0,
+  hasPrimaryFile = false,
 }) => {
   // Use centralized configuration with fallbacks for props
   const limits = getCurrentLimits();
@@ -45,7 +49,7 @@ export const MultiFileUploader: React.FC<MultiFileUploaderProps> = ({
   const finalAcceptedTypes = acceptedFileTypes ?? getAllAcceptedTypes();
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  
+
   // Use enhanced notification system
   const notifications = useUploadNotifications();
 
@@ -119,7 +123,8 @@ export const MultiFileUploader: React.FC<MultiFileUploaderProps> = ({
       const fileWithPreview: FileWithPreview = {
         file,
         id: `${Date.now()}-${Math.random()}`,
-        isPrimary: files.length === 0 && validFiles.length === 0, // First file is primary
+        // Only set as primary if no primary file exists and this is the first file
+        isPrimary: !hasPrimaryFile && files.length === 0 && validFiles.length === 0 && existingFilesCount === 0,
         displayTitle: generateDefaultTitle(file.name),
       };
 
@@ -230,11 +235,11 @@ export const MultiFileUploader: React.FC<MultiFileUploaderProps> = ({
         <div className="space-y-2">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-sm font-medium">
-              Uploaded Files ({files.length}/{finalMaxFiles})
+              Uploaded Files ({existingFilesCount + files.length}/{finalMaxFiles})
             </h3>
             {files.length > 1 && (
               <p className="text-xs text-gray-500">
-                Drag to reorder, click star to set primary file
+                Drag to reorder{!hasPrimaryFile && ', click star to set primary file'}
               </p>
             )}
           </div>
@@ -303,7 +308,7 @@ export const MultiFileUploader: React.FC<MultiFileUploaderProps> = ({
 
                   {/* Actions */}
                   <div className="flex items-center space-x-1">
-                    {files.length > 1 && (
+                    {files.length > 1 && !hasPrimaryFile && (
                       <>
                         <Button
                           size="sm"
