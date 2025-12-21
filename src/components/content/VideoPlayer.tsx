@@ -49,6 +49,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isBuffering, setIsBuffering] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [bufferedPercentage, setBufferedPercentage] = useState(0);
 
   const hideControlsTimeout = useRef<NodeJS.Timeout>();
 
@@ -65,14 +66,33 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
+  // Reset state when src changes
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    setIsLoading(true);
+    setIsBuffering(false);
+    setHasError(false);
+    setErrorMessage('');
+    setShowControls(true);
+  }, [src]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     console.log('VideoPlayer initialized with src:', src);
 
+    // Timeout fallback - if video doesn't load in 5 seconds, show play button anyway
+    const loadingTimeout = setTimeout(() => {
+      console.warn('Video loading timeout - showing controls anyway');
+      setIsLoading(false);
+    }, 5000);
+
     const handleLoadedMetadata = () => {
       console.log('Video loaded successfully:', src);
+      clearTimeout(loadingTimeout);
       setDuration(video.duration);
       setIsLoading(false);
       setHasError(false);
@@ -81,6 +101,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const handleTimeUpdate = () => {
       setCurrentTime(video.currentTime);
       onTimeUpdate?.(video.currentTime, video.duration);
+
+      // Update buffered percentage
+      if (video.buffered.length > 0 && video.duration > 0) {
+        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+        const percentage = (bufferedEnd / video.duration) * 100;
+        setBufferedPercentage(percentage);
+      }
     };
 
     const handlePlay = () => setIsPlaying(true);
@@ -90,10 +117,67 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       onEnded?.();
     };
 
-    const handleWaiting = () => setIsBuffering(true);
+    const handleWaiting = () => {
+      console.log('Video waiting/buffering...');
+      setIsBuffering(true);
+
+      // Pause playback while buffering to prevent stuttering
+      if (!video.paused) {
+        console.log('Pausing playback during buffer...');
+        video.pause();
+      }
+
+      // When video is waiting, check if we need to resume buffering
+      // The browser may have suspended loading prematurely
+      if (video.networkState === video.NETWORK_IDLE) {
+        console.log('Network idle detected - requesting more data');
+        // Trigger a small seek to wake up the network loading
+        const currentTime = video.currentTime;
+        video.currentTime = currentTime + 0.1;
+        video.currentTime = currentTime;
+      }
+    };
     const handleCanPlay = () => {
+      console.log('Video can play');
+      clearTimeout(loadingTimeout);
       setIsBuffering(false);
       setIsLoading(false);
+
+      // If we were buffering and user wanted to play, resume playback
+      // Check if the play button shows we should be playing
+      if (isPlaying && video.paused) {
+        console.log('Resuming playback after buffering...');
+        video.play().catch(err => {
+          console.log('Could not auto-resume:', err);
+        });
+      }
+    };
+
+    const handlePlaying = () => {
+      console.log('Video is playing');
+      setIsBuffering(false);
+      setIsLoading(false);
+    };
+
+    const handleStalled = () => {
+      console.warn('Video stalled - network issue');
+      setIsBuffering(true);
+    };
+
+    const handleSuspend = () => {
+      console.log('Video loading suspended by browser');
+      // Browser is being conservative with bandwidth
+      // This is normal behavior - it will resume when needed
+    };
+
+    const handleProgress = () => {
+      // Update buffered amount when data is downloaded
+      if (video.buffered.length > 0 && video.duration > 0) {
+        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+        const percentage = (bufferedEnd / video.duration) * 100;
+        setBufferedPercentage(percentage);
+        console.log(`Buffer: ${percentage.toFixed(1)}%`);
+      }
     };
 
     const handleError = (e: Event) => {
@@ -121,6 +205,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       }
       
+      clearTimeout(loadingTimeout);
       setErrorMessage(message);
       setHasError(true);
       setIsLoading(false);
@@ -140,10 +225,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     video.addEventListener('ended', handleEnded);
     video.addEventListener('waiting', handleWaiting);
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('playing', handlePlaying);
+    video.addEventListener('stalled', handleStalled);
+    video.addEventListener('suspend', handleSuspend);
+    video.addEventListener('progress', handleProgress);
     video.addEventListener('error', handleError);
     video.addEventListener('loadstart', handleLoadStart);
 
     return () => {
+      clearTimeout(loadingTimeout);
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('play', handlePlay);
@@ -151,6 +241,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       video.removeEventListener('ended', handleEnded);
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('stalled', handleStalled);
+      video.removeEventListener('suspend', handleSuspend);
+      video.removeEventListener('progress', handleProgress);
       video.removeEventListener('error', handleError);
       video.removeEventListener('loadstart', handleLoadStart);
     };
@@ -166,13 +260,59 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!videoRef.current) return;
-    
-    if (isPlaying) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play();
+
+    try {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        // Only try to play if video has some duration (metadata loaded)
+        if (videoRef.current.readyState >= 2) {
+          await videoRef.current.play();
+        } else {
+          // Wait for metadata to load first with timeout
+          console.log('Waiting for video metadata before playing...');
+          setIsLoading(true);
+
+          const waitForCanPlay = new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              videoRef.current?.removeEventListener('canplay', onCanPlay);
+              reject(new Error('Timeout waiting for video to be ready'));
+            }, 8000); // 8 second timeout
+
+            const onCanPlay = () => {
+              clearTimeout(timeout);
+              videoRef.current?.removeEventListener('canplay', onCanPlay);
+              resolve();
+            };
+            videoRef.current?.addEventListener('canplay', onCanPlay);
+          });
+
+          try {
+            await waitForCanPlay;
+            setIsLoading(false);
+            await videoRef.current.play();
+          } catch (timeoutError) {
+            console.warn('Video took too long to load, attempting play anyway');
+            setIsLoading(false);
+            // Try to play anyway, might work
+            try {
+              await videoRef.current.play();
+            } catch (playError) {
+              console.error('Failed to play video:', playError);
+              setHasError(true);
+              setErrorMessage('Video failed to load. Please try again.');
+            }
+          }
+        }
+      }
+    } catch (error) {
+      // Ignore AbortError - happens when play is interrupted by another action
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('Error playing video:', error);
+      }
+      setIsLoading(false);
     }
   };
 
@@ -239,6 +379,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         src={src}
         poster={poster}
         autoPlay={autoPlay}
+        preload="auto"
         crossOrigin="anonymous"
         controlsList="nodownload"
         onContextMenu={(e) => e.preventDefault()}
@@ -313,13 +454,29 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         >
           {/* Progress Bar */}
           <div className="mb-4">
-            <Slider
-              value={[currentTime]}
-              max={duration}
-              step={1}
-              onValueChange={handleSeek}
-              className="w-full"
-            />
+            {/* Custom progress bar with buffer indicator */}
+            <div className="relative h-2 bg-white/20 rounded-full cursor-pointer group"
+                 onClick={(e) => {
+                   const rect = e.currentTarget.getBoundingClientRect();
+                   const percent = (e.clientX - rect.left) / rect.width;
+                   handleSeek([percent * duration]);
+                 }}>
+              {/* Buffer bar (gray) */}
+              <div
+                className="absolute h-full bg-white/40 rounded-full transition-all duration-300"
+                style={{ width: `${bufferedPercentage}%` }}
+              />
+              {/* Progress bar (blue) */}
+              <div
+                className="absolute h-full bg-blue-500 rounded-full transition-all"
+                style={{ width: `${(currentTime / duration) * 100}%` }}
+              />
+              {/* Scrubber handle */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ left: `${(currentTime / duration) * 100}%`, marginLeft: '-8px' }}
+              />
+            </div>
             <div className="flex justify-between text-xs text-white/70 mt-1">
               <span>{formatTime(currentTime)}</span>
               <span>{formatTime(duration)}</span>
