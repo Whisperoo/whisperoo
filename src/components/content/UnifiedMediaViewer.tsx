@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import {
   FileText,
   Image as ImageIcon,
-  Loader2
+  Loader2,
+  ExternalLink
 } from 'lucide-react';
 import { VideoPlayer } from './VideoPlayer';
 import { ProductFile, productService } from '@/services/products';
@@ -21,6 +22,7 @@ export const UnifiedMediaViewer: React.FC<UnifiedMediaViewerProps> = ({
   onComplete,
 }) => {
   const [pdfLoaded, setPdfLoaded] = useState(false);
+  const [pdfError, setPdfError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const getFileIcon = () => {
@@ -91,55 +93,95 @@ export const UnifiedMediaViewer: React.FC<UnifiedMediaViewerProps> = ({
 
     return (
       <div className={cn("w-full bg-white rounded-lg relative border", className)}>
-        <div className="relative w-full min-h-[70vh] max-h-[80vh]">
-          <iframe
-            src={viewerUrl}
-            className="w-full h-full min-h-[70vh] border-0 rounded-lg bg-white"
-            title={file.display_title || file.file_name}
-            onLoad={() => {
-              setPdfLoaded(true);
-              // Mark as completed when document loads
-              setTimeout(() => {
-                onComplete?.();
-              }, 3000); // Give user 3 seconds to see it loaded
-            }}
-            onError={() => setPdfLoaded(true)}
-            style={{
-              background: 'white',
-              overflow: 'hidden'
-            }}
-            allow="autoplay"
-          />
-
-          {/* Document Loading State */}
-          {!pdfLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white rounded-lg">
-              <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-                <p className="text-gray-600">Loading document...</p>
-                <p className="text-xs text-gray-500 mt-2">
-                  {isPDF ? 'PDF Document' : isOfficeDoc ? 'Office Document' : 'Document'} • {file.file_size_mb?.toFixed(1)} MB
-                </p>
+        {pdfError ? (
+          // Error state - show fallback with "Open in New Tab" button
+          <div className="w-full min-h-[70vh] flex items-center justify-center bg-gray-50 rounded-lg p-8">
+            <div className="text-center max-w-md">
+              <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {file.display_title || file.file_name.replace(/\.[^/.]+$/, "")}
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                This document couldn't be displayed in the viewer. Open it in a new tab for the best experience.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  onClick={() => window.open(publicUrl, '_blank')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open in New Tab
+                </Button>
+                <Button
+                  onClick={() => {
+                    setPdfError(false);
+                    setPdfLoaded(false);
+                  }}
+                  variant="outline"
+                >
+                  Try Again
+                </Button>
               </div>
-            </div>
-          )}
-
-
-          {/* Optional: Bottom info bar */}
-          <div className="absolute bottom-2 left-2 right-2 bg-white/95 rounded px-3 py-2 text-xs text-gray-600 flex justify-between items-center">
-            <span className="font-medium">{file.display_title || file.file_name.replace(/\.[^/.]+$/, "")}</span>
-            <div className="flex items-center gap-3">
-              <span className="text-gray-400">•</span>
-              <span>{file.file_size_mb?.toFixed(1)} MB</span>
-              {file.page_count && (
-                <>
-                  <span className="text-gray-400">•</span>
-                  <span>{file.page_count} pages</span>
-                </>
-              )}
+              <p className="text-xs text-gray-500 mt-4">
+                {isPDF ? 'PDF Document' : isOfficeDoc ? 'Office Document' : 'Document'} • {file.file_size_mb?.toFixed(1)} MB
+              </p>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="relative w-full min-h-[70vh] max-h-[80vh]">
+            <iframe
+              src={viewerUrl}
+              className="w-full h-full min-h-[70vh] border-0 rounded-lg bg-white"
+              title={file.display_title || file.file_name}
+              onLoad={() => {
+                setPdfLoaded(true);
+                setPdfError(false);
+                // Mark as completed when document loads
+                setTimeout(() => {
+                  onComplete?.();
+                }, 3000); // Give user 3 seconds to see it loaded
+              }}
+              onError={() => {
+                setPdfLoaded(true);
+                setPdfError(true);
+              }}
+              style={{
+                background: 'white',
+                overflow: 'hidden'
+              }}
+              allow="autoplay"
+            />
+
+            {/* Document Loading State */}
+            {!pdfLoaded && !pdfError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white rounded-lg">
+                <div className="text-center">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+                  <p className="text-gray-600">Loading document...</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {isPDF ? 'PDF Document' : isOfficeDoc ? 'Office Document' : 'Document'} • {file.file_size_mb?.toFixed(1)} MB
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Bottom info bar with Open in New Tab button */}
+            {pdfLoaded && !pdfError && (
+              <div className="absolute bottom-2 left-2 right-2 bg-white/95 rounded px-3 py-2 text-xs text-gray-600 flex justify-between items-center">
+                <span className="font-medium truncate mr-2">{file.display_title || file.file_name.replace(/\.[^/.]+$/, "")}</span>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span>{file.file_size_mb?.toFixed(1)} MB</span>
+                  {file.page_count && (
+                    <>
+                      <span className="text-gray-400">•</span>
+                      <span>{file.page_count} pages</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
