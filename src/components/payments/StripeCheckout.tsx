@@ -7,7 +7,8 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const stripePromise = loadStripe(
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''
+);
 
 interface StripeCheckoutProps {
   productId: string;
@@ -128,15 +129,22 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
 
   return (
     <div className="py-4">
-      <Elements stripe={stripePromise} options={elementsOptions}>
-        <StripeCheckoutForm
-          amount={amount}
-          productTitle={productTitle}
-          onSuccess={handlePaymentSuccess}
-          onError={handlePaymentError}
-          purchaseId={purchaseId!}
-        />
-      </Elements>
+      {clientSecret ? (
+        <Elements stripe={stripePromise} options={elementsOptions}>
+          <StripeCheckoutForm
+            amount={amount}
+            productTitle={productTitle}
+            onSuccess={handlePaymentSuccess}
+            onError={handlePaymentError}
+            purchaseId={purchaseId!}
+          />
+        </Elements>
+      ) : (
+        <div className="text-center py-12">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Setting up payment...</h3>
+        </div>
+      )}
 
       <div className="mt-4">
         <Button

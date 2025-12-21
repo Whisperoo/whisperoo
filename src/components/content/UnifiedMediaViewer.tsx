@@ -40,10 +40,11 @@ export const UnifiedMediaViewer: React.FC<UnifiedMediaViewerProps> = ({
   if (file.file_type === 'video' || file.mime_type?.startsWith('video/')) {
     // Convert relative path to public URL
     const videoUrl = productService.getPublicFileUrl(file.file_url);
-    
+
     return (
       <div className={cn("w-full", className)}>
         <VideoPlayer
+          key={file.id} // Force re-mount when file changes
           src={videoUrl}
           title={file.display_title || file.file_name}
           className="w-full aspect-video"

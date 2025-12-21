@@ -27,6 +27,7 @@ export const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
     const elements = useElements();
     const [isProcessing, setIsProcessing] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [isPaymentElementReady, setIsPaymentElementReady] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -92,6 +93,11 @@ export const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
                         layout: 'tabs',
                         business: { name: 'Whisperoo' },
                     }}
+                    onReady={() => setIsPaymentElementReady(true)}
+                    onLoadError={(error) => {
+                        console.error('PaymentElement load error:', error);
+                        setErrorMessage('Failed to load payment form. Please refresh and try again.');
+                    }}
                 />
             </div>
 
@@ -113,7 +119,7 @@ export const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
 
             <Button
                 type="submit"
-                disabled={!stripe || isProcessing}
+                disabled={!stripe || !isPaymentElementReady || isProcessing}
                 className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-base font-semibold"
             >
                 {isProcessing ? (
