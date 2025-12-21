@@ -30,6 +30,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onTimeUpdate,
   onEnded,
 }) => {
+  //@ts-ignore
   const playerRef = useRef<ReactPlayer>(null);
 
   const handleProgress = (state: OnProgressState) => {
