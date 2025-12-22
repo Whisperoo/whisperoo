@@ -139,6 +139,7 @@ export const productService = {
       `
       )
       .eq('id', productId)
+      .eq('is_active', true)
       .single();
 
     if (error) throw error;
@@ -396,7 +397,13 @@ export const productService = {
       .order('purchased_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+
+    // Filter out purchases of inactive/deleted products
+    const activePurchases = (data || []).filter(purchase => {
+      return purchase.product && (purchase.product as any).is_active === true;
+    });
+
+    return activePurchases;
   },
 
   // Check if user has purchased a product
@@ -455,8 +462,7 @@ export const productService = {
   // Get expert's products
   // Note: expertId is profiles.id where account_type = 'expert'
   async getExpertProducts(expertId: string): Promise<ProductWithDetails[]> {
-    // Directly query expert's products without the is_active filter
-    // since experts should see all their products
+    // Query expert's active products only (exclude deleted/inactive products)
     const query = supabase
       .from('products')
       .select(
@@ -475,6 +481,7 @@ export const productService = {
       `
       )
       .eq('expert_id', expertId)
+      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     const { data, error } = await query;

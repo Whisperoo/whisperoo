@@ -122,7 +122,13 @@ export const MyPurchasesPage: React.FC = () => {
         .order('purchased_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+
+      // Filter out purchases of inactive/deleted products
+      const activePurchases = (data || []).filter(purchase => {
+        return purchase.product && (purchase.product as any).is_active === true;
+      });
+
+      return activePurchases;
     },
     enabled: !!user,
   });
