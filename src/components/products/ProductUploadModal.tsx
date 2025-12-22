@@ -73,6 +73,7 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
   const [uploadMode, setUploadMode] = useState<'single' | 'multiple'>('single');
   const [singleProductFile, setSingleProductFile] = useState<File | null>(null);
   const [lastSubmissionTime, setLastSubmissionTime] = useState<number>(0);
+  const [fileProgress, setFileProgress] = useState<Record<number, { fileName: string; progress: number }>>({});
   
   // Get current upload limits
   const limits = getCurrentLimits();
@@ -159,10 +160,11 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
 
     setIsUploading(true);
     setUploadProgress(0);
+    setFileProgress({}); // Reset file progress
 
     try {
       setUploadProgress(20);
-      
+
       // Get the user's profile to ensure they're an expert
       const { data: profile } = await supabase
         .from('profiles')
@@ -175,6 +177,25 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
       }
 
       setUploadProgress(40);
+
+      // Progress callback for individual files
+      const handleFileProgress = (fileIndex: number, fileName: string, progress: number) => {
+        setFileProgress(prev => {
+          const updated = {
+            ...prev,
+            [fileIndex]: { fileName, progress }
+          };
+
+          // Calculate overall progress based on file progress
+          const totalFiles = filesToUpload.length;
+          const completedCount = Object.values(updated)
+            .filter(f => f.progress === 100).length;
+          const overallProgress = 40 + Math.floor((completedCount / totalFiles) * 30);
+          setUploadProgress(overallProgress);
+
+          return updated;
+        });
+      };
 
       // Create product with file(s) upload
       const product = uploadMode === 'multiple' && filesToUpload.length > 1
@@ -189,7 +210,8 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
             },
             filesToUpload,
             fileTitles,
-            thumbnailFile || undefined
+            thumbnailFile || undefined,
+            handleFileProgress // Pass progress callback
           )
         : await productService.createProductWithFile(
             {
@@ -238,6 +260,7 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
     setProductFiles([]);
     setThumbnailFile(null);
     setUploadProgress(0);
+    setFileProgress({}); // Reset file progress
     setUploadMode('single');
     setLastSubmissionTime(0); // Reset debounce timer
     onClose();
@@ -538,11 +561,40 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
 
             {/* Upload Progress */}
             {isUploading && (
-              <div className="space-y-2">
-                <Progress value={uploadProgress} className="w-full" />
-                <p className="text-sm text-center text-muted-foreground">
-                  Uploading... {uploadProgress}%
-                </p>
+              <div className="space-y-3">
+                {/* Overall Progress */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Overall Progress</span>
+                    <span className="font-medium">{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="w-full h-2" />
+                </div>
+
+                {/* Individual File Progress */}
+                {Object.keys(fileProgress).length > 0 && (
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    <p className="text-xs font-medium text-muted-foreground">Uploading files:</p>
+                    {Object.entries(fileProgress).map(([index, { fileName, progress }]) => (
+                      <div key={index} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground truncate flex-1 mr-2">
+                            {fileName}
+                          </span>
+                          <span className="font-medium flex-shrink-0">
+                            {progress === -1 ? '❌ Error' : progress === 100 ? '✓' : `${progress}%`}
+                          </span>
+                        </div>
+                        {progress !== -1 && (
+                          <Progress
+                            value={progress}
+                            className={`w-full h-1 ${progress === 100 ? 'bg-green-100' : ''}`}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

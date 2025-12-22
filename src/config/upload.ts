@@ -14,42 +14,44 @@ const getEnvNumber = (key: string, fallback: number): number => {
 };
 
 // Base file size limits (in MB) - configurable via environment variables
+// Set to extremely high values to effectively remove file size restrictions
 export const FILE_SIZE_LIMITS = {
-  // Video files - matched to Supabase storage bucket limit (500MB)
+  // Video files - no limit
   VIDEO: {
-    DEVELOPMENT: getEnvNumber('VITE_MAX_VIDEO_SIZE_MB', 400), // Default 400MB for dev (some buffer)
-    PRODUCTION: getEnvNumber('VITE_MAX_VIDEO_SIZE_MB', 500),  // Default 500MB for production
+    DEVELOPMENT: getEnvNumber('VITE_MAX_VIDEO_SIZE_MB', 999999), // Effectively unlimited
+    PRODUCTION: getEnvNumber('VITE_MAX_VIDEO_SIZE_MB', 999999),  // Effectively unlimited
   },
-  
-  // Document files (PDFs, etc.)
+
+  // Document files (PDFs, etc.) - no limit
   DOCUMENT: {
-    DEVELOPMENT: getEnvNumber('VITE_MAX_DOCUMENT_SIZE_MB', 50),   // Default 50MB for dev
-    PRODUCTION: getEnvNumber('VITE_MAX_DOCUMENT_SIZE_MB', 100),   // Default 100MB for production
+    DEVELOPMENT: getEnvNumber('VITE_MAX_DOCUMENT_SIZE_MB', 999999),   // Effectively unlimited
+    PRODUCTION: getEnvNumber('VITE_MAX_DOCUMENT_SIZE_MB', 999999),   // Effectively unlimited
   },
-  
-  // Image files
+
+  // Image files - no limit
   IMAGE: {
-    DEVELOPMENT: getEnvNumber('VITE_MAX_IMAGE_SIZE_MB', 10),   // Default 10MB for dev
-    PRODUCTION: getEnvNumber('VITE_MAX_IMAGE_SIZE_MB', 25),    // Default 25MB for production
+    DEVELOPMENT: getEnvNumber('VITE_MAX_IMAGE_SIZE_MB', 999999),   // Effectively unlimited
+    PRODUCTION: getEnvNumber('VITE_MAX_IMAGE_SIZE_MB', 999999),    // Effectively unlimited
   },
-  
-  // Audio files
+
+  // Audio files - no limit
   AUDIO: {
-    DEVELOPMENT: getEnvNumber('VITE_MAX_AUDIO_SIZE_MB', 100),  // Default 100MB for dev
-    PRODUCTION: getEnvNumber('VITE_MAX_AUDIO_SIZE_MB', 500),   // Default 500MB for production
+    DEVELOPMENT: getEnvNumber('VITE_MAX_AUDIO_SIZE_MB', 999999),  // Effectively unlimited
+    PRODUCTION: getEnvNumber('VITE_MAX_AUDIO_SIZE_MB', 999999),   // Effectively unlimited
   },
-  
-  // Thumbnail images
+
+  // Thumbnail images - no limit
   THUMBNAIL: {
-    DEVELOPMENT: 5,    // 5MB for dev
-    PRODUCTION: 10,    // 10MB for production
+    DEVELOPMENT: 999999,    // Effectively unlimited
+    PRODUCTION: 999999,    // Effectively unlimited
   },
 } as const;
 
 // Maximum number of files per product - configurable via environment variables
+// Set to extremely high value to effectively remove file count restrictions
 export const MAX_FILES_PER_PRODUCT = {
-  DEVELOPMENT: getEnvNumber('VITE_MAX_FILES_PER_PRODUCT', 25),
-  PRODUCTION: getEnvNumber('VITE_MAX_FILES_PER_PRODUCT', 100),
+  DEVELOPMENT: getEnvNumber('VITE_MAX_FILES_PER_PRODUCT', 999999),  // Effectively unlimited
+  PRODUCTION: getEnvNumber('VITE_MAX_FILES_PER_PRODUCT', 999999),   // Effectively unlimited
 } as const;
 
 // Get current environment limits

@@ -589,12 +589,13 @@ export const productService = {
     return data;
   },
 
-  // Add multiple files to product
+  // Add multiple files to product with parallel upload (batched)
   async addMultipleProductFiles(
     productId: string,
     files: File[],
     expertId?: string,
-    titles?: string[]
+    titles?: string[],
+    onProgress?: (fileIndex: number, fileName: string, progress: number) => void
   ): Promise<ProductFile[]> {
     if (!files || files.length === 0) {
       throw new Error('No files provided for upload');
@@ -623,33 +624,55 @@ export const productService = {
       throw new Error(`All files failed validation: ${failedFiles.map(f => `${f.file.name}: ${f.error}`).join(', ')}`);
     }
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    // Parallel upload in batches of 3 files at a time
+    const BATCH_SIZE = 3;
+    const validFiles = files.filter(file => !failedFiles.find(f => f.file === file));
 
-      // Skip files that failed validation
-      const failedFile = failedFiles.find(f => f.file === file);
-      if (failedFile) {
-        console.warn(`Skipping ${file.name}: ${failedFile.error}`);
-        continue;
-      }
+    for (let batchStart = 0; batchStart < validFiles.length; batchStart += BATCH_SIZE) {
+      const batch = validFiles.slice(batchStart, batchStart + BATCH_SIZE);
 
-      const fileData: Partial<ProductFileInsert> = {
-        sort_order: i,
-        // Only set as primary if there's no existing primary file and this is the first file being uploaded
-        is_primary: !hasPrimaryFile && i === 0 && uploadedFiles.length === 0,
-        display_title: titles?.[i] || file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "),
-      };
+      // Upload batch in parallel
+      const batchPromises = batch.map(async (file, batchIndex) => {
+        const actualIndex = batchStart + batchIndex;
 
-      try {
-        const uploadedFile = await this.addProductFile(productId, file, fileData);
-        uploadedFiles.push(uploadedFile);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`Failed to upload file ${file.name}:`, error);
-        failedFiles.push({ file, error: errorMessage });
-        
-        // Continue with other files but track failures
-      }
+        const fileData: Partial<ProductFileInsert> = {
+          sort_order: actualIndex,
+          is_primary: !hasPrimaryFile && actualIndex === 0 && uploadedFiles.length === 0,
+          display_title: titles?.[actualIndex] || file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "),
+        };
+
+        try {
+          // Report progress as 0% when starting
+          onProgress?.(actualIndex, file.name, 0);
+
+          const uploadedFile = await this.addProductFile(productId, file, fileData);
+
+          // Report progress as 100% when done
+          onProgress?.(actualIndex, file.name, 100);
+
+          return { success: true, file: uploadedFile, originalFile: file };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`Failed to upload file ${file.name}:`, error);
+
+          // Report error
+          onProgress?.(actualIndex, file.name, -1); // -1 indicates error
+
+          return { success: false, error: errorMessage, originalFile: file };
+        }
+      });
+
+      // Wait for all files in batch to complete
+      const results = await Promise.all(batchPromises);
+
+      // Process results
+      results.forEach(result => {
+        if (result.success && 'file' in result) {
+          uploadedFiles.push(result.file);
+        } else if (!result.success && 'error' in result) {
+          failedFiles.push({ file: result.originalFile, error: result.error });
+        }
+      });
     }
 
     // Update product file counts after all uploads
@@ -877,7 +900,8 @@ export const productService = {
     },
     files: File[],
     titles?: string[],
-    thumbnail?: File
+    thumbnail?: File,
+    onProgress?: (fileIndex: number, fileName: string, progress: number) => void
   ): Promise<Product> {
     if (!files || files.length === 0) {
       throw new Error('At least one file is required');
@@ -927,12 +951,13 @@ export const productService = {
         }
       }
 
-      // Upload all files with enhanced error handling
+      // Upload all files with enhanced error handling and progress tracking
       const uploadResults = await this.addMultipleProductFiles(
         product.id,
         files,
         productData.expert_id,
-        titles
+        titles,
+        onProgress
       );
 
       uploadedFiles.push(...uploadResults);
