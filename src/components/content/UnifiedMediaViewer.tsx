@@ -6,6 +6,10 @@ import {
   Loader2,
   ExternalLink
 } from 'lucide-react';
+import { Viewer, Worker } from '@react-pdf-viewer/core';
+import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { VideoPlayer } from './VideoPlayer';
 import { ProductFile, productService } from '@/services/products';
 import { cn } from '@/lib/utils';
@@ -24,6 +28,64 @@ export const UnifiedMediaViewer: React.FC<UnifiedMediaViewerProps> = ({
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Initialize the default layout plugin for PDF viewer without download/open buttons
+  const defaultLayoutPluginInstance = defaultLayoutPlugin({
+    renderToolbar: (Toolbar) => (
+      <Toolbar>
+        {(slots) => {
+          const {
+            CurrentPageInput,
+            EnterFullScreen,
+            GoToNextPage,
+            GoToPreviousPage,
+            NumberOfPages,
+            ShowSearchPopover,
+            Zoom,
+            ZoomIn,
+            ZoomOut,
+          } = slots;
+          return (
+            <div
+              style={{
+                alignItems: 'center',
+                display: 'flex',
+                width: '100%',
+              }}
+            >
+              <div style={{ padding: '0px 2px' }}>
+                <ShowSearchPopover />
+              </div>
+              <div style={{ padding: '0px 2px' }}>
+                <ZoomOut />
+              </div>
+              <div style={{ padding: '0px 2px' }}>
+                <Zoom />
+              </div>
+              <div style={{ padding: '0px 2px' }}>
+                <ZoomIn />
+              </div>
+              <div style={{ padding: '0px 2px', marginLeft: 'auto' }}>
+                <GoToPreviousPage />
+              </div>
+              <div style={{ padding: '0px 2px', width: '4rem' }}>
+                <CurrentPageInput />
+              </div>
+              <div style={{ padding: '0px 2px' }}>
+                / <NumberOfPages />
+              </div>
+              <div style={{ padding: '0px 2px' }}>
+                <GoToNextPage />
+              </div>
+              <div style={{ padding: '0px 2px', marginLeft: 'auto' }}>
+                <EnterFullScreen />
+              </div>
+            </div>
+          );
+        }}
+      </Toolbar>
+    ),
+  });
 
   const getFileIcon = () => {
     if (file.file_type === 'video' || file.mime_type?.startsWith('video/')) {
@@ -78,12 +140,84 @@ export const UnifiedMediaViewer: React.FC<UnifiedMediaViewerProps> = ({
                         file.mime_type?.includes('presentationml') ||
                         /\.(doc|docx|xls|xlsx|ppt|pptx)$/i.test(file.file_url);
 
-    // For PDFs, use direct iframe. For Office docs, use Microsoft Office Online Viewer
-    // Google Docs Viewer is less reliable, so we use Office Online for better compatibility
-    let viewerUrl: string;
+    // For PDFs, use @react-pdf-viewer. For Office docs, use Microsoft Office Online Viewer
     if (isPDF) {
-      viewerUrl = `${publicUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
-    } else if (isOfficeDoc) {
+      return (
+        <div className={cn("w-full bg-white rounded-lg relative border", className)}>
+          {pdfError ? (
+            // Error state - show fallback with "Open in New Tab" button
+            <div className="w-full min-h-[70vh] flex items-center justify-center bg-gray-50 rounded-lg p-8">
+              <div className="text-center max-w-md">
+                <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {file.display_title || file.file_name.replace(/\.[^/.]+$/, "")}
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  This PDF couldn't be displayed in the viewer. Open it in a new tab for the best experience.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button
+                    onClick={() => window.open(publicUrl, '_blank')}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Open in New Tab
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setPdfError(false);
+                      setPdfLoaded(false);
+                    }}
+                    variant="outline"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-4">
+                  PDF Document • {file.file_size_mb?.toFixed(1)} MB
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="relative w-full min-h-[70vh] max-h-[80vh]">
+              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+                <div className="h-[70vh] overflow-auto">
+                  <Viewer
+                    fileUrl={publicUrl}
+                    plugins={[defaultLayoutPluginInstance]}
+                    onDocumentLoad={() => {
+                      setPdfLoaded(true);
+                      setPdfError(false);
+                      // Mark as completed when document loads
+                      setTimeout(() => {
+                        onComplete?.();
+                      }, 3000);
+                    }}
+                  />
+                </div>
+              </Worker>
+
+              {/* Document Loading State */}
+              {!pdfLoaded && !pdfError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white rounded-lg">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+                    <p className="text-gray-600">Loading PDF...</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      PDF Document • {file.file_size_mb?.toFixed(1)} MB
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // For Office documents, use Microsoft Office Online Viewer
+    let viewerUrl: string;
+    if (isOfficeDoc) {
       // Microsoft Office Online Viewer (more reliable than Google Docs Viewer)
       viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(publicUrl)}`;
     } else {
@@ -123,7 +257,7 @@ export const UnifiedMediaViewer: React.FC<UnifiedMediaViewerProps> = ({
                 </Button>
               </div>
               <p className="text-xs text-gray-500 mt-4">
-                {isPDF ? 'PDF Document' : isOfficeDoc ? 'Office Document' : 'Document'} • {file.file_size_mb?.toFixed(1)} MB
+                {isOfficeDoc ? 'Office Document' : 'Document'} • {file.file_size_mb?.toFixed(1)} MB
               </p>
             </div>
           </div>
@@ -159,7 +293,7 @@ export const UnifiedMediaViewer: React.FC<UnifiedMediaViewerProps> = ({
                   <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
                   <p className="text-gray-600">Loading document...</p>
                   <p className="text-xs text-gray-500 mt-2">
-                    {isPDF ? 'PDF Document' : isOfficeDoc ? 'Office Document' : 'Document'} • {file.file_size_mb?.toFixed(1)} MB
+                    {isOfficeDoc ? 'Office Document' : 'Document'} • {file.file_size_mb?.toFixed(1)} MB
                   </p>
                 </div>
               </div>

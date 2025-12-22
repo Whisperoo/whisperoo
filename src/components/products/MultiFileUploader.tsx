@@ -226,7 +226,7 @@ export const MultiFileUploader: React.FC<MultiFileUploaderProps> = ({
           disabled={files.length >= finalMaxFiles}
         />
         <p className="text-xs text-gray-400">
-          Maximum {finalMaxFiles} files • Videos up to {limits.video}MB • Documents up to {limits.document}MB
+          Upload unlimited files • No file size restrictions
         </p>
       </div>
 
@@ -235,7 +235,7 @@ export const MultiFileUploader: React.FC<MultiFileUploaderProps> = ({
         <div className="space-y-2">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-sm font-medium">
-              Uploaded Files ({existingFilesCount + files.length}/{finalMaxFiles})
+              Uploaded Files ({existingFilesCount + files.length})
             </h3>
             {files.length > 1 && (
               <p className="text-xs text-gray-500">

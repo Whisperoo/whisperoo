@@ -77,7 +77,8 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
   const { user } = useAuth();
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  
+  const [fileProgress, setFileProgress] = useState<Record<number, { fileName: string; progress: number }>>({});
+
   // Get current upload limits
   const limits = getCurrentLimits();
   const [newFiles, setNewFiles] = useState<File[]>([]);
@@ -258,13 +259,35 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
       }
 
       setUploadProgress(50);
+      setFileProgress({}); // Reset file progress
+
+      // Progress callback for individual files
+      const handleFileProgress = (fileIndex: number, fileName: string, progress: number) => {
+        setFileProgress(prev => {
+          const updated = {
+            ...prev,
+            [fileIndex]: { fileName, progress }
+          };
+
+          // Calculate overall progress based on file progress
+          const totalFiles = newFiles.length;
+          const completedCount = Object.values(updated)
+            .filter(f => f.progress === 100).length;
+          const overallProgress = 50 + Math.floor((completedCount / totalFiles) * 10);
+          setUploadProgress(overallProgress);
+
+          return updated;
+        });
+      };
 
       // Upload new files
       if (newFiles.length > 0) {
         const uploadedFiles = await productService.addMultipleProductFiles(
           product.id,
           newFiles,
-          product.expert_id || user.id
+          product.expert_id || user.id,
+          undefined, // titles
+          handleFileProgress // Pass progress callback
         );
 
         // If this is the first file or no primary file exists, set the first as primary
@@ -347,6 +370,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
+      setFileProgress({}); // Reset file progress
     }
   };
 
@@ -357,6 +381,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
     setFilesToDelete([]);
     setNewThumbnailFile(null);
     setUploadProgress(0);
+    setFileProgress({}); // Reset file progress
     setFileManagementMode('manage');
     onClose();
   };
@@ -772,11 +797,40 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
 
             {/* Upload Progress */}
             {isUploading && (
-              <div className="space-y-2">
-                <Progress value={uploadProgress} className="w-full" />
-                <p className="text-sm text-center text-muted-foreground">
-                  Updating... {uploadProgress}%
-                </p>
+              <div className="space-y-3">
+                {/* Overall Progress */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Overall Progress</span>
+                    <span className="font-medium">{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="w-full h-2" />
+                </div>
+
+                {/* Individual File Progress */}
+                {Object.keys(fileProgress).length > 0 && (
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    <p className="text-xs font-medium text-muted-foreground">Uploading files:</p>
+                    {Object.entries(fileProgress).map(([index, { fileName, progress }]) => (
+                      <div key={index} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground truncate flex-1 mr-2">
+                            {fileName}
+                          </span>
+                          <span className="font-medium flex-shrink-0">
+                            {progress === -1 ? '❌ Error' : progress === 100 ? '✓' : `${progress}%`}
+                          </span>
+                        </div>
+                        {progress !== -1 && (
+                          <Progress
+                            value={progress}
+                            className={`w-full h-1 ${progress === 100 ? 'bg-green-100' : ''}`}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
