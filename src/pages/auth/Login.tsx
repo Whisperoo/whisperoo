@@ -83,30 +83,58 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Determine the correct redirect URL based on environment
+      const getRedirectUrl = () => {
+        const isLocalhost =
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1";
+
+        if (isLocalhost) {
+          // Development
+          return "http://localhost:8080/update-password";
+        } else {
+          // Production - use your Railway domain
+          return "https://whisperoo-production.up.railway.app/update-password";
+        }
+      };
+
+      const redirectUrl = getRedirectUrl();
+
+      console.log("Environment:", window.location.hostname);
+      console.log("Using redirect URL:", redirectUrl);
+
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        // IMPORTANT: This must match the exact route you'll create for password update
-        redirectTo: `${window.location.origin}/update-password`,
+        redirectTo: redirectUrl,
       });
 
       if (error) {
+        console.error("Supabase error:", error);
         throw error;
       }
 
       toast({
-        title: "Check your email",
-        description:
-          "We've sent you a password reset link. Please check your inbox.",
+        title: "Email sent!",
+        description: `Reset link sent to ${resetEmail}. Check your inbox.`,
       });
 
-      // Switch back to login mode after successful reset request
+      // Show success message
       setResetMode(false);
       setResetEmail("");
     } catch (error: any) {
       console.error("Password reset error:", error);
+
+      // User-friendly error messages
+      let errorMessage = "Failed to send reset email. Please try again.";
+
+      if (error.message?.includes("rate limit")) {
+        errorMessage = "Too many attempts. Please wait a few minutes.";
+      } else if (error.message?.includes("email")) {
+        errorMessage = "Please enter a valid email address.";
+      }
+
       toast({
         title: "Reset failed",
-        description:
-          error.message || "Failed to send reset email. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -197,6 +225,15 @@ const Login: React.FC = () => {
               ? "Send Reset Link"
               : "Sign In"}
           </Button>
+          {/* Add this right before the form closing tag */}
+          {process.env.NODE_ENV === "development" && resetMode && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+              <div className="font-semibold text-yellow-800">Debug Info:</div>
+              <div>Current host: {window.location.hostname}</div>
+              <div>Environment: {process.env.NODE_ENV}</div>
+              <div>Redirect URL: {window.location.origin}/update-password</div>
+            </div>
+          )}
         </form>
 
         <div className="text-center space-y-4">
