@@ -1,32 +1,77 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Download, Receipt, Calendar, CheckCircle, Clock } from 'lucide-react';
-import { ContentGrid } from '@/components/content/ContentGrid';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { formatCurrency } from '@/lib/utils';
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Download, Receipt, Calendar, CheckCircle, Clock } from "lucide-react";
+import { ContentGrid } from "@/components/content/ContentGrid";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { formatCurrency } from "@/lib/utils";
 
 export const MyPurchasesPage: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  
+
   // Get tab from URL params, default to 'content'
   const searchParams = new URLSearchParams(location.search);
-  const defaultTab = searchParams.get('tab') || 'content';
+  const defaultTab = searchParams.get("tab") || "content";
 
   const handleViewProduct = (productId: string) => {
     window.location.href = `/products/${productId}`;
   };
 
+  // Helper function for Safari-compatible downloads
+  const downloadFileViaFetch = async (fileUrl: string, fileName: string) => {
+    try {
+      // Fetch the file with CORS mode
+      const response = await fetch(fileUrl, {
+        mode: "cors",
+        credentials: "omit",
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Get the file as a blob
+      const blob = await response.blob();
+
+      // Create a blob URL (same origin, so Safari will allow download)
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      // Create temporary anchor
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up - release the blob URL
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 100);
+
+      return true;
+    } catch (error) {
+      console.error("Fetch download failed:", error);
+
+      // Fallback: Open in new tab if fetch fails
+      console.log("Trying fallback method...");
+      window.open(fileUrl, "_blank");
+      return false;
+    }
+  };
+
   const handleDownload = async (purchase: any) => {
     if (!user) {
-      alert('Please log in to download products.');
+      alert("Please log in to download products.");
       return;
     }
 
@@ -34,56 +79,65 @@ export const MyPurchasesPage: React.FC = () => {
 
     try {
       // Get the current session to access the access token
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
-      
+
       if (!accessToken) {
-        alert('Unable to authenticate. Please log in again.');
+        alert("Unable to authenticate. Please log in again.");
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-purchase`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-purchase`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ product_id: purchase.product_id }),
         },
-        body: JSON.stringify({ product_id: purchase.product_id }),
-      });
-      
+      );
+
       const data = await response.json();
-      
+
       if (data.has_access && data.product?.download_url) {
-        // Create a temporary link and click it to start download
-        const link = document.createElement('a');
-        link.href = data.product.download_url;
-        link.download = `${data.product.title}.${data.product.product_type === 'video' ? 'mp4' : 'pdf'}`;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Use Safari-compatible download method
+        await downloadFileViaFetch(
+          data.product.download_url,
+          `${data.product.title}.${data.product.product_type === "video" ? "mp4" : "pdf"}`,
+        );
       } else if (data.has_access && !data.product?.download_url) {
         // User has access but file is missing
-        alert('The product file is being prepared. Please try again in a few moments or contact support if the issue persists.');
+        alert(
+          "The product file is being prepared. Please try again in a few moments or contact support if the issue persists.",
+        );
       } else {
-        alert(`Download failed: ${data.error || 'Unable to access product'}`);
+        alert(`Download failed: ${data.error || "Unable to access product"}`);
       }
     } catch (error) {
-      console.error('Download error:', error);
-      alert('Download failed. Please try again or contact support.');
+      console.error("Download error:", error);
+      alert("Download failed. Please try again or contact support.");
     } finally {
       setDownloadingId(null);
     }
   };
 
-  const { data: purchases, isLoading, error } = useQuery<any[]>({
-    queryKey: ['purchases', user?.id],
+  const {
+    data: purchases,
+    isLoading,
+    error,
+  } = useQuery<any[]>({
+    queryKey: ["purchases", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      
+
       const { data, error } = await supabase
-        .from('purchases')
-        .select(`
+        .from("purchases")
+        .select(
+          `
           id,
           product_id,
           expert_id,
@@ -116,15 +170,16 @@ export const MyPurchasesPage: React.FC = () => {
               profile_image_url
             )
           )
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'completed')
-        .order('purchased_at', { ascending: false });
+        `,
+        )
+        .eq("user_id", user.id)
+        .eq("status", "completed")
+        .order("purchased_at", { ascending: false });
 
       if (error) throw error;
 
       // Filter out purchases of inactive/deleted products
-      const activePurchases = (data || []).filter(purchase => {
+      const activePurchases = (data || []).filter((purchase) => {
         return purchase.product && (purchase.product as any).is_active === true;
       });
 
@@ -134,8 +189,14 @@ export const MyPurchasesPage: React.FC = () => {
   });
 
   // Separate consultations from other content
-  const consultations = purchases?.filter(p => (p.product as any)?.product_type === 'consultation') || [];
-  const contentPurchases = purchases?.filter(p => (p.product as any)?.product_type !== 'consultation') || [];
+  const consultations =
+    purchases?.filter(
+      (p) => (p.product as any)?.product_type === "consultation",
+    ) || [];
+  const contentPurchases =
+    purchases?.filter(
+      (p) => (p.product as any)?.product_type !== "consultation",
+    ) || [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -148,7 +209,10 @@ export const MyPurchasesPage: React.FC = () => {
           </p>
           {purchases && purchases.length > 0 && (
             <div className="mt-4 text-sm text-gray-500">
-              {contentPurchases.length} content {contentPurchases.length === 1 ? 'item' : 'items'} • {consultations.length} {consultations.length === 1 ? 'booking' : 'bookings'}
+              {contentPurchases.length} content{" "}
+              {contentPurchases.length === 1 ? "item" : "items"} •{" "}
+              {consultations.length}{" "}
+              {consultations.length === 1 ? "booking" : "bookings"}
             </div>
           )}
         </div>
@@ -178,10 +242,17 @@ export const MyPurchasesPage: React.FC = () => {
                 <CardContent className="p-8 text-center">
                   <div className="text-red-500 mb-4">
                     <Receipt className="h-12 w-12 mx-auto mb-3" />
-                    <p className="text-lg font-medium">Oops! Something went wrong</p>
-                    <p className="text-sm text-gray-600 mt-2">We couldn't load your purchases right now.</p>
+                    <p className="text-lg font-medium">
+                      Oops! Something went wrong
+                    </p>
+                    <p className="text-sm text-gray-600 mt-2">
+                      We couldn't load your purchases right now.
+                    </p>
                   </div>
-                  <Button onClick={() => window.location.reload()} className="mt-4">
+                  <Button
+                    onClick={() => window.location.reload()}
+                    className="mt-4"
+                  >
                     Try Again
                   </Button>
                 </CardContent>
@@ -194,12 +265,18 @@ export const MyPurchasesPage: React.FC = () => {
                       <Download className="h-10 w-10 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-3">No Content Yet</h3>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                        No Content Yet
+                      </h3>
                       <p className="text-gray-600 text-lg leading-relaxed max-w-md mx-auto">
-                        You haven't purchased any expert content yet. Browse our collection of guides, courses, and resources.
+                        You haven't purchased any expert content yet. Browse our
+                        collection of guides, courses, and resources.
                       </p>
                     </div>
-                    <Button onClick={() => window.location.href = '/products'} size="lg">
+                    <Button
+                      onClick={() => (window.location.href = "/products")}
+                      size="lg"
+                    >
                       Browse Products
                     </Button>
                   </div>
@@ -232,12 +309,18 @@ export const MyPurchasesPage: React.FC = () => {
                       <Calendar className="h-10 w-10 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-3">No Bookings Yet</h3>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                        No Bookings Yet
+                      </h3>
                       <p className="text-gray-600 text-lg leading-relaxed max-w-md mx-auto">
-                        You haven't booked any consultations yet. Browse our expert profiles to schedule a session.
+                        You haven't booked any consultations yet. Browse our
+                        expert profiles to schedule a session.
                       </p>
                     </div>
-                    <Button onClick={() => window.location.href = '/experts'} size="lg">
+                    <Button
+                      onClick={() => (window.location.href = "/experts")}
+                      size="lg"
+                    >
                       Browse Experts
                     </Button>
                   </div>
@@ -251,10 +334,13 @@ export const MyPurchasesPage: React.FC = () => {
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
                           <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                            {(consultation as any).product?.title || 'Consultation'}
+                            {(consultation as any).product?.title ||
+                              "Consultation"}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            with {(consultation as any).product?.expert?.first_name || 'Expert'}
+                            with{" "}
+                            {(consultation as any).product?.expert
+                              ?.first_name || "Expert"}
                           </p>
                         </div>
                         <div className="text-right">
@@ -262,22 +348,42 @@ export const MyPurchasesPage: React.FC = () => {
                             {formatCurrency(Number(consultation.amount))}
                           </div>
                           <Badge
-                            variant={consultation.consultation_completed ? 'default' : 'secondary'}
+                            variant={
+                              consultation.consultation_completed
+                                ? "default"
+                                : "secondary"
+                            }
                             className="mt-1"
                           >
                             {consultation.consultation_completed ? (
-                              <><CheckCircle className="h-3 w-3 mr-1" />Completed</>
+                              <>
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Completed
+                              </>
                             ) : (
-                              <><Clock className="h-3 w-3 mr-1" />Pending</>
+                              <>
+                                <Clock className="h-3 w-3 mr-1" />
+                                Pending
+                              </>
                             )}
                           </Badge>
                         </div>
                       </div>
-                      
+
                       <div className="text-sm text-gray-600 mb-4">
-                        <div>Booked: {new Date(consultation.purchased_at).toLocaleDateString()}</div>
+                        <div>
+                          Booked:{" "}
+                          {new Date(
+                            consultation.purchased_at,
+                          ).toLocaleDateString()}
+                        </div>
                         {consultation.consultation_completed_at && (
-                          <div>Completed: {new Date(consultation.consultation_completed_at).toLocaleDateString()}</div>
+                          <div>
+                            Completed:{" "}
+                            {new Date(
+                              consultation.consultation_completed_at,
+                            ).toLocaleDateString()}
+                          </div>
                         )}
                       </div>
 
@@ -285,12 +391,14 @@ export const MyPurchasesPage: React.FC = () => {
                         {consultation.consultation_completed ? (
                           <div className="text-green-700">
                             <CheckCircle className="h-4 w-4 inline mr-2" />
-                            This consultation has been completed. Thank you for booking with our expert!
+                            This consultation has been completed. Thank you for
+                            booking with our expert!
                           </div>
                         ) : (
                           <div className="text-blue-700">
                             <Clock className="h-4 w-4 inline mr-2" />
-                            The expert will reach out to you within 24 hours to schedule your appointment.
+                            The expert will reach out to you within 24 hours to
+                            schedule your appointment.
                           </div>
                         )}
                       </div>
