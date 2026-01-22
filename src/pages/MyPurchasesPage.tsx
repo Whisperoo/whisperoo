@@ -24,11 +24,52 @@ export const MyPurchasesPage: React.FC = () => {
     window.location.href = `/products/${productId}`;
   };
 
-  // Helper function for Safari-compatible downloads
+  // NEW: Simple file download handler for proxied files
+  const downloadFile = async (response: Response, product: any) => {
+    try {
+      // Get the file data as blob
+      const blob = await response.blob();
+
+      // Create a blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      // Create download link
+      const link = document.createElement("a");
+      link.href = blobUrl;
+
+      // Get filename from Content-Disposition header or create default
+      const contentDisposition = response.headers.get("content-disposition");
+      let filename = `${product?.title || "download"}.${
+        product?.product_type === "video" ? "mp4" : "pdf"
+      }`;
+
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) filename = match[1];
+      }
+
+      link.download = filename;
+
+      // Add to DOM, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up blob URL
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 100);
+
+      return true;
+    } catch (error) {
+      console.error("File download error:", error);
+      return false;
+    }
+  };
+
+  // OLD function - now used as fallback only
   const downloadFileViaFetch = async (fileUrl: string, fileName: string) => {
     try {
-      console.log(`Trying enhanced download for: ${fileName}`);
-
       // Add timestamp to bypass cache
       const cacheBusterUrl = `${fileUrl}${fileUrl.includes("?") ? "&" : "?"}_=${Date.now()}`;
 
@@ -40,12 +81,9 @@ export const MyPurchasesPage: React.FC = () => {
         },
       });
 
-      // Force download for PDFs by creating blob
       const blob = await response.blob();
-
-      // Create a NEW blob with explicit type
       const downloadBlob = new Blob([blob], {
-        type: "application/octet-stream", // Force download instead of display
+        type: "application/octet-stream",
       });
 
       const blobUrl = window.URL.createObjectURL(downloadBlob);
@@ -53,24 +91,8 @@ export const MyPurchasesPage: React.FC = () => {
       link.href = blobUrl;
       link.download = fileName;
 
-      // Safari-specific: Need to add to document AND click
       document.body.appendChild(link);
-
-      // Multiple click strategies for Safari
       link.click();
-
-      // Additional Safari trigger
-      if (
-        navigator.userAgent.includes("Safari") &&
-        !navigator.userAgent.includes("Chrome")
-      ) {
-        const event = new MouseEvent("click", {
-          view: window,
-          bubbles: true,
-          cancelable: true,
-        });
-        link.dispatchEvent(event);
-      }
 
       setTimeout(() => {
         document.body.removeChild(link);
@@ -79,8 +101,7 @@ export const MyPurchasesPage: React.FC = () => {
 
       return true;
     } catch (error) {
-      console.error("Download failed:", error);
-      // Final fallback
+      console.error("Fallback download failed:", error);
       window.open(fileUrl, "_blank");
       return false;
     }
@@ -118,23 +139,44 @@ export const MyPurchasesPage: React.FC = () => {
         },
       );
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`);
+      }
 
-      if (data.has_access && data.product?.download_url) {
-        // Use Safari-compatible download method
-        console.log("Download URL:", data.product.download_url);
+      // Check content type to determine response type
+      const contentType = response.headers.get("content-type") || "";
 
-        await downloadFileViaFetch(
-          data.product.download_url,
-          `${data.product.title}.${data.product.product_type === "video" ? "mp4" : "pdf"}`,
-        );
-      } else if (data.has_access && !data.product?.download_url) {
-        // User has access but file is missing
-        alert(
-          "The product file is being prepared. Please try again in a few moments or contact support if the issue persists.",
-        );
+      if (contentType.includes("application/json")) {
+        // FALLBACK CASE: Edge function returned JSON with URL
+        const data = await response.json();
+
+        if (data.has_access && data.product?.download_url) {
+          console.log(
+            "Using fallback download method with URL:",
+            data.product.download_url,
+          );
+
+          await downloadFileViaFetch(
+            data.product.download_url,
+            `${data.product.title}.${data.product.product_type === "video" ? "mp4" : "pdf"}`,
+          );
+        } else if (data.has_access && !data.product?.download_url) {
+          alert(
+            "The product file is being prepared. Please try again in a few moments or contact support if the issue persists.",
+          );
+        } else {
+          alert(`Download failed: ${data.error || "Unable to access product"}`);
+        }
       } else {
-        alert(`Download failed: ${data.error || "Unable to access product"}`);
+        // SUCCESS CASE: Edge function returned the actual file
+        console.log("Edge function returned file directly");
+        console.log("Content-Type:", contentType);
+        console.log(
+          "Content-Disposition:",
+          response.headers.get("content-disposition"),
+        );
+
+        await downloadFile(response, purchase.product || purchase);
       }
     } catch (error) {
       console.error("Download error:", error);
