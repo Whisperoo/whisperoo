@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Filter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { supabase } from '@/lib/supabase';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Search, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
 
 interface ExpertProfile {
   id: string;
@@ -24,8 +24,8 @@ const ExpertProfiles: React.FC = () => {
   const navigate = useNavigate();
   const [experts, setExperts] = useState<ExpertProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSpecialty, setSelectedSpecialty] = useState("");
 
   useEffect(() => {
     fetchExperts();
@@ -34,35 +34,42 @@ const ExpertProfiles: React.FC = () => {
   const fetchExperts = async () => {
     try {
       // Fetch expert profiles from unified profiles table
-      // Note: expertId = profiles.id where account_type = 'expert'
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, expert_bio, expert_specialties, expert_experience_years, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified')
-        .eq('account_type', 'expert')
-        .eq('expert_verified', true)
-        .order('expert_rating', { ascending: false });
+        .from("profiles")
+        .select(
+          "id, first_name, expert_bio, expert_specialties, expert_experience_years, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified",
+        )
+        .eq("account_type", "expert")
+        .eq("expert_verified", true)
+        // ✅ FIX: Only show experts who are NOT unavailable
+        .neq("expert_availability_status", "unavailable")
+        .order("expert_rating", { ascending: false });
 
       if (error) throw error;
       setExperts(data || []);
     } catch (error) {
-      console.error('Error fetching experts:', error);
+      console.error("Error fetching experts:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredExperts = experts.filter(expert => {
-    const matchesSearch = expert.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (expert.expert_specialties || []).some(specialty => 
-                           specialty.toLowerCase().includes(searchTerm.toLowerCase())
-                         ) ||
-                         expert.expert_bio?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSpecialty = !selectedSpecialty || 
-                            (expert.expert_specialties || []).includes(selectedSpecialty);
+  const filteredExperts = experts.filter((expert) => {
+    const matchesSearch =
+      expert.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (expert.expert_specialties || []).some((specialty) =>
+        specialty.toLowerCase().includes(searchTerm.toLowerCase()),
+      ) ||
+      expert.expert_bio?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSpecialty =
+      !selectedSpecialty ||
+      (expert.expert_specialties || []).includes(selectedSpecialty);
     return matchesSearch && matchesSpecialty;
   });
 
-  const specialties = [...new Set(experts.flatMap(expert => expert.expert_specialties || []))];
+  const specialties = [
+    ...new Set(experts.flatMap((expert) => expert.expert_specialties || [])),
+  ];
 
   const handleExpertClick = (expertId: string) => {
     navigate(`/experts/${expertId}`);
@@ -99,7 +106,8 @@ const ExpertProfiles: React.FC = () => {
             Whisperoo Verified Experts
           </h1>
           <p className="text-gray-600 mt-1">
-            Connect with board-certified professionals who specialize in child and family health
+            Connect with board-certified professionals who specialize in child
+            and family health
           </p>
         </div>
 
@@ -120,16 +128,21 @@ const ExpertProfiles: React.FC = () => {
             className="px-4 py-2 bg-white border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">All Specialties</option>
-            {specialties.filter(specialty => specialty && specialty.trim()).map(specialty => (
-              <option key={specialty} value={specialty}>{specialty}</option>
-            ))}
+            {specialties
+              .filter((specialty) => specialty && specialty.trim())
+              .map((specialty) => (
+                <option key={specialty} value={specialty}>
+                  {specialty}
+                </option>
+              ))}
           </select>
         </div>
 
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-gray-600">
-            {filteredExperts.length} expert{filteredExperts.length !== 1 ? 's' : ''} found
+            {filteredExperts.length} expert
+            {filteredExperts.length !== 1 ? "s" : ""} found
           </p>
         </div>
 
@@ -139,13 +152,15 @@ const ExpertProfiles: React.FC = () => {
             <div className="text-gray-500 mb-4">
               <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg">No experts found matching your criteria</p>
-              <p className="text-sm">Try adjusting your search or filter options</p>
+              <p className="text-sm">
+                Try adjusting your search or filter options
+              </p>
             </div>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredExperts.map((expert) => (
-              <Card 
+              <Card
                 key={expert.id}
                 className="cursor-pointer hover:shadow-lg transition-shadow duration-200 bg-white border-none"
                 onClick={() => handleExpertClick(expert.id)}
@@ -153,7 +168,7 @@ const ExpertProfiles: React.FC = () => {
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <img
-                      src={expert.profile_image_url || '/placeholder.svg'}
+                      src={expert.profile_image_url || "/placeholder.svg"}
                       alt={expert.first_name}
                       className="w-16 h-16 rounded-full object-cover flex-shrink-0"
                     />
@@ -162,13 +177,16 @@ const ExpertProfiles: React.FC = () => {
                         {expert.first_name}
                       </h3>
                       <p className="text-indigo-600 font-medium text-sm">
-                        {expert.expert_specialties?.[0] || 'General Expert'}
+                        {expert.expert_specialties?.[0] || "General Expert"}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex items-center">
                           <span className="text-yellow-400">★</span>
                           <span className="text-sm text-gray-600 ml-1">
-                            {expert.expert_rating ? expert.expert_rating.toFixed(1) : 'New'} ({expert.expert_total_reviews || 0} reviews)
+                            {expert.expert_rating
+                              ? expert.expert_rating.toFixed(1)
+                              : "New"}{" "}
+                            ({expert.expert_total_reviews || 0} reviews)
                           </span>
                         </div>
                       </div>
