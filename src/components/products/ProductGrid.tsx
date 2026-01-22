@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { ProductCard } from "./ProductCard";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Grid, List, Search, Filter } from "lucide-react";
+import { Grid, List, Search } from "lucide-react";
 import {
   productService,
   ProductFilters,
@@ -26,6 +26,142 @@ interface ProductGridProps {
   initialFilters?: ProductFilters;
   showFilters?: boolean;
 }
+
+interface PaginationControlsProps {
+  currentPage: number;
+  totalResults: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  isLoading: boolean;
+  searchQuery?: string;
+}
+
+const PaginationControls: React.FC<PaginationControlsProps> = ({
+  currentPage,
+  totalResults,
+  pageSize,
+  onPageChange,
+  isLoading,
+  searchQuery,
+}) => {
+  // Don't show pagination if there's only one page or no results
+  if (totalResults <= pageSize || totalResults === 0) {
+    return null;
+  }
+
+  const totalPages = Math.ceil(totalResults / pageSize);
+
+  // Calculate which page numbers to show (max 5 buttons)
+  const getPageNumbers = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, 5];
+    }
+
+    if (currentPage >= totalPages - 2) {
+      return [
+        totalPages - 4,
+        totalPages - 3,
+        totalPages - 2,
+        totalPages - 1,
+        totalPages,
+      ];
+    }
+
+    return [
+      currentPage - 2,
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      currentPage + 2,
+    ];
+  };
+
+  const pageNumbers = getPageNumbers();
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 mt-8">
+      {/* Page info */}
+      <div className="text-sm text-gray-600">
+        Showing {(currentPage - 1) * pageSize + 1} -{" "}
+        {Math.min(currentPage * pageSize, totalResults)} of {totalResults}{" "}
+        results
+        {searchQuery && searchQuery.trim() && ` for "${searchQuery}"`}
+      </div>
+
+      {/* Pagination buttons */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1 || isLoading}
+        >
+          Previous
+        </Button>
+
+        {/* First page button if needed */}
+        {pageNumbers[0] > 1 && (
+          <>
+            <Button
+              variant={currentPage === 1 ? "default" : "outline"}
+              size="sm"
+              onClick={() => onPageChange(1)}
+              disabled={isLoading}
+            >
+              1
+            </Button>
+            {pageNumbers[0] > 2 && (
+              <span className="px-2 text-gray-400">...</span>
+            )}
+          </>
+        )}
+
+        {/* Page number buttons */}
+        {pageNumbers.map((pageNum) => (
+          <Button
+            key={pageNum}
+            variant={currentPage === pageNum ? "default" : "outline"}
+            size="sm"
+            onClick={() => onPageChange(pageNum)}
+            disabled={isLoading}
+          >
+            {pageNum}
+          </Button>
+        ))}
+
+        {/* Last page button if needed */}
+        {pageNumbers[pageNumbers.length - 1] < totalPages && (
+          <>
+            {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && (
+              <span className="px-2 text-gray-400">...</span>
+            )}
+            <Button
+              variant={currentPage === totalPages ? "default" : "outline"}
+              size="sm"
+              onClick={() => onPageChange(totalPages)}
+              disabled={isLoading}
+            >
+              {totalPages}
+            </Button>
+          </>
+        )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages || isLoading}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
   expertId,
@@ -43,10 +179,18 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   const [page, setPage] = useState(1);
   const [userPurchases, setUserPurchases] = useState<Set<string>>(new Set());
 
-  // Fetch products
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["products", filters, page],
-    queryFn: () => productService.getProducts(filters, page, 12),
+  // ✅ Fixed: Added refetch to useQuery
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["products", filters, page, searchQuery],
+    queryFn: () =>
+      productService.getProducts(
+        {
+          ...filters,
+          searchQuery: searchQuery.trim() || undefined,
+        },
+        page,
+        12,
+      ),
   });
 
   // Fetch categories
@@ -60,41 +204,30 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     if (user) {
       productService.getUserPurchases(user.id).then((purchases) => {
         const purchasedIds = new Set(
-          purchases.map((p) => p.product_id).filter(Boolean) as string[]
+          purchases.map((p) => p.product_id).filter(Boolean) as string[],
         );
         setUserPurchases(purchasedIds);
       });
     }
   }, [user]);
 
-  // Create filtered products based on search
-  const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return data?.products || [];
-    }
-
-    const query = searchQuery.toLowerCase().trim();
-    return (data?.products || []).filter(
-      (product) =>
-        product.title?.toLowerCase().includes(query) ||
-        product.description?.toLowerCase().includes(query) ||
-        (product as any).expert_name?.toLowerCase().includes(query) ||
-        product.product_type?.toLowerCase().includes(query)
-    );
-  }, [searchQuery, data?.products]);
+  const displayProducts = data?.products || [];
+  const totalResults = data?.total || 0;
 
   const handleFilterChange = (key: keyof ProductFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-    setPage(1);
+    setPage(1); // Reset to page 1 when filters change
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Search happens client-side via filteredProducts
+    setPage(1); // Reset to page 1 when searching
+    refetch(); // Trigger refetch with new search term
   };
 
   const handleClearSearch = () => {
     setSearchQuery("");
+    setPage(1);
   };
 
   const handleProductView = (product: ProductWithDetails) => {
@@ -116,13 +249,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${
-              (
-                await supabase.auth.getSession()
-              ).data.session?.access_token
+              (await supabase.auth.getSession()).data.session?.access_token
             }`,
           },
           body: JSON.stringify({ product_id: product.id }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -134,14 +265,27 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     }
   };
 
-  const totalPages = Math.ceil((data?.total || 0) / 12);
-
   if (error) {
+    // ✅ Handle 416 error specifically
+    const errorMessage =
+      error instanceof Error
+        ? error.message.includes("Range Not Satisfiable") ||
+          error.message.includes("PGRST116")
+          ? "No more results available. Please go back to previous page."
+          : error.message
+        : "Error loading products. Please try again.";
+
     return (
       <div className="text-center py-12">
-        <p className="text-red-500">
-          Error loading products. Please try again.
-        </p>
+        <p className="text-red-500 mb-4">{errorMessage}</p>
+        <Button
+          onClick={() => {
+            setPage(1);
+            refetch();
+          }}
+        >
+          Go to First Page
+        </Button>
       </div>
     );
   }
@@ -156,7 +300,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Search products by title or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -179,8 +323,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
               <div className="flex items-center justify-between">
                 <span className="font-medium text-blue-700">
-                  🔍 Found {filteredProducts.length} product
-                  {filteredProducts.length !== 1 ? "s" : ""} for "{searchQuery}"
+                  🔍 Found {totalResults} product
+                  {totalResults !== 1 ? "s" : ""} for "{searchQuery}"
+                  {page > 1 && ` (Page ${page})`}
                 </span>
                 {searchQuery && (
                   <Button
@@ -204,7 +349,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               onValueChange={(value) =>
                 handleFilterChange(
                   "category",
-                  value === "all" ? undefined : value
+                  value === "all" ? undefined : value,
                 )
               }
             >
@@ -227,7 +372,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               onValueChange={(value) =>
                 handleFilterChange(
                   "productType",
-                  value === "all" ? undefined : value
+                  value === "all" ? undefined : value,
                 )
               }
             >
@@ -301,40 +446,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         </div>
       ) : (
         <>
-          {/* Always check filteredProducts first when searching */}
-          {searchQuery.trim() ? (
-            // When searching, show filtered results
-            filteredProducts.length > 0 ? (
-              <div
-                className={
-                  viewMode === "grid"
-                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                    : "space-y-4"
-                }
-              >
-                {filteredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onView={() => handleProductView(product)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-500 font-medium mb-2">
-                  No products found for "{searchQuery}"
-                </p>
-                <p className="text-sm text-gray-400 mb-4">
-                  Try different keywords or check spelling
-                </p>
-                <Button variant="outline" onClick={handleClearSearch}>
-                  Clear search & show all products
-                </Button>
-              </div>
-            )
-          ) : // When NOT searching, show all products
-          data?.products && data.products.length > 0 ? (
+          {/* Always use server-filtered products */}
+          {displayProducts.length > 0 ? (
             <div
               className={
                 viewMode === "grid"
@@ -342,7 +455,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                   : "space-y-4"
               }
             >
-              {data.products.map((product) => (
+              {displayProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -352,47 +465,35 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No products found</p>
+              {searchQuery.trim() ? (
+                <>
+                  <p className="text-gray-500 font-medium mb-2">
+                    No products found for "{searchQuery}"
+                  </p>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Try different keywords or check spelling
+                  </p>
+                  <Button variant="outline" onClick={handleClearSearch}>
+                    Clear search & show all products
+                  </Button>
+                </>
+              ) : (
+                <p className="text-muted-foreground">No products found</p>
+              )}
             </div>
           )}
 
-          {/* Pagination - Only show when not searching */}
-          {!searchQuery.trim() &&
-            data?.products &&
-            data.products.length > 0 &&
-            totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-8">
-                <Button
-                  variant="outline"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  Previous
-                </Button>
-                <div className="flex items-center gap-2">
-                  {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                    const pageNum = i + 1;
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={page === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setPage(pageNum)}
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                >
-                  Next
-                </Button>
-              </div>
-            )}
+          {/* ✅ Use PaginationControls component */}
+          {displayProducts.length > 0 && (
+            <PaginationControls
+              currentPage={page}
+              totalResults={totalResults}
+              pageSize={12}
+              onPageChange={setPage}
+              isLoading={isLoading}
+              searchQuery={searchQuery}
+            />
+          )}
         </>
       )}
     </div>
