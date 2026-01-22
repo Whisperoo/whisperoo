@@ -34,7 +34,8 @@ export const ProductPurchasePage: React.FC = () => {
 
   const handlePaymentSuccess = (purchaseId: string) => {
     toast.success("Payment successful! Thank you for your purchase.");
-    navigate(`/my-purchases`);
+    navigate(`/purchase-success/${purchaseId}`);
+    // navigate(`/my-purchases`);
   };
 
   const handlePaymentError = (error: string) => {
