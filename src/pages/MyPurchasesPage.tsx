@@ -27,43 +27,60 @@ export const MyPurchasesPage: React.FC = () => {
   // Helper function for Safari-compatible downloads
   const downloadFileViaFetch = async (fileUrl: string, fileName: string) => {
     try {
-      // Fetch the file with CORS mode
-      const response = await fetch(fileUrl, {
+      console.log(`Trying enhanced download for: ${fileName}`);
+
+      // Add timestamp to bypass cache
+      const cacheBusterUrl = `${fileUrl}${fileUrl.includes("?") ? "&" : "?"}_=${Date.now()}`;
+
+      const response = await fetch(cacheBusterUrl, {
         mode: "cors",
-        credentials: "omit",
+        cache: "no-store",
+        headers: {
+          Accept: "application/pdf, application/octet-stream",
+        },
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      // Get the file as a blob
+      // Force download for PDFs by creating blob
       const blob = await response.blob();
 
-      // Create a blob URL (same origin, so Safari will allow download)
-      const blobUrl = window.URL.createObjectURL(blob);
+      // Create a NEW blob with explicit type
+      const downloadBlob = new Blob([blob], {
+        type: "application/octet-stream", // Force download instead of display
+      });
 
-      // Create temporary anchor
+      const blobUrl = window.URL.createObjectURL(downloadBlob);
       const link = document.createElement("a");
       link.href = blobUrl;
       link.download = fileName;
 
-      // Trigger download
+      // Safari-specific: Need to add to document AND click
       document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
 
-      // Clean up - release the blob URL
+      // Multiple click strategies for Safari
+      link.click();
+
+      // Additional Safari trigger
+      if (
+        navigator.userAgent.includes("Safari") &&
+        !navigator.userAgent.includes("Chrome")
+      ) {
+        const event = new MouseEvent("click", {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+        });
+        link.dispatchEvent(event);
+      }
+
       setTimeout(() => {
+        document.body.removeChild(link);
         window.URL.revokeObjectURL(blobUrl);
       }, 100);
 
       return true;
     } catch (error) {
-      console.error("Fetch download failed:", error);
-
-      // Fallback: Open in new tab if fetch fails
-      console.log("Trying fallback method...");
+      console.error("Download failed:", error);
+      // Final fallback
       window.open(fileUrl, "_blank");
       return false;
     }
@@ -105,6 +122,8 @@ export const MyPurchasesPage: React.FC = () => {
 
       if (data.has_access && data.product?.download_url) {
         // Use Safari-compatible download method
+        console.log("Download URL:", data.product.download_url);
+
         await downloadFileViaFetch(
           data.product.download_url,
           `${data.product.title}.${data.product.product_type === "video" ? "mp4" : "pdf"}`,
