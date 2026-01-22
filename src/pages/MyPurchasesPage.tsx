@@ -107,6 +107,84 @@ export const MyPurchasesPage: React.FC = () => {
     }
   };
 
+  // const handleDownload = async (purchase: any) => {
+  //   if (!user) {
+  //     alert("Please log in to download products.");
+  //     return;
+  //   }
+
+  //   setDownloadingId(purchase.product_id);
+
+  //   try {
+  //     // Get the current session to access the access token
+  //     const {
+  //       data: { session },
+  //     } = await supabase.auth.getSession();
+  //     const accessToken = session?.access_token;
+
+  //     if (!accessToken) {
+  //       alert("Unable to authenticate. Please log in again.");
+  //       return;
+  //     }
+
+  //     const response = await fetch(
+  //       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-purchase`,
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${accessToken}`,
+  //         },
+  //         body: JSON.stringify({ product_id: purchase.product_id }),
+  //       },
+  //     );
+
+  //     if (!response.ok) {
+  //       throw new Error(`Download failed: ${response.status}`);
+  //     }
+
+  //     // Check content type to determine response type
+  //     const contentType = response.headers.get("content-type") || "";
+
+  //     if (contentType.includes("application/json")) {
+  //       // FALLBACK CASE: Edge function returned JSON with URL
+  //       const data = await response.json();
+
+  //       if (data.has_access && data.product?.download_url) {
+  //         console.log(
+  //           "Using fallback download method with URL:",
+  //           data.product.download_url,
+  //         );
+
+  //         await downloadFileViaFetch(
+  //           data.product.download_url,
+  //           `${data.product.title}.${data.product.product_type === "video" ? "mp4" : "pdf"}`,
+  //         );
+  //       } else if (data.has_access && !data.product?.download_url) {
+  //         alert(
+  //           "The product file is being prepared. Please try again in a few moments or contact support if the issue persists.",
+  //         );
+  //       } else {
+  //         alert(`Download failed: ${data.error || "Unable to access product"}`);
+  //       }
+  //     } else {
+  //       // SUCCESS CASE: Edge function returned the actual file
+  //       console.log("Edge function returned file directly");
+  //       console.log("Content-Type:", contentType);
+  //       console.log(
+  //         "Content-Disposition:",
+  //         response.headers.get("content-disposition"),
+  //       );
+
+  //       await downloadFile(response, purchase.product || purchase);
+  //     }
+  //   } catch (error) {
+  //     console.error("Download error:", error);
+  //     alert("Download failed. Please try again or contact support.");
+  //   } finally {
+  //     setDownloadingId(null);
+  //   }
+  // };
   const handleDownload = async (purchase: any) => {
     if (!user) {
       alert("Please log in to download products.");
@@ -116,7 +194,6 @@ export const MyPurchasesPage: React.FC = () => {
     setDownloadingId(purchase.product_id);
 
     try {
-      // Get the current session to access the access token
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -143,40 +220,54 @@ export const MyPurchasesPage: React.FC = () => {
         throw new Error(`Download failed: ${response.status}`);
       }
 
-      // Check content type to determine response type
+      // Check if response is a file or JSON
       const contentType = response.headers.get("content-type") || "";
 
       if (contentType.includes("application/json")) {
-        // FALLBACK CASE: Edge function returned JSON with URL
+        // Fallback case: edge function returned JSON
         const data = await response.json();
 
         if (data.has_access && data.product?.download_url) {
-          console.log(
-            "Using fallback download method with URL:",
-            data.product.download_url,
-          );
-
+          console.log("Using fallback URL:", data.product.download_url);
+          // Use your existing downloadFileViaFetch for fallback
           await downloadFileViaFetch(
             data.product.download_url,
             `${data.product.title}.${data.product.product_type === "video" ? "mp4" : "pdf"}`,
           );
-        } else if (data.has_access && !data.product?.download_url) {
-          alert(
-            "The product file is being prepared. Please try again in a few moments or contact support if the issue persists.",
-          );
         } else {
-          alert(`Download failed: ${data.error || "Unable to access product"}`);
+          alert(data.error || "Download failed");
         }
       } else {
-        // SUCCESS CASE: Edge function returned the actual file
+        // SUCCESS: Edge function returned the file directly
         console.log("Edge function returned file directly");
-        console.log("Content-Type:", contentType);
-        console.log(
-          "Content-Disposition:",
-          response.headers.get("content-disposition"),
-        );
 
-        await downloadFile(response, purchase.product || purchase);
+        // Get the file as blob
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        // Get filename from header or use default
+        const contentDisposition = response.headers.get("content-disposition");
+        let filename = `${purchase.product?.title || "download"}.${
+          purchase.product?.product_type === "video" ? "mp4" : "pdf"
+        }`;
+
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename="(.+)"/);
+          if (match) filename = match[1];
+        }
+
+        // Create and trigger download
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Clean up
+        setTimeout(() => {
+          window.URL.revokeObjectURL(blobUrl);
+        }, 100);
       }
     } catch (error) {
       console.error("Download error:", error);
@@ -185,7 +276,6 @@ export const MyPurchasesPage: React.FC = () => {
       setDownloadingId(null);
     }
   };
-
   const {
     data: purchases,
     isLoading,
