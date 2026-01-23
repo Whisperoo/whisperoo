@@ -37,16 +37,20 @@ const ExpertProfiles: React.FC = () => {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "id, first_name, expert_bio, expert_specialties, expert_experience_years, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified",
-        )
+          "id, first_name, expert_bio, expert_specialties, expert_experience_years, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified, expert_profile_visibility, expert_accepts_new_clients",
+        ) // ✅ Both corrected: visibility & accepts_new_clients
         .eq("account_type", "expert")
         .eq("expert_verified", true)
-        // ✅ FIX: Only show experts who are NOT unavailable
+        // ✅ TRIPLE FILTER with corrected column names
         .neq("expert_availability_status", "unavailable")
+        .eq("expert_profile_visibility", true) // ✅ visibility (not visiability)
+        .eq("expert_accepts_new_clients", true) // ✅ accepts_new_clients (not accept_new_clients)
         .order("expert_rating", { ascending: false });
 
       if (error) throw error;
       setExperts(data || []);
+
+      console.log(`Found ${data?.length || 0} visible experts after filtering`);
     } catch (error) {
       console.error("Error fetching experts:", error);
     } finally {
