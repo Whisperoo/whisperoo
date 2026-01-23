@@ -169,41 +169,80 @@ export const productService = {
   },
 
   // Get single product by ID (unchanged)
+  // async getProduct(productId: string): Promise<ProductWithDetails | null> {
+  //   const { data, error } = await supabase
+  //     .from("products")
+  //     .select(
+  //       `
+  //       *,
+  //       expert:profiles!products_expert_id_fkey(
+  //         id,
+  //         first_name,
+  //         profile_image_url
+  //       ),
+  //       categories:product_category_mappings(
+  //         category:product_categories(*)
+  //       ),
+  //       reviews:product_reviews(*),
+  //       files:product_files(*)
+  //     `,
+  //     )
+  //     .eq("id", productId)
+  //     .eq("is_active", true)
+  //     .single();
+
+  //   if (error) throw error;
+
+  //   const ratings =
+  //     data.reviews?.map((r: { rating: number }) => r.rating).filter(Boolean) ||
+  //     [];
+  //   const averageRating =
+  //     ratings.length > 0
+  //       ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
+  //       : null;
+
+  //   return {
+  //     ...data,
+  //     average_rating: averageRating,
+  //     total_reviews: ratings.length,
+  //     files: data.files || [],
+  //   } as ProductWithDetails;
+  // },
+  // Public product (marketplace, resources)
   async getProduct(productId: string): Promise<ProductWithDetails | null> {
     const { data, error } = await supabase
       .from("products")
       .select(
         `
-        *,
-        expert:profiles!products_expert_id_fkey(
-          id,
-          first_name,
-          profile_image_url
-        ),
-        categories:product_category_mappings(
-          category:product_categories(*)
-        ),
-        reviews:product_reviews(*),
-        files:product_files(*)
-      `,
+      *,
+      expert:profiles!products_expert_id_fkey(
+        id,
+        first_name,
+        profile_image_url
+      ),
+      categories:product_category_mappings(
+        category:product_categories(*)
+      ),
+      reviews:product_reviews(*),
+      files:product_files(*)
+    `,
       )
       .eq("id", productId)
       .eq("is_active", true)
       .single();
 
-    if (error) throw error;
+    if (error) return null;
 
     const ratings =
       data.reviews?.map((r: { rating: number }) => r.rating).filter(Boolean) ||
       [];
-    const averageRating =
-      ratings.length > 0
-        ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
-        : null;
 
     return {
       ...data,
-      average_rating: averageRating,
+      average_rating:
+        ratings.length > 0
+          ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
+          : null,
       total_reviews: ratings.length,
       files: data.files || [],
     } as ProductWithDetails;
@@ -304,66 +343,116 @@ export const productService = {
   },
 
   // Delete a product (soft delete by setting is_active to false)
-  async deleteProduct(productId: string): Promise<void> {
-    // First, clean up all associated files from product_files table
+  // async deleteProduct(productId: string): Promise<void> {
+  //   // First, clean up all associated files from product_files table
+  //   const { data: productFiles } = await supabase
+  //     .from("product_files")
+  //     .select("id, file_url")
+  //     .eq("product_id", productId);
+
+  //   if (productFiles && productFiles.length > 0) {
+  //     // Delete storage files from Cloudflare R2
+  //     try {
+  //       const filePaths = productFiles.map((f) => f.file_url);
+  //       await deleteFiles(filePaths);
+  //     } catch (storageError) {
+  //       console.error("Cloudflare R2 deletion error:", storageError);
+  //       // Continue with database deletion even if storage deletion fails
+  //     }
+
+  //     // Delete database records
+  //     const { error: deleteFilesError } = await supabase
+  //       .from("product_files")
+  //       .delete()
+  //       .eq("product_id", productId);
+
+  //     if (deleteFilesError) throw deleteFilesError;
+  //   }
+
+  //   // Also handle legacy file_url in products table
+  //   const { data: product } = await supabase
+  //     .from("products")
+  //     .select("file_url, thumbnail_url, expert_id")
+  //     .eq("id", productId)
+  //     .single();
+
+  //   if (product?.file_url) {
+  //     try {
+  //       await deleteFile(product.file_url);
+  //     } catch (legacyStorageError) {
+  //       console.error(
+  //         "Legacy Cloudflare R2 deletion error:",
+  //         legacyStorageError,
+  //       );
+  //     }
+  //   }
+
+  //   // Delete thumbnail if exists
+  //   if (product?.thumbnail_url) {
+  //     try {
+  //       await deleteFile(product.thumbnail_url);
+  //     } catch (thumbnailError) {
+  //       console.error(
+  //         "Thumbnail Cloudflare R2 deletion error:",
+  //         thumbnailError,
+  //       );
+  //     }
+  //   }
+
+  //   // Then soft delete the product
+  //   const { error } = await supabase
+  //     .from("products")
+  //     .update({ is_active: false })
+  //     .eq("id", productId);
+
+  //   if (error) throw error;
+  // },
+  // HARD DELETE — irreversible
+  async deleteProductPermanently(productId: string): Promise<void> {
+    // 1. Delete product_files
     const { data: productFiles } = await supabase
       .from("product_files")
-      .select("id, file_url")
+      .select("file_url")
       .eq("product_id", productId);
 
-    if (productFiles && productFiles.length > 0) {
-      // Delete storage files from Cloudflare R2
-      try {
-        const filePaths = productFiles.map((f) => f.file_url);
-        await deleteFiles(filePaths);
-      } catch (storageError) {
-        console.error("Cloudflare R2 deletion error:", storageError);
-        // Continue with database deletion even if storage deletion fails
-      }
-
-      // Delete database records
-      const { error: deleteFilesError } = await supabase
-        .from("product_files")
-        .delete()
-        .eq("product_id", productId);
-
-      if (deleteFilesError) throw deleteFilesError;
+    if (productFiles?.length) {
+      await deleteFiles(productFiles.map((f) => f.file_url));
+      await supabase.from("product_files").delete().eq("product_id", productId);
     }
 
-    // Also handle legacy file_url in products table
+    // 2. Delete legacy files
     const { data: product } = await supabase
       .from("products")
-      .select("file_url, thumbnail_url, expert_id")
+      .select("file_url, thumbnail_url")
       .eq("id", productId)
       .single();
 
-    if (product?.file_url) {
-      try {
-        await deleteFile(product.file_url);
-      } catch (legacyStorageError) {
-        console.error(
-          "Legacy Cloudflare R2 deletion error:",
-          legacyStorageError,
-        );
-      }
-    }
+    if (product?.file_url) await deleteFile(product.file_url);
+    if (product?.thumbnail_url) await deleteFile(product.thumbnail_url);
 
-    // Delete thumbnail if exists
-    if (product?.thumbnail_url) {
-      try {
-        await deleteFile(product.thumbnail_url);
-      } catch (thumbnailError) {
-        console.error(
-          "Thumbnail Cloudflare R2 deletion error:",
-          thumbnailError,
-        );
-      }
-    }
+    // 3. HARD DELETE PRODUCT ROW
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", productId);
 
-    // Then soft delete the product
+    if (error) throw error;
+  },
+  // Deactivate product (soft hide)
+  async deactivateProduct(productId: string): Promise<void> {
     const { error } = await supabase
       .from("products")
       .update({ is_active: false })
+      .eq("id", productId);
+
+    if (error) throw error;
+  },
+
+  // Reactivate product
+  async activateProduct(productId: string): Promise<void> {
+    const { error } = await supabase
+      .from("products")
+      .update({ is_active: true })
       .eq("id", productId);
 
     if (error) throw error;
@@ -537,54 +626,95 @@ export const productService = {
 
   // Get expert's products
   // Note: expertId is profiles.id where account_type = 'expert'
+  // async getExpertProducts(expertId: string): Promise<ProductWithDetails[]> {
+  //   // Query expert's active products only (exclude deleted/inactive products)
+  //   const query = supabase
+  //     .from("products")
+  //     .select(
+  //       `
+  //       *,
+  //       expert:profiles!products_expert_id_fkey(
+  //         id,
+  //         first_name,
+  //         profile_image_url
+  //       ),
+  //       categories:product_category_mappings(
+  //         category:product_categories(*)
+  //       ),
+  //       reviews:product_reviews(rating),
+  //       files:product_files(*)
+  //     `,
+  //     )
+  //     .eq("expert_id", expertId)
+  //     .eq("is_active", true)
+  //     .order("created_at", { ascending: false });
+
+  //   const { data, error } = await query;
+
+  //   if (error) throw error;
+
+  //   // Calculate average ratings
+  //   const productsWithRatings =
+  //     data?.map((product) => {
+  //       const ratings =
+  //         product.reviews
+  //           ?.map((r: { rating: number }) => r.rating)
+  //           .filter(Boolean) || [];
+  //       const averageRating =
+  //         ratings.length > 0
+  //           ? ratings.reduce((a: number, b: number) => a + b, 0) /
+  //             ratings.length
+  //           : null;
+
+  //       return {
+  //         ...product,
+  //         average_rating: averageRating,
+  //         total_reviews: ratings.length,
+  //       };
+  //     }) || [];
+
+  //   return productsWithRatings as ProductWithDetails[];
+  // },
   async getExpertProducts(expertId: string): Promise<ProductWithDetails[]> {
-    // Query expert's active products only (exclude deleted/inactive products)
-    const query = supabase
+    const { data, error } = await supabase
       .from("products")
       .select(
         `
-        *,
-        expert:profiles!products_expert_id_fkey(
-          id,
-          first_name,
-          profile_image_url
-        ),
-        categories:product_category_mappings(
-          category:product_categories(*)
-        ),
-        reviews:product_reviews(rating),
-        files:product_files(*)
-      `,
+      *,
+      expert:profiles!products_expert_id_fkey(
+        id,
+        first_name,
+        profile_image_url
+      ),
+      categories:product_category_mappings(
+        category:product_categories(*)
+      ),
+      reviews:product_reviews(rating),
+      files:product_files(*)
+    `,
       )
       .eq("expert_id", expertId)
-      .eq("is_active", true)
+      // ❗ DO NOT filter by is_active
       .order("created_at", { ascending: false });
-
-    const { data, error } = await query;
 
     if (error) throw error;
 
-    // Calculate average ratings
-    const productsWithRatings =
-      data?.map((product) => {
-        const ratings =
-          product.reviews
-            ?.map((r: { rating: number }) => r.rating)
-            .filter(Boolean) || [];
-        const averageRating =
+    return (data?.map((product) => {
+      const ratings =
+        product.reviews
+          ?.map((r: { rating: number }) => r.rating)
+          .filter(Boolean) || [];
+
+      return {
+        ...product,
+        average_rating:
           ratings.length > 0
             ? ratings.reduce((a: number, b: number) => a + b, 0) /
               ratings.length
-            : null;
-
-        return {
-          ...product,
-          average_rating: averageRating,
-          total_reviews: ratings.length,
-        };
-      }) || [];
-
-    return productsWithRatings as ProductWithDetails[];
+            : null,
+        total_reviews: ratings.length,
+      };
+    }) || []) as ProductWithDetails[];
   },
 
   // Get product files
