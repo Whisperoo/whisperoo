@@ -172,6 +172,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [filters, setFilters] = useState<ProductFilters>({
     ...initialFilters,
     expertId,
@@ -292,8 +293,19 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
   return (
     <div className="space-y-6">
+      <div className="flex md:hidden">
+        <h2 className="text-[22px] font-semibold text-[#1C3263]">
+          All Resources
+        </h2>
+        <button
+          className="ml-auto"
+          onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
+        >
+          <img src="/filter.svg" />
+        </button>
+      </div>
       {showFilters && (
-        <div className="space-y-4">
+        <div className={`space-y-4 ${!mobileFilterOpen && "hidden"} md:block `}>
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="relative flex-1">
