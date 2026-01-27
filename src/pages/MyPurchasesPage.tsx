@@ -353,13 +353,13 @@ export const MyPurchasesPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto p-6 max-w-7xl">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">My Content</h1>
-          <p className="text-gray-600 text-lg">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-[#1C3263] mb-2">My Content</h1>
+          <p className="text-black text-lg">
             Your purchased expert resources and consultation bookings
           </p>
           {purchases && purchases.length > 0 && (
-            <div className="mt-4 text-sm text-gray-500">
+            <div className="mt-4 hidden md:block text-sm text-gray-500">
               {contentPurchases.length} content{" "}
               {contentPurchases.length === 1 ? "item" : "items"} •{" "}
               {consultations.length}{" "}
