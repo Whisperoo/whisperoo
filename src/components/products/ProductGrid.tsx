@@ -20,6 +20,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { CardProduct } from "../content/product-card";
 
 interface ProductGridProps {
   expertId?: string;
@@ -134,9 +135,9 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
         ))}
 
         {/* Last page button if needed */}
-        {pageNumbers[pageNumbers.length - 1] < totalPages && (
+        {pageNumbers[pageNumbers?.length - 1] < totalPages && (
           <>
-            {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && (
+            {pageNumbers[pageNumbers?.length - 1] < totalPages - 1 && (
               <span className="px-2 text-gray-400">...</span>
             )}
             <Button
@@ -459,11 +460,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       ) : (
         <>
           {/* Always use server-filtered products */}
-          {displayProducts.length > 0 ? (
+          {displayProducts?.length > 0 ? (
             <div
               className={
                 viewMode === "grid"
-                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                   : "space-y-4"
               }
             >
@@ -496,7 +497,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           )}
 
           {/* ✅ Use PaginationControls component */}
-          {displayProducts.length > 0 && (
+          {displayProducts?.length > 0 && (
             <PaginationControls
               currentPage={page}
               totalResults={totalResults}
