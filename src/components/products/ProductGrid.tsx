@@ -308,7 +308,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       {showFilters && (
         <div className={`space-y-4 ${!mobileFilterOpen && "hidden"} md:block `}>
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="flex gap-2">
+          <form onSubmit={handleSearch} className="flex gap-2 items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -328,7 +328,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                 </button>
               )}
             </div>
-            <Button type="submit">Search</Button>
+            <Button type="submit" size="lg">
+              Search
+            </Button>
           </form>
 
           {/* Search Results Header */}
