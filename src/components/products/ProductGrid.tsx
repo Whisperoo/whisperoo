@@ -424,7 +424,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             </Select>
 
             {/* View Mode Toggle */}
-            <div className="ml-auto flex gap-2">
+            <div className=" hidden ml-auto md:flex gap-2">
               <Button
                 variant={viewMode === "grid" ? "default" : "outline"}
                 size="icon"

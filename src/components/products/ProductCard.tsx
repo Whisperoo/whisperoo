@@ -341,7 +341,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               : "none",
         }}
       >
-        {product.product_type === "video" ? (
+        {/* {product.product_type === "video" ? (
           <div className="flex flex-col items-center">
             <div className="relative">
               <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-xl">
@@ -374,7 +374,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </div>
             <p className="text-sm font-semibold text-gray-700 mt-1">Document</p>
           </div>
-        )}
+        )} */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent to-[70.707%] rounded-tl-[16px] rounded-tr-[16px]" />
         <div className="absolute inset-0 flex items-start justify-between p-4 rounded-tl-[16px] rounded-tr-[16px]">
           {/* Product Type Badge */}
