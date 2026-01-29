@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -400,9 +400,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Title Section */}
         <div className="flex flex-col gap-3 w-full">
           {/* Title */}
-          <h2 className="font-semibold text-[18px] leading-normal text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
+          <Link
+            to={`/products/${product.id}`}
+            className="font-semibold text-[18px] leading-normal text-[#393939] font-['Plus_Jakarta_Sans'] truncate"
+          >
             {product.title}
-          </h2>
+          </Link>
 
           {/* Description */}
           <p className="font-normal text-[14px] leading-[19.6px] text-[#111111] font-['Plus_Jakarta_Sans'] line-clamp-3 break-words">
@@ -458,13 +461,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           {/* Purchase Button */}
-          <Button
-            onClick={handlePurchaseClick}
-            disabled={isFreeProduct && (isSaved || isCheckingStatus)}
-            className="w-full bg-[#2E54A5] hover:bg-blue-700 text-[#E7ECFA] font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans'] mt-2"
-          >
-            Purchase
-          </Button>
+          {isFreeProduct &&
+          isSaved &&
+          product.product_type !== "consultation" ? (
+            <Link
+              to={`/my-purchases`}
+              className="w-full bg-[#2E54A5] hover:bg-blue-700 text-[#E7ECFA] font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans'] mt-2 flex items-center justify-center"
+            >
+              View
+            </Link>
+          ) : (
+            <Button
+              onClick={handlePurchaseClick}
+              disabled={isFreeProduct && (isSaved || isCheckingStatus)}
+              className="w-full bg-[#2E54A5] hover:bg-blue-700 text-[#E7ECFA] font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans'] mt-2"
+            >
+              {isFreeProduct ? (isSaved ? "View" : "Save") : " Purchase"}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

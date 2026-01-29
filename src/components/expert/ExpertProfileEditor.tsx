@@ -1,7 +1,7 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Form,
   FormControl,
@@ -10,88 +10,98 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Eye, CheckCircle, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useState, useMemo } from 'react';
-import AvatarUpload from '@/components/ui/AvatarUpload';
-import { useNavigate } from 'react-router-dom';
-import { Progress } from '@/components/ui/progress';
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { X, Eye, CheckCircle, AlertCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useState, useMemo } from "react";
+import AvatarUpload from "@/components/ui/AvatarUpload";
+import { useNavigate } from "react-router-dom";
+import { Progress } from "@/components/ui/progress";
 
 const expertProfileSchema = z.object({
-  first_name: z.string().min(1, 'First name is required'),
-  expert_bio: z.string().min(50, 'Bio must be at least 50 characters'),
-  expert_experience_years: z.number().min(0, 'Experience must be 0 or more years'),
-  expert_consultation_rate: z.number().min(0, 'Rate must be 0 or more'),
-  expert_availability_status: z.enum(['available', 'busy', 'unavailable']),
+  first_name: z.string().min(1, "First name is required"),
+  expert_bio: z.string().min(50, "Bio must be at least 50 characters"),
+  expert_experience_years: z
+    .number()
+    .min(0, "Experience must be 0 or more years"),
+  expert_consultation_rate: z.number().min(0, "Rate must be 0 or more"),
+  expert_availability_status: z.enum(["available", "busy", "unavailable"]),
 });
 
 type ExpertProfileFormData = z.infer<typeof expertProfileSchema>;
 
 const COMMON_SPECIALTIES = [
-  'Child Development',
-  'Parenting Strategies',
-  'Sleep Training',
-  'Nutrition',
-  'Behavioral Issues',
-  'Newborn Care',
-  'Breastfeeding',
-  'Potty Training',
-  'Educational Development',
-  'Special Needs',
-  'Mental Health',
-  'Family Dynamics',
-  'Discipline Strategies',
+  "Child Development",
+  "Parenting Strategies",
+  "Sleep Training",
+  "Nutrition",
+  "Behavioral Issues",
+  "Newborn Care",
+  "Breastfeeding",
+  "Potty Training",
+  "Educational Development",
+  "Special Needs",
+  "Mental Health",
+  "Family Dynamics",
+  "Discipline Strategies",
 ];
 
 const COMMON_CREDENTIALS = [
-  'Licensed Family Therapist (LFT)',
-  'Licensed Clinical Social Worker (LCSW)',
-  'Licensed Professional Counselor (LPC)',
-  'Licensed Marriage and Family Therapist (LMFT)',
-  'Board Certified Pediatrician',
-  'Registered Nurse (RN)',
-  'Certified Lactation Consultant',
-  'Certified Parenting Coach',
-  'Child Development Associate (CDA)',
-  'Child Development Specialist',
-  'Master\'s in Child Psychology',
-  'PhD in Developmental Psychology',
-  'Certified Sleep Consultant',
-  'Certified Pediatric Sleep Consultant',
+  "Licensed Family Therapist (LFT)",
+  "Licensed Clinical Social Worker (LCSW)",
+  "Licensed Professional Counselor (LPC)",
+  "Licensed Marriage and Family Therapist (LMFT)",
+  "Board Certified Pediatrician",
+  "Registered Nurse (RN)",
+  "Certified Lactation Consultant",
+  "Certified Parenting Coach",
+  "Child Development Associate (CDA)",
+  "Child Development Specialist",
+  "Master's in Child Psychology",
+  "PhD in Developmental Psychology",
+  "Certified Sleep Consultant",
+  "Certified Pediatric Sleep Consultant",
 ];
 
 export const ExpertProfileEditor: React.FC = () => {
   const { profile, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [specialties, setSpecialties] = useState<string[]>(profile?.expert_specialties || []);
-  const [credentials, setCredentials] = useState<string[]>(profile?.expert_credentials || []);
-  const [newSpecialty, setNewSpecialty] = useState('');
-  const [newCredential, setNewCredential] = useState('');
-  const [customSpecialty, setCustomSpecialty] = useState('');
-  const [customCredential, setCustomCredential] = useState('');
+  const [specialties, setSpecialties] = useState<string[]>(
+    profile?.expert_specialties || [],
+  );
+  const [credentials, setCredentials] = useState<string[]>(
+    profile?.expert_credentials || [],
+  );
+  const [newSpecialty, setNewSpecialty] = useState("");
+  const [newCredential, setNewCredential] = useState("");
+  const [customSpecialty, setCustomSpecialty] = useState("");
+  const [customCredential, setCustomCredential] = useState("");
 
   const form = useForm<ExpertProfileFormData>({
     resolver: zodResolver(expertProfileSchema),
     defaultValues: {
-      first_name: profile?.first_name || '',
-      expert_bio: profile?.expert_bio || '',
+      first_name: profile?.first_name || "",
+      expert_bio: profile?.expert_bio || "",
       expert_experience_years: profile?.expert_experience_years || 0,
       expert_consultation_rate: profile?.expert_consultation_rate || 0,
-      expert_availability_status: (profile?.expert_availability_status as 'available' | 'busy' | 'unavailable') || 'available',
+      expert_availability_status:
+        (profile?.expert_availability_status as
+          | "available"
+          | "busy"
+          | "unavailable") || "available",
     },
   });
 
@@ -106,13 +116,13 @@ export const ExpertProfileEditor: React.FC = () => {
 
       const { error } = await updateProfile(updates);
       if (error) {
-        console.error('Profile update error:', error);
+        console.error("Profile update error:", error);
       } else {
         // Show success message
-        console.log('Profile updated successfully');
+        console.log("Profile updated successfully");
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
     } finally {
       setIsLoading(false);
     }
@@ -121,56 +131,87 @@ export const ExpertProfileEditor: React.FC = () => {
   const addSpecialty = (specialty: string) => {
     if (specialty && !specialties.includes(specialty)) {
       setSpecialties([...specialties, specialty]);
-      setNewSpecialty('');
-      setCustomSpecialty('');
+      setNewSpecialty("");
+      setCustomSpecialty("");
     }
   };
 
   const removeSpecialty = (specialty: string) => {
-    setSpecialties(specialties.filter(s => s !== specialty));
+    setSpecialties(specialties.filter((s) => s !== specialty));
   };
 
   const addCredential = (credential: string) => {
     if (credential && !credentials.includes(credential)) {
       setCredentials([...credentials, credential]);
-      setNewCredential('');
-      setCustomCredential('');
+      setNewCredential("");
+      setCustomCredential("");
     }
   };
 
   const removeCredential = (credential: string) => {
-    setCredentials(credentials.filter(c => c !== credential));
+    setCredentials(credentials.filter((c) => c !== credential));
   };
 
   const handlePreviewProfile = () => {
     if (profile?.id) {
       // Open expert profile in new tab to preview
-      window.open(`/experts/${profile.id}`, '_blank');
+      window.open(`/experts/${profile.id}`, "_blank");
     }
   };
 
   // Calculate profile completeness
   const profileCompleteness = useMemo(() => {
-    if (!profile) return { percentage: 0, completedItems: [], missingItems: [] };
+    if (!profile)
+      return { percentage: 0, completedItems: [], missingItems: [] };
 
     const items = [
-      { key: 'profile_image', completed: !!profile.profile_image_url, label: 'Profile Photo' },
-      { key: 'first_name', completed: !!profile.first_name, label: 'Name' },
-      { key: 'expert_bio', completed: !!profile.expert_bio && profile.expert_bio.length >= 50, label: 'Professional Bio (50+ characters)' },
-      { key: 'expert_specialties', completed: !!profile.expert_specialties && profile.expert_specialties.length > 0, label: 'Areas of Specialization' },
-      { key: 'expert_credentials', completed: !!profile.expert_credentials && profile.expert_credentials.length > 0, label: 'Professional Credentials' },
-      { key: 'expert_experience_years', completed: !!profile.expert_experience_years && profile.expert_experience_years > 0, label: 'Years of Experience' },
-      { key: 'expert_consultation_rate', completed: !!profile.expert_consultation_rate && profile.expert_consultation_rate > 0, label: 'Consultation Rate' },
+      {
+        key: "profile_image",
+        completed: !!profile.profile_image_url,
+        label: "Profile Photo",
+      },
+      { key: "first_name", completed: !!profile.first_name, label: "Name" },
+      {
+        key: "expert_bio",
+        completed: !!profile.expert_bio && profile.expert_bio.length >= 50,
+        label: "Professional Bio (50+ characters)",
+      },
+      {
+        key: "expert_specialties",
+        completed:
+          !!profile.expert_specialties && profile.expert_specialties.length > 0,
+        label: "Areas of Specialization",
+      },
+      {
+        key: "expert_credentials",
+        completed:
+          !!profile.expert_credentials && profile.expert_credentials.length > 0,
+        label: "Professional Credentials",
+      },
+      {
+        key: "expert_experience_years",
+        completed:
+          !!profile.expert_experience_years &&
+          profile.expert_experience_years > 0,
+        label: "Years of Experience",
+      },
+      {
+        key: "expert_consultation_rate",
+        completed:
+          !!profile.expert_consultation_rate &&
+          profile.expert_consultation_rate > 0,
+        label: "Consultation Rate",
+      },
     ];
 
-    const completedItems = items.filter(item => item.completed);
-    const missingItems = items.filter(item => !item.completed);
+    const completedItems = items.filter((item) => item.completed);
+    const missingItems = items.filter((item) => !item.completed);
     const percentage = Math.round((completedItems.length / items.length) * 100);
 
     return { percentage, completedItems, missingItems };
   }, [profile]);
 
-  if (!profile || profile.account_type !== 'expert') {
+  if (!profile || profile.account_type !== "expert") {
     return (
       <Card>
         <CardContent className="p-6">
@@ -190,14 +231,21 @@ export const ExpertProfileEditor: React.FC = () => {
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Profile Completeness</span>
-            <span className="text-sm font-semibold">{profileCompleteness.percentage}%</span>
+            <span className="text-sm font-semibold">
+              {profileCompleteness.percentage}%
+            </span>
           </div>
           <Progress value={profileCompleteness.percentage} className="mb-3" />
           {profileCompleteness.missingItems.length > 0 && (
             <div className="space-y-1">
-              <p className="text-sm text-gray-600 font-medium">Complete your profile to attract more families:</p>
+              <p className="text-sm text-gray-600 font-medium">
+                Complete your profile to attract more families:
+              </p>
               {profileCompleteness.missingItems.map((item) => (
-                <div key={item.key} className="flex items-center text-sm text-gray-600">
+                <div
+                  key={item.key}
+                  className="flex items-center text-sm text-gray-600"
+                >
                   <AlertCircle className="h-3 w-3 mr-2 text-amber-500" />
                   {item.label}
                 </div>
@@ -220,7 +268,8 @@ export const ExpertProfileEditor: React.FC = () => {
               <h3 className="text-lg font-medium mb-4">Profile Photo</h3>
               <AvatarUpload className="mb-2" />
               <p className="text-sm text-gray-600 text-center max-w-md">
-                Upload a professional headshot. This image will be visible to families browsing expert profiles.
+                Upload a professional headshot. This image will be visible to
+                families browsing expert profiles.
               </p>
             </div>
 
@@ -250,7 +299,9 @@ export const ExpertProfileEditor: React.FC = () => {
                       <Input
                         type="number"
                         {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value))
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -274,7 +325,8 @@ export const ExpertProfileEditor: React.FC = () => {
                     />
                   </FormControl>
                   <FormDescription>
-                    Describe your expertise, approach, and what makes you unique as a parenting expert.
+                    Describe your expertise, approach, and what makes you unique
+                    as a parenting expert.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -287,7 +339,11 @@ export const ExpertProfileEditor: React.FC = () => {
               <div className="space-y-3 mt-2">
                 <div className="flex flex-wrap gap-2">
                   {specialties.map((specialty) => (
-                    <Badge key={specialty} variant="secondary" className="gap-1">
+                    <Badge
+                      key={specialty}
+                      variant="secondary"
+                      className="gap-1"
+                    >
                       {specialty}
                       <X
                         className="h-3 w-3 cursor-pointer"
@@ -296,14 +352,16 @@ export const ExpertProfileEditor: React.FC = () => {
                     </Badge>
                   ))}
                 </div>
-                
+
                 <div className="flex gap-2">
                   <Select value={newSpecialty} onValueChange={setNewSpecialty}>
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Choose a specialty" />
                     </SelectTrigger>
                     <SelectContent>
-                      {COMMON_SPECIALTIES.filter(s => !specialties.includes(s)).map((specialty) => (
+                      {COMMON_SPECIALTIES.filter(
+                        (s) => !specialties.includes(s),
+                      ).map((specialty) => (
                         <SelectItem key={specialty} value={specialty}>
                           {specialty}
                         </SelectItem>
@@ -319,14 +377,14 @@ export const ExpertProfileEditor: React.FC = () => {
                     Add
                   </Button>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <Input
                     placeholder="Or add custom specialty"
                     value={customSpecialty}
                     onChange={(e) => setCustomSpecialty(e.target.value)}
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         e.preventDefault();
                         addSpecialty(customSpecialty);
                       }
@@ -350,7 +408,11 @@ export const ExpertProfileEditor: React.FC = () => {
               <div className="space-y-3 mt-2">
                 <div className="flex flex-wrap gap-2">
                   {credentials.map((credential) => (
-                    <Badge key={credential} variant="secondary" className="gap-1">
+                    <Badge
+                      key={credential}
+                      variant="secondary"
+                      className="gap-1"
+                    >
                       {credential}
                       <X
                         className="h-3 w-3 cursor-pointer"
@@ -359,14 +421,19 @@ export const ExpertProfileEditor: React.FC = () => {
                     </Badge>
                   ))}
                 </div>
-                
+
                 <div className="flex gap-2">
-                  <Select value={newCredential} onValueChange={setNewCredential}>
+                  <Select
+                    value={newCredential}
+                    onValueChange={setNewCredential}
+                  >
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Choose a credential" />
                     </SelectTrigger>
                     <SelectContent>
-                      {COMMON_CREDENTIALS.filter(c => !credentials.includes(c)).map((credential) => (
+                      {COMMON_CREDENTIALS.filter(
+                        (c) => !credentials.includes(c),
+                      ).map((credential) => (
                         <SelectItem key={credential} value={credential}>
                           {credential}
                         </SelectItem>
@@ -382,14 +449,14 @@ export const ExpertProfileEditor: React.FC = () => {
                     Add
                   </Button>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <Input
                     placeholder="Or add custom credential"
                     value={customCredential}
                     onChange={(e) => setCustomCredential(e.target.value)}
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         e.preventDefault();
                         addCredential(customCredential);
                       }
@@ -421,7 +488,9 @@ export const ExpertProfileEditor: React.FC = () => {
                         step="0.01"
                         placeholder="0.00"
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        onChange={(e) =>
+                          field.onChange(parseFloat(e.target.value))
+                        }
                       />
                     </FormControl>
                     <FormDescription>
@@ -456,15 +525,19 @@ export const ExpertProfileEditor: React.FC = () => {
               />
             </div>
 
-            <div className="flex gap-3">
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save Profile'}
+            <div className="flex flex-wrap md:flex-nowrap gap-3">
+              <Button
+                className="w-full md:w-fit"
+                type="submit"
+                disabled={isLoading}
+              >
+                {isLoading ? "Saving..." : "Save Profile"}
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handlePreviewProfile}
-                className="gap-2"
+                className="gap-2 w-full md:w-fit"
               >
                 <Eye className="h-4 w-4" />
                 Preview Profile
