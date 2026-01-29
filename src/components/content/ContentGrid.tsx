@@ -382,12 +382,11 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
             {/* Actions */}
             {/* Actions - UPDATED WITH DOWNLOAD BUTTON */}
             <CardFooter className="p-0 pl-4 pb-4 pr-4 pt-3">
-              <div className="w-full grid grid-cols-2 gap-2">
+              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
                 {/* View Content Button */}
                 {purchase.product && (
                   <Button
                     onClick={() => handlePreview(purchase.product!)}
-                    size="sm"
                     variant="outline"
                     className="w-full border-gray-300 font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans']"
                   >

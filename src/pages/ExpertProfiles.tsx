@@ -129,7 +129,7 @@ const ExpertProfiles: React.FC = () => {
           <select
             value={selectedSpecialty}
             onChange={(e) => setSelectedSpecialty(e.target.value)}
-            className="px-4 py-2 bg-white border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-4 w-full md:w-fit py-2 bg-white border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">All Specialties</option>
             {specialties
