@@ -54,6 +54,129 @@ export interface ProductFilters {
 export const productService = {
   // Get products with filters and search
   // In productService.ts - Updated getProducts method
+  // async getProducts(
+  //   filters: ProductFilters = {},
+  //   page = 1,
+  //   limit = 12,
+  // ): Promise<{
+  //   products: ProductWithDetails[];
+  //   total: number;
+  //   hasMore: boolean;
+  // }> {
+  //   // ← Add hasMore flag
+  //   let query = supabase
+  //     .from("products")
+  //     .select(
+  //       `
+  //     *,
+  //     expert:profiles!products_expert_id_fkey(
+  //       id,
+  //       first_name,
+  //       profile_image_url,
+  //       expert_specialties
+  //     ),
+  //     categories:product_category_mappings(
+  //       category:product_categories(*)
+  //     ),
+  //     reviews:product_reviews(rating)
+  //   `,
+  //       { count: "exact" },
+  //     )
+  //     .eq("is_active", true);
+
+  //   // Apply search filter
+  //   // if (filters.searchQuery && filters.searchQuery.trim()) {
+  //   //   const searchTerm = `%${filters.searchQuery.trim()}%`;
+  //   //   query = query.or(
+  //   //     `title.ilike.${searchTerm},description.ilike.${searchTerm}`,
+  //   //   );
+  //   // }
+  //   if (filters.searchQuery && filters.searchQuery.trim()) {
+  //     const searchTerm = `%${filters.searchQuery.trim()}%`;
+
+  //     // Try this syntax - separate .or() calls
+  //     query = query
+  //       .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
+  //       .or(`expert.first_name.ilike.${searchTerm}`);
+  //   }
+
+  //   // Apply other filters...
+  //   if (filters.expertId) query = query.eq("expert_id", filters.expertId);
+  //   if (filters.productType)
+  //     query = query.eq("product_type", filters.productType);
+  //   if (filters.minPrice !== undefined)
+  //     query = query.gte("price", filters.minPrice);
+  //   if (filters.maxPrice !== undefined)
+  //     query = query.lte("price", filters.maxPrice);
+
+  //   // Apply sorting
+  //   const sortBy = filters.sortBy || "created_at";
+  //   const sortOrder = filters.sortOrder || "desc";
+  //   query = query.order(sortBy, { ascending: sortOrder === "asc" });
+
+  //   // ✅ CRITICAL FIX: Only apply range if we have enough results
+  //   const start = (page - 1) * limit;
+
+  //   // Apply pagination
+  //   query = query.range(start, start + limit - 1);
+
+  //   const { data, error, count } = await query;
+
+  //   if (error) {
+  //     // Handle 416 error gracefully
+  //     if (
+  //       error.code === "PGRST116" ||
+  //       error.message?.includes("Range Not Satisfiable")
+  //     ) {
+  //       console.log("No more results available for this page");
+  //       return {
+  //         products: [],
+  //         total: count || 0,
+  //         hasMore: false,
+  //       };
+  //     }
+  //     throw error;
+  //   }
+
+  //   // Calculate average ratings...
+  //   const productsWithRatings = (data || []).map((product) => {
+  //     const ratings =
+  //       product.reviews
+  //         ?.map((r: { rating: number }) => r.rating)
+  //         .filter(Boolean) || [];
+  //     const averageRating =
+  //       ratings.length > 0
+  //         ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
+  //         : null;
+
+  //     return {
+  //       ...product,
+  //       average_rating: averageRating,
+  //       total_reviews: ratings.length,
+  //     };
+  //   });
+
+  //   // Filter by category if specified...
+  //   let filteredProducts = productsWithRatings;
+  //   if (filters.category) {
+  //     filteredProducts = productsWithRatings.filter((product) =>
+  //       product.categories?.some(
+  //         (c: { category?: { slug: string } }) =>
+  //           c.category?.slug === filters.category,
+  //       ),
+  //     );
+  //   }
+
+  //   // ✅ Calculate if there are more pages
+  //   const totalResults = count || 0;
+  //   const hasMore = start + limit < totalResults;
+
+  //   return {
+  //     products: filteredProducts as ProductWithDetails[],
+  //     total: totalResults,
+  //     hasMore, // ← This tells frontend if there's a next page
+  //   };
+  // },
   async getProducts(
     filters: ProductFilters = {},
     page = 1,
@@ -63,7 +186,142 @@ export const productService = {
     total: number;
     hasMore: boolean;
   }> {
-    // ← Add hasMore flag
+    const searchTerm = filters.searchQuery?.trim();
+
+    // If we have a search query, use the RPC function
+    if (searchTerm) {
+      try {
+        // Call the RPC function
+        const { data: rpcProducts, error: rpcError } = await supabase.rpc(
+          "search_products_with_experts",
+          {
+            search_term: searchTerm,
+          },
+        );
+
+        if (rpcError) {
+          console.error("RPC error:", rpcError);
+          throw rpcError;
+        }
+
+        // If no results from RPC, return empty
+        if (!rpcProducts || rpcProducts.length === 0) {
+          return {
+            products: [],
+            total: 0,
+            hasMore: false,
+          };
+        }
+
+        // Extract IDs from RPC results
+        const productIds = rpcProducts.map((p: any) => p.id);
+
+        // Apply pagination to the IDs
+        const start = (page - 1) * limit;
+        const end = start + limit - 1;
+        const paginatedIds = productIds.slice(start, end + 1);
+
+        // If paginatedIds is empty (page out of range), return empty
+        if (paginatedIds.length === 0) {
+          return {
+            products: [],
+            total: productIds.length,
+            hasMore: end < productIds.length - 1,
+          };
+        }
+
+        // Fetch full product details for the paginated IDs
+        let query = supabase
+          .from("products")
+          .select(
+            `
+          *,
+          expert:profiles!products_expert_id_fkey(
+            id,
+            first_name,
+            profile_image_url,
+            expert_specialties
+          ),
+          categories:product_category_mappings(
+            category:product_categories(*)
+          ),
+          reviews:product_reviews(rating)
+        `,
+          )
+          .in("id", paginatedIds)
+          .eq("is_active", true);
+
+        // Apply other filters
+        if (filters.productType) {
+          query = query.eq("product_type", filters.productType);
+        }
+        if (filters.minPrice !== undefined) {
+          query = query.gte("price", filters.minPrice);
+        }
+        if (filters.maxPrice !== undefined) {
+          query = query.lte("price", filters.maxPrice);
+        }
+        if (filters.expertId) {
+          query = query.eq("expert_id", filters.expertId);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        // Calculate average ratings
+        const productsWithRatings = (data || []).map((product) => {
+          const ratings =
+            product.reviews
+              ?.map((r: { rating: number }) => r.rating)
+              .filter(Boolean) || [];
+          const averageRating =
+            ratings.length > 0
+              ? ratings.reduce((a: number, b: number) => a + b, 0) /
+                ratings.length
+              : null;
+
+          return {
+            ...product,
+            average_rating: averageRating,
+            total_reviews: ratings.length,
+          };
+        });
+
+        // Filter by category if specified (client-side for RPC results)
+        let filteredProducts = productsWithRatings;
+        if (filters.category) {
+          filteredProducts = productsWithRatings.filter((product) =>
+            product.categories?.some(
+              (c: { category?: { slug: string } }) =>
+                c.category?.slug === filters.category,
+            ),
+          );
+        }
+
+        // Reorder to match the original RPC order
+        filteredProducts.sort((a, b) => {
+          const indexA = productIds.indexOf(a.id);
+          const indexB = productIds.indexOf(b.id);
+          return indexA - indexB;
+        });
+
+        const hasMore = end < productIds.length - 1;
+
+        return {
+          products: filteredProducts as ProductWithDetails[],
+          total: productIds.length,
+          hasMore,
+        };
+      } catch (error) {
+        console.error(
+          "RPC search failed, falling back to regular query:",
+          error,
+        );
+        // Fall through to regular query
+      }
+    }
+
+    // No search term OR RPC failed - use regular query
     let query = supabase
       .from("products")
       .select(
@@ -84,15 +342,15 @@ export const productService = {
       )
       .eq("is_active", true);
 
-    // Apply search filter
-    if (filters.searchQuery && filters.searchQuery.trim()) {
-      const searchTerm = `%${filters.searchQuery.trim()}%`;
+    // Apply search filter (only as fallback)
+    if (searchTerm) {
+      const searchTermFormatted = `%${searchTerm}%`;
       query = query.or(
-        `title.ilike.${searchTerm},description.ilike.${searchTerm}`,
+        `title.ilike.${searchTermFormatted},description.ilike.${searchTermFormatted}`,
       );
     }
 
-    // Apply other filters...
+    // Apply other filters
     if (filters.expertId) query = query.eq("expert_id", filters.expertId);
     if (filters.productType)
       query = query.eq("product_type", filters.productType);
@@ -106,21 +364,17 @@ export const productService = {
     const sortOrder = filters.sortOrder || "desc";
     query = query.order(sortBy, { ascending: sortOrder === "asc" });
 
-    // ✅ CRITICAL FIX: Only apply range if we have enough results
-    const start = (page - 1) * limit;
-
     // Apply pagination
+    const start = (page - 1) * limit;
     query = query.range(start, start + limit - 1);
 
     const { data, error, count } = await query;
 
     if (error) {
-      // Handle 416 error gracefully
       if (
         error.code === "PGRST116" ||
         error.message?.includes("Range Not Satisfiable")
       ) {
-        console.log("No more results available for this page");
         return {
           products: [],
           total: count || 0,
@@ -130,7 +384,7 @@ export const productService = {
       throw error;
     }
 
-    // Calculate average ratings...
+    // Calculate average ratings
     const productsWithRatings = (data || []).map((product) => {
       const ratings =
         product.reviews
@@ -148,7 +402,7 @@ export const productService = {
       };
     });
 
-    // Filter by category if specified...
+    // Filter by category if specified
     let filteredProducts = productsWithRatings;
     if (filters.category) {
       filteredProducts = productsWithRatings.filter((product) =>
@@ -159,14 +413,13 @@ export const productService = {
       );
     }
 
-    // ✅ Calculate if there are more pages
     const totalResults = count || 0;
     const hasMore = start + limit < totalResults;
 
     return {
       products: filteredProducts as ProductWithDetails[],
       total: totalResults,
-      hasMore, // ← This tells frontend if there's a next page
+      hasMore,
     };
   },
 
