@@ -345,136 +345,377 @@ export const ExpertDashboard: React.FC = () => {
               {productsLoading ? (
                 <div className="text-center py-6">Loading products...</div>
               ) : products && products.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[200px]">Product</TableHead>
-                        <TableHead className="min-w-[100px]">Type</TableHead>
-                        <TableHead className="min-w-[80px]">Price</TableHead>
-                        <TableHead className="min-w-[80px]">Status</TableHead>
-                        <TableHead className="min-w-[60px]">Views</TableHead>
-                        <TableHead className="min-w-[80px]">Rating</TableHead>
-                        <TableHead className="text-right min-w-[80px]">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {products.map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              {product.thumbnail_url && (
-                                <img
-                                  src={product.thumbnail_url}
-                                  alt={product.title}
-                                  className="w-10 h-10 object-cover rounded"
-                                />
-                              )}
-                              <div>
-                                <div className="font-medium">
-                                  {product.title}
-                                </div>
-                                <div className="text-sm text-muted-foreground line-clamp-1">
-                                  {product.description}
-                                </div>
-                                {(product.files?.length ||
-                                  (product.file_url ? 1 : 0)) > 0 && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    {product.files?.length || 1} file
-                                    {(product.files?.length || 1) > 1
-                                      ? "s"
-                                      : ""}
-                                  </div>
+                // <div className="overflow-x-auto">
+                //   <Table>
+                //     <TableHeader>
+                //       <TableRow>
+                //         <TableHead className="min-w-[200px]">Product</TableHead>
+                //         <TableHead className="min-w-[100px]">Type</TableHead>
+                //         <TableHead className="min-w-[80px]">Price</TableHead>
+                //         <TableHead className="min-w-[80px]">Status</TableHead>
+                //         <TableHead className="min-w-[60px]">Views</TableHead>
+                //         <TableHead className="min-w-[80px]">Rating</TableHead>
+                //         <TableHead className="text-right min-w-[80px]">
+                //           Actions
+                //         </TableHead>
+                //       </TableRow>
+                //     </TableHeader>
+                //     <TableBody>
+                //       {products.map((product) => (
+                //         <TableRow key={product.id}>
+                //           <TableCell>
+                //             <div className="flex items-center gap-3">
+                //               {product.thumbnail_url && (
+                //                 <img
+                //                   src={product.thumbnail_url}
+                //                   alt={product.title}
+                //                   className="w-10 h-10 object-cover rounded"
+                //                 />
+                //               )}
+                //               <div>
+                //                 <div className="font-medium">
+                //                   {product.title}
+                //                 </div>
+                //                 <div className="text-sm text-muted-foreground line-clamp-1">
+                //                   {product.description}
+                //                 </div>
+                //                 {(product.files?.length ||
+                //                   (product.file_url ? 1 : 0)) > 0 && (
+                //                   <div className="text-xs text-muted-foreground mt-1">
+                //                     {product.files?.length || 1} file
+                //                     {(product.files?.length || 1) > 1
+                //                       ? "s"
+                //                       : ""}
+                //                   </div>
+                //                 )}
+                //               </div>
+                //             </div>
+                //           </TableCell>
+                //           <TableCell>
+                //             <div className="flex items-center gap-2">
+                //               <Badge variant="outline" className="capitalize">
+                //                 {product.product_type}
+                //               </Badge>
+                //               {product.has_multiple_files && (
+                //                 <Badge variant="secondary" className="text-xs">
+                //                   Multi-file
+                //                 </Badge>
+                //               )}
+                //             </div>
+                //           </TableCell>
+                //           <TableCell>{formatCurrency(product.price)}</TableCell>
+                //           <TableCell>
+                //             <Badge
+                //               variant={
+                //                 product.is_active ? "default" : "secondary"
+                //               }
+                //             >
+                //               {product.is_active ? "Active" : "Inactive"}
+                //             </Badge>
+                //           </TableCell>
+                //           <TableCell>{product.view_count || 0}</TableCell>
+                //           <TableCell>
+                //             {product.average_rating ? (
+                //               <div className="flex items-center gap-1">
+                //                 <span>{product.average_rating.toFixed(1)}</span>
+                //                 <span className="text-xs text-muted-foreground">
+                //                   ({product.total_reviews})
+                //                 </span>
+                //               </div>
+                //             ) : (
+                //               "No reviews"
+                //             )}
+                //           </TableCell>
+                //           <TableCell className="text-right">
+                //             <DropdownMenu>
+                //               <DropdownMenuTrigger asChild>
+                //                 <Button variant="ghost" className="h-8 w-8 p-0">
+                //                   <MoreHorizontal className="h-4 w-4" />
+                //                 </Button>
+                //               </DropdownMenuTrigger>
+                //               <DropdownMenuContent align="end">
+                //                 <DropdownMenuItem
+                //                   onClick={() => handleViewProduct(product)}
+                //                 >
+                //                   <Eye className="mr-2 h-4 w-4" />
+                //                   Preview Content
+                //                 </DropdownMenuItem>
+                //                 <DropdownMenuItem
+                //                   onClick={() => handleEditProduct(product)}
+                //                 >
+                //                   <Edit className="mr-2 h-4 w-4" />
+                //                   Edit
+                //                 </DropdownMenuItem>
+                //                 <DropdownMenuItem
+                //                   onClick={() =>
+                //                     handleToggleActive(
+                //                       product.id,
+                //                       product.is_active || false,
+                //                     )
+                //                   }
+                //                 >
+                //                   {product.is_active
+                //                     ? "Deactivate"
+                //                     : "Activate"}
+                //                 </DropdownMenuItem>
+                //                 <DropdownMenuItem
+                //                   onClick={() =>
+                //                     handleDeleteProduct(product.id)
+                //                   }
+                //                   className="text-red-600"
+                //                 >
+                //                   <Trash2 className="mr-2 h-4 w-4" />
+                //                   Delete
+                //                 </DropdownMenuItem>
+                //               </DropdownMenuContent>
+                //             </DropdownMenu>
+                //           </TableCell>
+                //         </TableRow>
+                //       ))}
+                //     </TableBody>
+                //   </Table>
+                // </div>
+                <>
+                  {/* DESKTOP: Original table (hidden on mobile) */}
+                  <div className="hidden lg:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[200px]">
+                            Product
+                          </TableHead>
+                          <TableHead className="min-w-[100px]">Type</TableHead>
+                          <TableHead className="min-w-[80px]">Price</TableHead>
+                          <TableHead className="min-w-[80px]">Status</TableHead>
+                          <TableHead className="min-w-[60px]">Views</TableHead>
+                          <TableHead className="min-w-[80px]">Rating</TableHead>
+                          <TableHead className="text-right min-w-[80px]">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {products.map((product) => (
+                          <TableRow key={product.id}>
+                            {/* Your original desktop table cells */}
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                {product.thumbnail_url && (
+                                  <img
+                                    src={product.thumbnail_url}
+                                    alt={product.title}
+                                    className="w-10 h-10 object-cover rounded flex-shrink-0"
+                                  />
                                 )}
+                                <div className="min-w-0">
+                                  <div className="font-medium truncate">
+                                    {product.title}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground truncate">
+                                    {product.description}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
+                            </TableCell>
+                            <TableCell>
                               <Badge variant="outline" className="capitalize">
                                 {product.product_type}
                               </Badge>
-                              {product.has_multiple_files && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Multi-file
-                                </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {formatCurrency(product.price)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  product.is_active ? "default" : "secondary"
+                                }
+                              >
+                                {product.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{product.view_count || 0}</TableCell>
+                            <TableCell>
+                              {product.average_rating ? (
+                                <div className="flex items-center gap-1">
+                                  <span>
+                                    {product.average_rating.toFixed(1)}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    ({product.total_reviews})
+                                  </span>
+                                </div>
+                              ) : (
+                                "No reviews"
                               )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => handleViewProduct(product)}
+                                  >
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Preview
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleEditProduct(product)}
+                                  >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleToggleActive(
+                                        product.id,
+                                        product.is_active || false,
+                                      )
+                                    }
+                                  >
+                                    {product.is_active
+                                      ? "Deactivate"
+                                      : "Activate"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleDeleteProduct(product.id)
+                                    }
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* MOBILE: Card layout (hidden on desktop) */}
+                  <div className="lg:hidden space-y-4">
+                    {products.map((product) => (
+                      <div
+                        key={product.id}
+                        className="border rounded-lg p-4 bg-card shadow-sm"
+                      >
+                        {/* Product Header */}
+                        <div className="flex items-start gap-3 mb-3">
+                          {product.thumbnail_url && (
+                            <img
+                              src={product.thumbnail_url}
+                              alt={product.title}
+                              className="w-12 h-12 object-cover rounded flex-shrink-0"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm truncate">
+                              {product.title}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {product.product_type}
+                              </Badge>
+                              <Badge
+                                variant={
+                                  product.is_active ? "default" : "secondary"
+                                }
+                                className="text-xs"
+                              >
+                                {product.is_active ? "Active" : "Inactive"}
+                              </Badge>
                             </div>
-                          </TableCell>
-                          <TableCell>{formatCurrency(product.price)}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                product.is_active ? "default" : "secondary"
-                              }
-                            >
-                              {product.is_active ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{product.view_count || 0}</TableCell>
-                          <TableCell>
-                            {product.average_rating ? (
-                              <div className="flex items-center gap-1">
-                                <span>{product.average_rating.toFixed(1)}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  ({product.total_reviews})
-                                </span>
-                              </div>
-                            ) : (
-                              "No reviews"
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => handleViewProduct(product)}
-                                >
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  Preview Content
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleEditProduct(product)}
-                                >
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleToggleActive(
-                                      product.id,
-                                      product.is_active || false,
-                                    )
-                                  }
-                                >
-                                  {product.is_active
-                                    ? "Deactivate"
-                                    : "Activate"}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleDeleteProduct(product.id)
-                                  }
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                          </div>
+                        </div>
+
+                        {/* Product Info Grid */}
+                        <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                          <div>
+                            <p className="text-muted-foreground text-xs">
+                              Price
+                            </p>
+                            <p className="font-medium mt-1">
+                              {formatCurrency(product.price)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">
+                              Views
+                            </p>
+                            <p className="font-medium mt-1">
+                              {product.view_count || 0}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">
+                              Rating
+                            </p>
+                            <p className="font-medium mt-1">
+                              {product.average_rating
+                                ? `${product.average_rating.toFixed(1)} (${product.total_reviews})`
+                                : "No reviews"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">
+                              Files
+                            </p>
+                            <p className="font-medium mt-1">
+                              {product.files?.length ||
+                                (product.file_url ? 1 : 0)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Mobile Action Buttons */}
+                        <div className="flex gap-2 pt-3 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleViewProduct(product)}
+                          >
+                            <Eye className="h-3.5 w-3.5 mr-1.5" />
+                            <span className="text-xs">Preview</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleEditProduct(product)}
+                          >
+                            <Edit className="h-3.5 w-3.5 mr-1.5" />
+                            <span className="text-xs">Edit</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleToggleActive(
+                                product.id,
+                                product.is_active || false,
+                              )
+                            }
+                          >
+                            <span className="text-xs">
+                              {product.is_active ? "Deactivate" : "Activate"}
+                            </span>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-12">
                   <Package className="mx-auto h-12 w-12 text-muted-foreground" />
