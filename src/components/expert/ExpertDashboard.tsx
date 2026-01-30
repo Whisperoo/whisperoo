@@ -345,139 +345,8 @@ export const ExpertDashboard: React.FC = () => {
               {productsLoading ? (
                 <div className="text-center py-6">Loading products...</div>
               ) : products && products.length > 0 ? (
-                // <div className="overflow-x-auto">
-                //   <Table>
-                //     <TableHeader>
-                //       <TableRow>
-                //         <TableHead className="min-w-[200px]">Product</TableHead>
-                //         <TableHead className="min-w-[100px]">Type</TableHead>
-                //         <TableHead className="min-w-[80px]">Price</TableHead>
-                //         <TableHead className="min-w-[80px]">Status</TableHead>
-                //         <TableHead className="min-w-[60px]">Views</TableHead>
-                //         <TableHead className="min-w-[80px]">Rating</TableHead>
-                //         <TableHead className="text-right min-w-[80px]">
-                //           Actions
-                //         </TableHead>
-                //       </TableRow>
-                //     </TableHeader>
-                //     <TableBody>
-                //       {products.map((product) => (
-                //         <TableRow key={product.id}>
-                //           <TableCell>
-                //             <div className="flex items-center gap-3">
-                //               {product.thumbnail_url && (
-                //                 <img
-                //                   src={product.thumbnail_url}
-                //                   alt={product.title}
-                //                   className="w-10 h-10 object-cover rounded"
-                //                 />
-                //               )}
-                //               <div>
-                //                 <div className="font-medium">
-                //                   {product.title}
-                //                 </div>
-                //                 <div className="text-sm text-muted-foreground line-clamp-1">
-                //                   {product.description}
-                //                 </div>
-                //                 {(product.files?.length ||
-                //                   (product.file_url ? 1 : 0)) > 0 && (
-                //                   <div className="text-xs text-muted-foreground mt-1">
-                //                     {product.files?.length || 1} file
-                //                     {(product.files?.length || 1) > 1
-                //                       ? "s"
-                //                       : ""}
-                //                   </div>
-                //                 )}
-                //               </div>
-                //             </div>
-                //           </TableCell>
-                //           <TableCell>
-                //             <div className="flex items-center gap-2">
-                //               <Badge variant="outline" className="capitalize">
-                //                 {product.product_type}
-                //               </Badge>
-                //               {product.has_multiple_files && (
-                //                 <Badge variant="secondary" className="text-xs">
-                //                   Multi-file
-                //                 </Badge>
-                //               )}
-                //             </div>
-                //           </TableCell>
-                //           <TableCell>{formatCurrency(product.price)}</TableCell>
-                //           <TableCell>
-                //             <Badge
-                //               variant={
-                //                 product.is_active ? "default" : "secondary"
-                //               }
-                //             >
-                //               {product.is_active ? "Active" : "Inactive"}
-                //             </Badge>
-                //           </TableCell>
-                //           <TableCell>{product.view_count || 0}</TableCell>
-                //           <TableCell>
-                //             {product.average_rating ? (
-                //               <div className="flex items-center gap-1">
-                //                 <span>{product.average_rating.toFixed(1)}</span>
-                //                 <span className="text-xs text-muted-foreground">
-                //                   ({product.total_reviews})
-                //                 </span>
-                //               </div>
-                //             ) : (
-                //               "No reviews"
-                //             )}
-                //           </TableCell>
-                //           <TableCell className="text-right">
-                //             <DropdownMenu>
-                //               <DropdownMenuTrigger asChild>
-                //                 <Button variant="ghost" className="h-8 w-8 p-0">
-                //                   <MoreHorizontal className="h-4 w-4" />
-                //                 </Button>
-                //               </DropdownMenuTrigger>
-                //               <DropdownMenuContent align="end">
-                //                 <DropdownMenuItem
-                //                   onClick={() => handleViewProduct(product)}
-                //                 >
-                //                   <Eye className="mr-2 h-4 w-4" />
-                //                   Preview Content
-                //                 </DropdownMenuItem>
-                //                 <DropdownMenuItem
-                //                   onClick={() => handleEditProduct(product)}
-                //                 >
-                //                   <Edit className="mr-2 h-4 w-4" />
-                //                   Edit
-                //                 </DropdownMenuItem>
-                //                 <DropdownMenuItem
-                //                   onClick={() =>
-                //                     handleToggleActive(
-                //                       product.id,
-                //                       product.is_active || false,
-                //                     )
-                //                   }
-                //                 >
-                //                   {product.is_active
-                //                     ? "Deactivate"
-                //                     : "Activate"}
-                //                 </DropdownMenuItem>
-                //                 <DropdownMenuItem
-                //                   onClick={() =>
-                //                     handleDeleteProduct(product.id)
-                //                   }
-                //                   className="text-red-600"
-                //                 >
-                //                   <Trash2 className="mr-2 h-4 w-4" />
-                //                   Delete
-                //                 </DropdownMenuItem>
-                //               </DropdownMenuContent>
-                //             </DropdownMenu>
-                //           </TableCell>
-                //         </TableRow>
-                //       ))}
-                //     </TableBody>
-                //   </Table>
-                // </div>
                 <>
-                  {/* DESKTOP: Original table (hidden on mobile) */}
-                  <div className="hidden lg:block">
+                  <div className="hidden md:block overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -497,30 +366,48 @@ export const ExpertDashboard: React.FC = () => {
                       <TableBody>
                         {products.map((product) => (
                           <TableRow key={product.id}>
-                            {/* Your original desktop table cells */}
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 {product.thumbnail_url && (
                                   <img
                                     src={product.thumbnail_url}
                                     alt={product.title}
-                                    className="w-10 h-10 object-cover rounded flex-shrink-0"
+                                    className="w-10 h-10 object-cover rounded"
                                   />
                                 )}
-                                <div className="min-w-0">
-                                  <div className="font-medium truncate">
+                                <div>
+                                  <div className="font-medium">
                                     {product.title}
                                   </div>
-                                  <div className="text-sm text-muted-foreground truncate">
+                                  <div className="text-sm text-muted-foreground line-clamp-1">
                                     {product.description}
                                   </div>
+                                  {(product.files?.length ||
+                                    (product.file_url ? 1 : 0)) > 0 && (
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      {product.files?.length || 1} file
+                                      {(product.files?.length || 1) > 1
+                                        ? "s"
+                                        : ""}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline" className="capitalize">
-                                {product.product_type}
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="capitalize">
+                                  {product.product_type}
+                                </Badge>
+                                {product.has_multiple_files && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    Multi-file
+                                  </Badge>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               {formatCurrency(product.price)}
@@ -564,7 +451,7 @@ export const ExpertDashboard: React.FC = () => {
                                     onClick={() => handleViewProduct(product)}
                                   >
                                     <Eye className="mr-2 h-4 w-4" />
-                                    Preview
+                                    Preview Content
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => handleEditProduct(product)}
@@ -601,6 +488,8 @@ export const ExpertDashboard: React.FC = () => {
                       </TableBody>
                     </Table>
                   </div>
+
+                  {/* DESKTOP: Original table (hidden on mobile) */}
 
                   {/* MOBILE: Card layout (hidden on desktop) */}
                   <div className="lg:hidden space-y-4">
