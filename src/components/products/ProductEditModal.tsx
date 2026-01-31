@@ -79,7 +79,12 @@ interface ProductEditModalProps {
   onSuccess: () => void;
   product: ProductWithDetails;
 }
-
+interface NewFileObject {
+  file: File;
+  id: string; // Temporary ID for tracking
+  display_title: string;
+  isNew: boolean;
+}
 export const ProductEditModal: React.FC<ProductEditModalProps> = ({
   open,
   onClose,
@@ -95,7 +100,8 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
 
   // Get current upload limits
   const limits = getCurrentLimits();
-  const [newFiles, setNewFiles] = useState<File[]>([]);
+
+  const [newFiles, setNewFiles] = useState<NewFileObject[]>([]);
   const [existingFiles, setExistingFiles] = useState<ProductFile[]>([]);
   const [filesToDelete, setFilesToDelete] = useState<string[]>([]);
   const [newThumbnailFile, setNewThumbnailFile] = useState<File | null>(null);
@@ -195,17 +201,28 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
   const handleNewFilesChange = (
     filesWithTitles: { file: File; displayTitle: string }[],
   ) => {
-    // Extract the File objects from FileWithTitle wrapper objects
-    const files = filesWithTitles.map((ft) => ft.file);
-    setNewFiles(files);
+    // Create new file objects with proper tracking
+    const newFileObjects = filesWithTitles.map((fileWithTitle, index) => ({
+      file: fileWithTitle.file,
+      id: `new-${Date.now()}-${index}`, // Temporary ID for tracking
+      display_title: fileWithTitle.displayTitle,
+      isNew: true, // Mark as new file
+    }));
 
-    // Auto-detect content type based on file count
-    const totalFiles =
-      existingFiles.filter((f) => !filesToDelete.includes(f.id)).length +
-      files.length;
+    // Update newFiles state
+    setNewFiles((prev) => [...prev, ...newFileObjects]);
+
+    // Calculate total files for content type
+    const totalExistingFiles = existingFiles.filter(
+      (f) => !filesToDelete.includes(f.id),
+    ).length;
+    const totalNewFiles = newFileObjects.length;
+    const totalFiles = totalExistingFiles + totalNewFiles;
+
+    // Update content type if needed
     if (totalFiles > 1) {
       form.setValue("contentType", "bundle");
-    } else {
+    } else if (totalFiles === 1) {
       form.setValue("contentType", "single");
     }
   };
@@ -309,6 +326,184 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
     return `${mb.toFixed(2)} MB`;
   };
 
+  // const onSubmit = async (data: ProductFormData) => {
+  //   if (!user || !product) return;
+
+  //   setIsUploading(true);
+  //   setUploadProgress(0);
+
+  //   try {
+  //     setUploadProgress(20);
+
+  //     // Update basic product information
+  //     const updateData: any = {
+  //       title: data.title,
+  //       description: data.description,
+  //       price: data.price,
+  //       product_type: data.productType,
+  //       content_type: data.contentType,
+  //       is_active: data.isActive,
+  //       has_multiple_files:
+  //         existingFiles.length + newFiles.length - filesToDelete.length > 1,
+  //       total_files_count:
+  //         existingFiles.length + newFiles.length - filesToDelete.length,
+  //     };
+
+  //     if (data.productType === "video" && data.durationMinutes) {
+  //       updateData.duration_minutes = data.durationMinutes;
+  //     }
+
+  //     if (data.productType === "document" && data.pageCount) {
+  //       updateData.page_count = data.pageCount;
+  //     }
+
+  //     setUploadProgress(40);
+
+  //     // Handle file deletions
+  //     if (filesToDelete.length > 0) {
+  //       for (const fileId of filesToDelete) {
+  //         await productService.deleteProductFile(fileId);
+  //       }
+  //     }
+
+  //     setUploadProgress(50);
+  //     setFileProgress({}); // Reset file progress
+
+  //     // Progress callback for individual files
+  //     const handleFileProgress = (
+  //       fileIndex: number,
+  //       fileName: string,
+  //       progress: number,
+  //     ) => {
+  //       setFileProgress((prev) => {
+  //         const updated = {
+  //           ...prev,
+  //           [fileIndex]: { fileName, progress },
+  //         };
+
+  //         // Calculate overall progress based on file progress
+  //         const totalFiles = newFiles.length;
+  //         const completedCount = Object.values(updated).filter(
+  //           (f) => f.progress === 100,
+  //         ).length;
+  //         const overallProgress =
+  //           50 + Math.floor((completedCount / totalFiles) * 10);
+  //         setUploadProgress(overallProgress);
+
+  //         return updated;
+  //       });
+  //     };
+
+  //     // Upload new files
+  //     if (newFiles.length > 0) {
+  //       const uploadedFiles = await productService.addMultipleProductFiles(
+  //         product.id,
+  //         newFiles,
+  //         product.expert_id || user.id,
+  //         undefined, // titles
+  //         handleFileProgress, // Pass progress callback
+  //       );
+
+  //       // If this is the first file or no primary file exists, set the first as primary
+  //       const hasPrimaryFile = existingFiles.some(
+  //         (f) => f.is_primary && !filesToDelete.includes(f.id),
+  //       );
+  //       if (!hasPrimaryFile && uploadedFiles.length > 0) {
+  //         await productService.setPrimaryFile(product.id, uploadedFiles[0].id);
+  //         updateData.primary_file_url = uploadedFiles[0].file_url;
+  //       }
+  //     }
+
+  //     setUploadProgress(60);
+
+  //     // Handle primary file selection for existing files
+  //     const primaryFile = existingFiles.find(
+  //       (f) => f.is_primary && !filesToDelete.includes(f.id),
+  //     );
+  //     if (primaryFile) {
+  //       await productService.setPrimaryFile(product.id, primaryFile.id);
+  //       updateData.primary_file_url = primaryFile.file_url;
+  //     }
+
+  //     // Upload new thumbnail if provided
+  //     if (newThumbnailFile) {
+  //       setUploadProgress(70);
+  //       const thumbnailUrl = await productService.uploadProductThumbnail(
+  //         newThumbnailFile,
+  //         product.expert_id || user.id,
+  //         product.id,
+  //       );
+  //       updateData.thumbnail_url = thumbnailUrl;
+  //     }
+
+  //     setUploadProgress(80);
+
+  //     // Update the product
+  //     await productService.updateProduct(product.id, updateData);
+
+  //     setUploadProgress(90);
+
+  //     // Update display titles and sort order for existing files
+  //     // for (let i = 0; i < existingFiles.length; i++) {
+  //     //   const file = existingFiles[i];
+  //     //   if (!filesToDelete.includes(file.id)) {
+  //     //     await supabase
+  //     //       .from('product_files')
+  //     //       .update({
+  //     //         display_title: file.display_title,
+  //     //         sort_order: i
+  //     //       })
+  //     //       .eq('id', file.id);
+  //     //   }
+  //     // }
+  //     for (const file of existingFiles) {
+  //       if (!filesToDelete.includes(file.id)) {
+  //         await supabase
+  //           .from("product_files")
+  //           .update({
+  //             display_title: file.display_title,
+  //             sort_order: file.sort_order, // keep the original order
+  //           })
+  //           .eq("id", file.id);
+  //       }
+  //     }
+
+  //     // Update category mappings
+  //     // First, delete existing mappings
+  //     await supabase
+  //       .from("product_category_mappings")
+  //       .delete()
+  //       .eq("product_id", product.id);
+
+  //     // Then add new mappings
+  //     if (data.categoryIds.length > 0) {
+  //       const categoryMappings = data.categoryIds.map((categoryId) => ({
+  //         product_id: product.id,
+  //         category_id: categoryId,
+  //       }));
+
+  //       await supabase
+  //         .from("product_category_mappings")
+  //         .insert(categoryMappings);
+  //     }
+
+  //     setUploadProgress(100);
+
+  //     setTimeout(() => {
+  //       onSuccess();
+  //       handleClose();
+  //     }, 500);
+  //   } catch (error) {
+  //     console.error("Update error:", error);
+  //     alert(
+  //       `Failed to update product: ${error instanceof Error ? error.message : "Unknown error"}`,
+  //     );
+  //   } finally {
+  //     setIsUploading(false);
+  //     setUploadProgress(0);
+  //     setFileProgress({}); // Reset file progress
+  //   }
+  // };
   const onSubmit = async (data: ProductFormData) => {
     if (!user || !product) return;
 
@@ -318,6 +513,15 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
     try {
       setUploadProgress(20);
 
+      // STEP 1: Calculate file order BEFORE making changes
+      // Get existing files to keep (sorted by sort_order)
+      const existingFilesToKeep = existingFiles
+        .filter((f) => !filesToDelete.includes(f.id))
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+      // Calculate total files
+      const totalFiles = existingFilesToKeep.length + newFiles.length;
+
       // Update basic product information
       const updateData: any = {
         title: data.title,
@@ -326,10 +530,8 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
         product_type: data.productType,
         content_type: data.contentType,
         is_active: data.isActive,
-        has_multiple_files:
-          existingFiles.length + newFiles.length - filesToDelete.length > 1,
-        total_files_count:
-          existingFiles.length + newFiles.length - filesToDelete.length,
+        has_multiple_files: totalFiles > 1,
+        total_files_count: totalFiles,
       };
 
       if (data.productType === "video" && data.durationMinutes) {
@@ -340,16 +542,49 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
         updateData.page_count = data.pageCount;
       }
 
-      setUploadProgress(40);
+      setUploadProgress(30);
 
-      // Handle file deletions
+      // STEP 2: Handle file deletions FIRST
       if (filesToDelete.length > 0) {
         for (const fileId of filesToDelete) {
           await productService.deleteProductFile(fileId);
         }
       }
 
-      setUploadProgress(50);
+      setUploadProgress(40);
+
+      // STEP 3: Track all files with their final order positions
+      // STEP 3: Track all files with their final order positions
+      const allFilesWithOrder: Array<{
+        id: string;
+        isNew: boolean;
+        sort_order: number;
+        display_title?: string;
+        file?: File;
+      }> = [];
+
+      // Add existing files first (keep their existing sort_order)
+      existingFilesToKeep.forEach((file, index) => {
+        allFilesWithOrder.push({
+          id: file.id,
+          isNew: false,
+          sort_order: index, // Re-index from 0
+          display_title: file.display_title || file.file_name,
+        });
+      });
+
+      // Add new files after existing ones
+      newFiles.forEach((fileObj, index) => {
+        allFilesWithOrder.push({
+          id: fileObj.id, // Use the ID from NewFileObject
+          isNew: true,
+          sort_order: existingFilesToKeep.length + index, // Continue numbering
+          display_title:
+            fileObj.display_title || fileObj.file.name.replace(/\.[^/.]+$/, ""),
+          file: fileObj.file, // ✅ This is the actual File object
+        });
+      });
+
       setFileProgress({}); // Reset file progress
 
       // Progress callback for individual files
@@ -365,52 +600,111 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
           };
 
           // Calculate overall progress based on file progress
-          const totalFiles = newFiles.length;
+          const totalNewFiles = newFiles.length;
           const completedCount = Object.values(updated).filter(
             (f) => f.progress === 100,
           ).length;
           const overallProgress =
-            50 + Math.floor((completedCount / totalFiles) * 10);
+            40 + Math.floor((completedCount / totalNewFiles) * 30);
           setUploadProgress(overallProgress);
 
           return updated;
         });
       };
 
-      // Upload new files
+      // STEP 4: Upload new files
+      let uploadedNewFiles: any[] = [];
       if (newFiles.length > 0) {
-        const uploadedFiles = await productService.addMultipleProductFiles(
-          product.id,
-          newFiles,
-          product.expert_id || user.id,
-          undefined, // titles
-          handleFileProgress, // Pass progress callback
+        // ✅ CORRECT: Extract File objects from NewFileObject
+        const filesToUpload = newFiles.map((fileObj) => fileObj.file);
+
+        // ✅ CORRECT: Get titles for new files
+        const titles = newFiles.map(
+          (fileObj) =>
+            fileObj.display_title || fileObj.file.name.replace(/\.[^/.]+$/, ""),
         );
 
-        // If this is the first file or no primary file exists, set the first as primary
-        const hasPrimaryFile = existingFiles.some(
-          (f) => f.is_primary && !filesToDelete.includes(f.id),
+        uploadedNewFiles = await productService.addMultipleProductFiles(
+          product.id,
+          filesToUpload, // ✅ Now it's File[]
+          product.expert_id || user.id,
+          titles.length > 0 ? titles : undefined,
+          handleFileProgress,
         );
-        if (!hasPrimaryFile && uploadedFiles.length > 0) {
-          await productService.setPrimaryFile(product.id, uploadedFiles[0].id);
-          updateData.primary_file_url = uploadedFiles[0].file_url;
+
+        // Update the allFilesWithOrder array with real IDs from uploaded files
+        uploadedNewFiles.forEach((uploadedFile, index) => {
+          const newFileIndex = allFilesWithOrder.findIndex(
+            (f) =>
+              f.isNew && f.sort_order === existingFilesToKeep.length + index,
+          );
+          if (newFileIndex !== -1) {
+            allFilesWithOrder[newFileIndex].id = uploadedFile.id;
+          }
+        });
+      }
+
+      setUploadProgress(70);
+
+      // STEP 5: Update ALL files with correct sort_order
+      for (const fileWithOrder of allFilesWithOrder) {
+        if (fileWithOrder.isNew) {
+          // Update newly uploaded files with sort_order
+          await supabase
+            .from("product_files")
+            .update({
+              display_title: fileWithOrder.display_title,
+              sort_order: fileWithOrder.sort_order,
+            })
+            .eq("id", fileWithOrder.id);
+        } else {
+          // Update existing files with sort_order
+          await supabase
+            .from("product_files")
+            .update({
+              display_title: fileWithOrder.display_title,
+              sort_order: fileWithOrder.sort_order, // Use the new order
+            })
+            .eq("id", fileWithOrder.id);
         }
       }
 
-      setUploadProgress(60);
+      // STEP 6: Handle primary file selection
+      const hasPrimaryFile = existingFilesToKeep.some((f) => f.is_primary);
+      if (!hasPrimaryFile && allFilesWithOrder.length > 0) {
+        // Set the first file in order as primary
+        const firstFileId = allFilesWithOrder[0].id;
+        await productService.setPrimaryFile(product.id, firstFileId);
 
-      // Handle primary file selection for existing files
-      const primaryFile = existingFiles.find(
-        (f) => f.is_primary && !filesToDelete.includes(f.id),
-      );
-      if (primaryFile) {
-        await productService.setPrimaryFile(product.id, primaryFile.id);
-        updateData.primary_file_url = primaryFile.file_url;
+        // Find the file URL for the update
+        const firstFile = allFilesWithOrder[0];
+        let fileUrl = "";
+
+        if (firstFile.isNew) {
+          const uploadedFile = uploadedNewFiles.find(
+            (uf) => uf.id === firstFileId,
+          );
+          fileUrl = uploadedFile?.file_url || "";
+        } else {
+          const existingFile = existingFilesToKeep.find(
+            (ef) => ef.id === firstFileId,
+          );
+          fileUrl = existingFile?.file_url || "";
+        }
+
+        updateData.primary_file_url = fileUrl;
+      } else {
+        // Keep existing primary file if it exists
+        const primaryFile = existingFilesToKeep.find((f) => f.is_primary);
+        if (primaryFile) {
+          updateData.primary_file_url = primaryFile.file_url;
+        }
       }
 
-      // Upload new thumbnail if provided
+      setUploadProgress(80);
+
+      // STEP 7: Upload new thumbnail if provided
       if (newThumbnailFile) {
-        setUploadProgress(70);
         const thumbnailUrl = await productService.uploadProductThumbnail(
           newThumbnailFile,
           product.expert_id || user.id,
@@ -419,39 +713,12 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
         updateData.thumbnail_url = thumbnailUrl;
       }
 
-      setUploadProgress(80);
-
-      // Update the product
+      // STEP 8: Update the product
       await productService.updateProduct(product.id, updateData);
 
       setUploadProgress(90);
 
-      // Update display titles and sort order for existing files
-      // for (let i = 0; i < existingFiles.length; i++) {
-      //   const file = existingFiles[i];
-      //   if (!filesToDelete.includes(file.id)) {
-      //     await supabase
-      //       .from('product_files')
-      //       .update({
-      //         display_title: file.display_title,
-      //         sort_order: i
-      //       })
-      //       .eq('id', file.id);
-      //   }
-      // }
-      for (const file of existingFiles) {
-        if (!filesToDelete.includes(file.id)) {
-          await supabase
-            .from("product_files")
-            .update({
-              display_title: file.display_title,
-              sort_order: file.sort_order, // keep the original order
-            })
-            .eq("id", file.id);
-        }
-      }
-
-      // Update category mappings
+      // STEP 9: Update category mappings
       // First, delete existing mappings
       await supabase
         .from("product_category_mappings")
@@ -487,7 +754,6 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
       setFileProgress({}); // Reset file progress
     }
   };
-
   const handleClose = () => {
     form.reset();
     setNewFiles([]);

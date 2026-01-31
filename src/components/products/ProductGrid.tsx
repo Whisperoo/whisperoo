@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { ProductCard } from "./ProductCard";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -8,19 +7,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Grid, List, Search } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 import {
-  productService,
   ProductFilters,
+  productService,
   ProductWithDetails,
 } from "@/services/products";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CardProduct } from "../content/product-card";
+import { Grid, List, Search } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ProductCard } from "./ProductCard";
 
 interface ProductGridProps {
   expertId?: string;
@@ -215,6 +214,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
   const displayProducts = data?.products || [];
   const totalResults = data?.total || 0;
+  console.log(displayProducts, "from grid");
 
   const handleFilterChange = (key: keyof ProductFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

@@ -291,6 +291,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     if (hours > 0) return `${hours}h ${mins}m`;
     return `${mins}m`;
   };
+  console.log(formatCurrency(product.price));
 
   return (
     <Card
@@ -442,11 +443,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* Price Section */}
           <div className="flex flex-col gap-0.5">
             <p className="font-semibold text-[12px] text-[#393939] font-['Plus_Jakarta_Sans']">
-              {isCourse
-                ? ""
-                : isFreeProduct
-                  ? "Free"
-                  : formatCurrency(product.price)}
+              {isFreeProduct ? "Free" : formatCurrency(product.price)}
             </p>
             <p className="font-normal text-[10px] text-[#393939] font-['Plus_Jakarta_Sans']">
               {product.price > 0 &&
