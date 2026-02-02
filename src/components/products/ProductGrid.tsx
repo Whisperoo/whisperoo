@@ -81,7 +81,18 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   };
 
   const pageNumbers = getPageNumbers();
+  // Add this useEffect to reset scroll on page change
+  useEffect(() => {
+    // Scroll to top when page changes
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth", // or 'auto' for instant scroll
+    });
 
+    // Alternative: Scroll the container div if you have one
+    // const container = document.getElementById('product-grid-container');
+    // if (container) container.scrollTop = 0;
+  }, [currentPage]); // Trigger when page changes
   return (
     <div className="flex flex-col items-center justify-center gap-4 mt-8">
       {/* Page info */}
@@ -214,7 +225,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
   const displayProducts = data?.products || [];
   const totalResults = data?.total || 0;
-  console.log(displayProducts, "from grid");
+  // console.log(displayProducts, "from grid");
 
   const handleFilterChange = (key: keyof ProductFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));

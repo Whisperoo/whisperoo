@@ -111,12 +111,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     loadProductFiles();
   }, [product.id]);
   useEffect(() => {
-    console.log({
-      productId: product.id,
-      productFilesLength: productFiles.length,
-      totalFilesCount: product.total_files_count,
-      lessonCount,
-    });
+    // console.log({
+    //   productId: product.id,
+    //   productFilesLength: productFiles.length,
+    //   totalFilesCount: product.total_files_count,
+    //   lessonCount,
+    // });
   }, [productFiles, product.total_files_count]);
 
   const checkSaveStatus = async () => {
@@ -143,9 +143,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       setIsCheckingStatus(false);
     }
   };
-  useEffect(() => {
-    console.table(productFiles);
-  }, [productFiles]);
+  // useEffect(() => {
+  //   console.table(productFiles);
+  // }, [productFiles]);
 
   const checkPurchaseStatus = async () => {
     if (!user) return;
@@ -245,7 +245,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const handlePurchaseSuccess = (purchaseId: string) => {
     setShowPurchaseModal(false);
     setIsPurchased(true); // Update purchase status
-    console.log("Purchase completed:", purchaseId);
+    // console.log("Purchase completed:", purchaseId);
   };
 
   const handleViewContent = () => {
@@ -291,7 +291,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     if (hours > 0) return `${hours}h ${mins}m`;
     return `${mins}m`;
   };
-  console.log(formatCurrency(product.price));
+  // console.log(formatCurrency(product.price));
 
   return (
     <Card
