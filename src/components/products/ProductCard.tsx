@@ -461,12 +461,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {isFreeProduct &&
           isSaved &&
           product.product_type !== "consultation" ? (
-            <Link
-              to={`/my-purchases`}
+            <Button
+              disabled={isFreeProduct && isSaved}
               className="w-full bg-[#2E54A5] hover:bg-blue-700 text-[#E7ECFA] font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans'] mt-2 flex items-center justify-center"
             >
-              View
-            </Link>
+              Saved
+            </Button>
           ) : (
             <Button
               onClick={handlePurchaseClick}
