@@ -249,7 +249,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                 <div className="absolute inset-0 flex items-start justify-between p-4 rounded-tl-[16px] rounded-tr-[16px]">
                   {/* Product Type Badge */}
                   <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 py-1.5 flex items-center">
-                    <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
+                    <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                       {isCourse(purchase.product)
                         ? "Course"
                         : purchase.product.product_type}
@@ -321,7 +321,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
               <div className="absolute inset-0 flex items-start justify-between p-4 rounded-tl-[16px] rounded-tr-[16px]">
                 {/* Product Type Badge */}
                 <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 py-1.5 flex items-center">
-                  <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
+                  <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                     {isCourse(purchase.product)
                       ? "Course"
                       : purchase.product.product_type}

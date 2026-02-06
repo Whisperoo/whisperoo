@@ -354,7 +354,7 @@ export const ProductDetailPage: React.FC = () => {
                   )}
 
                   {/* Preview Button for non-video content */}
-                  {product.product_type !== "video" &&
+                  {/* {product.product_type !== "video" &&
                     !isCourse &&
                     hasContent && (
                       <div className="absolute bottom-4 right-4">
@@ -368,7 +368,7 @@ export const ProductDetailPage: React.FC = () => {
                           Preview
                         </Button>
                       </div>
-                    )}
+                    )} */}
                 </div>
               </CardContent>
             </Card>
