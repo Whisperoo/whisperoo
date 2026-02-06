@@ -72,7 +72,6 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
 
   const elementsOptions: StripeElementsOptions = {
     clientSecret: clientSecret || undefined,
-    paymentMethodTypes: ["card", "link"],
     appearance: {
       theme: "stripe",
       variables: {
