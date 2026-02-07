@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
   Play,
   SkipForward,
   SkipBack,
@@ -12,11 +12,11 @@ import {
   Image as ImageIcon,
   File,
   Music,
-  BookOpen
-} from 'lucide-react';
-import { UnifiedMediaViewer } from './UnifiedMediaViewer';
-import { ProductFile } from '@/services/products';
-import { cn } from '@/lib/utils';
+  BookOpen,
+} from "lucide-react";
+import { UnifiedMediaViewer } from "./UnifiedMediaViewer";
+import { ProductFile, productService } from "@/services/products";
+import { cn } from "@/lib/utils";
 
 interface CourseViewerProps {
   title: string;
@@ -33,36 +33,54 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 }) => {
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [showPlaylist, setShowPlaylist] = useState(true); // Default to true for enterprise UX
+  const isDocument = (file: ProductFile) =>
+    file.file_type === "document" || file.mime_type?.includes("pdf");
 
   // Sort all files by sort_order
-  const sortedFiles = files.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-  const videoFiles = sortedFiles.filter(file => file.file_type === 'video' || file.mime_type?.startsWith('video/'));
-  const documentFiles = sortedFiles.filter(file => file.file_type === 'document' || file.mime_type?.includes('pdf'));
-  const imageFiles = sortedFiles.filter(file => file.file_type === 'image' || file.mime_type?.startsWith('image/'));
-  const audioFiles = sortedFiles.filter(file => file.file_type === 'audio' || file.mime_type?.startsWith('audio/'));
+  const sortedFiles = files.sort(
+    (a, b) => (a.sort_order || 0) - (b.sort_order || 0),
+  );
+  const videoFiles = sortedFiles.filter(
+    (file) =>
+      file.file_type === "video" || file.mime_type?.startsWith("video/"),
+  );
+  const documentFiles = sortedFiles.filter(
+    (file) => file.file_type === "document" || file.mime_type?.includes("pdf"),
+  );
+  const imageFiles = sortedFiles.filter(
+    (file) =>
+      file.file_type === "image" || file.mime_type?.startsWith("image/"),
+  );
+  const audioFiles = sortedFiles.filter(
+    (file) =>
+      file.file_type === "audio" || file.mime_type?.startsWith("audio/"),
+  );
 
   const currentFile = sortedFiles[currentFileIndex];
 
   // Format duration for display
   const formatDuration = (minutes?: number) => {
-    if (!minutes) return '';
+    if (!minutes) return "";
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
   // Calculate total course duration from all files with duration
-  const totalDuration = sortedFiles.reduce((sum, file) => sum + (file.duration_minutes || 0), 0);
-  
+  const totalDuration = sortedFiles.reduce(
+    (sum, file) => sum + (file.duration_minutes || 0),
+    0,
+  );
+
   // Get file icon based on type
   const getFileIcon = (file: ProductFile) => {
-    if (file.file_type === 'video' || file.mime_type?.startsWith('video/')) {
+    if (file.file_type === "video" || file.mime_type?.startsWith("video/")) {
       return <Video className="w-4 h-4" />;
     }
-    if (file.file_type === 'document' || file.mime_type?.includes('pdf')) {
+    if (file.file_type === "document" || file.mime_type?.includes("pdf")) {
       return <FileText className="w-4 h-4" />;
     }
-    if (file.file_type === 'image' || file.mime_type?.startsWith('image/')) {
+    if (file.file_type === "image" || file.mime_type?.startsWith("image/")) {
       return <ImageIcon className="w-4 h-4" />;
     }
     return <File className="w-4 h-4" />;
@@ -84,9 +102,16 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 
   if (sortedFiles.length === 0) {
     return (
-      <div className={cn("flex flex-col items-center justify-center h-96 text-center", className)}>
+      <div
+        className={cn(
+          "flex flex-col items-center justify-center h-96 text-center",
+          className,
+        )}
+      >
         <File className="h-16 w-16 text-gray-400 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Content Found</h3>
+        <h3 className="text-lg font-semibold text-gray-700 mb-2">
+          No Content Found
+        </h3>
         <p className="text-gray-500">This course doesn't contain any files.</p>
       </div>
     );
@@ -101,18 +126,19 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
             <BookOpen className="h-6 w-6 text-blue-600" />
             <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
           </div>
-          
+
           <div className="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
             {videoFiles.length > 0 && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 <Video className="h-3 w-3" />
-                {videoFiles.length} video{videoFiles.length !== 1 ? 's' : ''}
+                {videoFiles.length} video{videoFiles.length !== 1 ? "s" : ""}
               </Badge>
             )}
             {documentFiles.length > 0 && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 <FileText className="h-3 w-3" />
-                {documentFiles.length} document{documentFiles.length !== 1 ? 's' : ''}
+                {documentFiles.length} document
+                {documentFiles.length !== 1 ? "s" : ""}
               </Badge>
             )}
             {audioFiles.length > 0 && (
@@ -124,7 +150,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
             {imageFiles.length > 0 && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 <ImageIcon className="h-3 w-3" />
-                {imageFiles.length} image{imageFiles.length !== 1 ? 's' : ''}
+                {imageFiles.length} image{imageFiles.length !== 1 ? "s" : ""}
               </Badge>
             )}
             <Badge variant="outline" className="flex items-center gap-1">
@@ -143,7 +169,12 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Media Viewer */}
-        <div className={cn("space-y-4", showPlaylist ? "lg:col-span-3" : "lg:col-span-4")}>
+        <div
+          className={cn(
+            "space-y-4",
+            showPlaylist ? "lg:col-span-3" : "lg:col-span-4",
+          )}
+        >
           {!showPlaylist && (
             <div className="flex justify-end mb-4">
               <Button
@@ -157,30 +188,49 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
               </Button>
             </div>
           )}
-          {currentFile && (
+          {isDocument(currentFile) ? (
+            <div className="w-full rounded-lg border bg-gray-50 p-6 text-center">
+              <FileText className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+              <h3 className="text-base font-semibold text-gray-900 mb-1">
+                Open Document
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                This document opens in a new tab for the best experience.
+              </p>
+              <Button
+                onClick={() =>
+                  window.open(
+                    productService.getPublicFileUrl(currentFile.file_url),
+                    "_blank",
+                  )
+                }
+              >
+                Open PDF
+              </Button>
+            </div>
+          ) : (
             <>
-              <UnifiedMediaViewer
-                file={currentFile}
-                className="w-full"
-              />
-              
-              {/* Current File Info */}
+              <UnifiedMediaViewer file={currentFile} className="w-full" />
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                     {getFileIcon(currentFile)}
-                    Item {currentFileIndex + 1}: {currentFile.display_title || currentFile.file_name.replace(/\.[^/.]+$/, "")}
+                    Item {currentFileIndex + 1}:{" "}
+                    {currentFile.display_title ||
+                      currentFile.file_name.replace(/\.[^/.]+$/, "")}
                   </h3>
                 </div>
-                
+
                 {currentFile.description && (
-                  <p className="text-gray-600 text-sm mb-3">{currentFile.description}</p>
+                  <p className="text-gray-600 text-sm mb-3">
+                    {currentFile.description}
+                  </p>
                 )}
-                
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 text-sm text-gray-500">
                     <span className="capitalize bg-gray-200 px-2 py-1 rounded text-xs">
-                      {currentFile.file_type || 'file'}
+                      {currentFile.file_type || "file"}
                     </span>
                     {currentFile.duration_minutes && (
                       <span className="flex items-center gap-1">
@@ -189,12 +239,10 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                       </span>
                     )}
                     {currentFile.file_size_mb && (
-                      <span>
-                        {currentFile.file_size_mb.toFixed(1)} MB
-                      </span>
+                      <span>{currentFile.file_size_mb.toFixed(1)} MB</span>
                     )}
                   </div>
-                  
+
                   {/* Navigation Controls */}
                   <div className="flex items-center gap-2">
                     <Button
@@ -248,7 +296,7 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                       "p-3 rounded-lg cursor-pointer transition-all",
                       index === currentFileIndex
                         ? "bg-blue-100 border-2 border-blue-500"
-                        : "bg-white hover:bg-gray-100 border border-gray-200"
+                        : "bg-white hover:bg-gray-100 border border-gray-200",
                     )}
                     onClick={() => setCurrentFileIndex(index)}
                   >
@@ -264,12 +312,14 @@ export const CourseViewer: React.FC<CourseViewerProps> = ({
                         <div className="flex items-center gap-2 mb-1">
                           {getFileIcon(file)}
                           <p className="text-sm font-medium text-gray-900 truncate">
-                            {index + 1}. {file.display_title || file.file_name.replace(/\.[^/.]+$/, "")}
+                            {index + 1}.{" "}
+                            {file.display_title ||
+                              file.file_name.replace(/\.[^/.]+$/, "")}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-500">
                           <span className="capitalize bg-gray-200 px-2 py-0.5 rounded">
-                            {file.file_type || 'file'}
+                            {file.file_type || "file"}
                           </span>
                           {file.duration_minutes && (
                             <span>{formatDuration(file.duration_minutes)}</span>

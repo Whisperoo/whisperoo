@@ -314,7 +314,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* Badges */}
           <div className="absolute inset-0 flex items-start justify-between p-4 rounded-tl-[16px] rounded-tr-[16px]">
             {/* Product Type Badge */}
-            <div className="backdrop-blur-[2px] justify-center w-[84px] bg-white/35 rounded-full px-2 flex items-center">
+            <div className="backdrop-blur-[2px] justify-center bg-white/35 rounded-full px-2 flex items-center">
               <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                 {isCourse ? "Course" : product.product_type}
               </p>
@@ -379,7 +379,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent to-[70.707%] rounded-tl-[16px] rounded-tr-[16px]" />
         <div className="absolute inset-0 flex items-start justify-between p-4 rounded-tl-[16px] rounded-tr-[16px]">
           {/* Product Type Badge */}
-          <div className="backdrop-blur-[2px] w-[84px] justify-center bg-white/35 rounded-full px-2 flex items-center">
+          <div className="backdrop-blur-[2px] justify-center bg-white/35 rounded-full px-2 flex items-center">
             <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px]  font-['Plus_Jakarta_Sans']">
               {isCourse ? "Course" : product.product_type}
             </p>
@@ -387,7 +387,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Lesson Count Badge */}
           {lessonCount > 1 && (
-            <div className="backdrop-blur-[2px] w-[84px] bg-white/35 rounded-full px-2  flex items-center justify-center">
+            <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2  flex items-center justify-center">
               <p className="font-bold  text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                 {lessonCount} Lessons
               </p>
@@ -463,7 +463,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           product.product_type !== "consultation" ? (
             <Button
               disabled={isFreeProduct && isSaved}
-              className="w-full bg-[#2E54A5] hover:bg-blue-700 text-[#E7ECFA] font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans'] flex items-center justify-center"
+              className="w-full bg-[#2E54A5] hover:bg-blue-700 text-[#E7ECFA] font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans'] flex items-center justify-center mt-2"
             >
               Saved
             </Button>

@@ -248,7 +248,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                 {/* Badges */}
                 <div className="absolute inset-0 flex items-start justify-between p-4 rounded-tl-[16px] rounded-tr-[16px]">
                   {/* Product Type Badge */}
-                  <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 py-1.5 flex items-center">
+                  <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 flex items-center justify-center">
                     <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                       {isCourse(purchase.product)
                         ? "Course"
@@ -258,7 +258,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
 
                   {/* Lesson Count Badge */}
                   {lessonCount(purchase.product) > 1 && (
-                    <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 py-1.5 flex items-center">
+                    <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2  flex items-center justify-center">
                       <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                         {lessonCount(purchase.product)} Lessons
                       </p>
@@ -320,7 +320,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
               <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent to-[70.707%] rounded-tl-[16px] rounded-tr-[16px]" />
               <div className="absolute inset-0 flex items-start justify-between p-4 rounded-tl-[16px] rounded-tr-[16px]">
                 {/* Product Type Badge */}
-                <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 py-1.5 flex items-center">
+                <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 flex items-center justify-center">
                   <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                     {isCourse(purchase.product)
                       ? "Course"
@@ -330,7 +330,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
 
                 {/* Lesson Count Badge */}
                 {lessonCount(purchase.product) > 1 && (
-                  <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 py-1.5 flex items-center">
+                  <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 flex items-center justify-center">
                     <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                       {lessonCount(purchase.product)} Lessons
                     </p>
@@ -343,16 +343,16 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
               {/* Title Section */}{" "}
               <div className="flex flex-col gap-3 w-full">
                 {/* Title */}{" "}
-                <h2 className="font-semibold text-[18px] leading-normal text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
+                <h2 className="font-semibold text-[18px] leading-normal text-[#393939] font-['Plus_Jakarta_Sans'] md:truncate">
                   {purchase.product.title}{" "}
                 </h2>
                 {/* Description */}{" "}
-                <p className="font-normal text-[14px] leading-[19.6px] text-[#111111] font-['Plus_Jakarta_Sans'] line-clamp-3 break-words">
+                <p className="font-normal text-[14px] leading-[19.6px] text-[#111111] font-['Plus_Jakarta_Sans'] max-w-[21rem] line-clamp-3 break-words">
                   {purchase.product.description}{" "}
                 </p>{" "}
               </div>
               {/* Expert Info & Price Section */}{" "}
-              <div className="flex flex-col gap-3 w-full mt-auto">
+              <div className="flex flex-col w-full mt-auto">
                 {/* Expert Section */}{" "}
                 <div className="flex items-start gap-3 w-full">
                   {/* Avatar */}{" "}
@@ -367,7 +367,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                     </AvatarFallback>
                   </Avatar>
                   {/* Expert Info */}
-                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                  <div className="flex flex-col flex-1 min-w-0">
                     <p className="font-semibold text-[14px] text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
                       {purchase.product.expert.first_name || "Expert"}
                     </p>
@@ -381,7 +381,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
             </CardContent>
             {/* Actions */}
             {/* Actions - UPDATED WITH DOWNLOAD BUTTON */}
-            <CardFooter className="p-0 pl-4 pb-4 pr-4 pt-3">
+            <CardFooter className="p-0 pl-4 pb-4 pr-4">
               <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
                 {/* View Content Button */}
                 {purchase.product && (
