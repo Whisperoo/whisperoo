@@ -314,7 +314,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* Badges */}
           <div className="absolute inset-0 flex items-start justify-between p-4 rounded-tl-[16px] rounded-tr-[16px]">
             {/* Product Type Badge */}
-            <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 py-1.5 flex items-center">
+            <div className="backdrop-blur-[2px] justify-center w-[84px] bg-white/35 rounded-full px-2 flex items-center">
               <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                 {isCourse ? "Course" : product.product_type}
               </p>
@@ -322,8 +322,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
             {/* Lesson Count Badge */}
             {lessonCount > 1 && (
-              <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 py-1.5 flex items-center">
-                <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
+              <div className="backdrop-blur-[2px] w-20 text-center bg-white/35 rounded-full px-2 flex justify-center items-center">
+                <p className="font-bold  text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                   {lessonCount} Lessons
                 </p>
               </div>
@@ -379,16 +379,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent to-[70.707%] rounded-tl-[16px] rounded-tr-[16px]" />
         <div className="absolute inset-0 flex items-start justify-between p-4 rounded-tl-[16px] rounded-tr-[16px]">
           {/* Product Type Badge */}
-          <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 py-1.5 flex items-center">
-            <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
+          <div className="backdrop-blur-[2px] w-[84px] justify-center bg-white/35 rounded-full px-2 flex items-center">
+            <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px]  font-['Plus_Jakarta_Sans']">
               {isCourse ? "Course" : product.product_type}
             </p>
           </div>
 
           {/* Lesson Count Badge */}
           {lessonCount > 1 && (
-            <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 py-1.5 flex items-center">
-              <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
+            <div className="backdrop-blur-[2px] w-[84px] bg-white/35 rounded-full px-2  flex items-center justify-center">
+              <p className="font-bold  text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                 {lessonCount} Lessons
               </p>
             </div>
@@ -403,21 +403,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* Title */}
           <Link
             to={`/products/${product.id}`}
-            className="font-semibold text-[18px] leading-normal text-[#393939] font-['Plus_Jakarta_Sans'] truncate"
+            className="font-semibold text-[18px] leading-normal text-[#393939] font-['Plus_Jakarta_Sans'] md:truncate"
           >
             {product.title}
           </Link>
 
           {/* Description */}
-          <p className="font-normal text-[14px] leading-[19.6px] text-[#111111] font-['Plus_Jakarta_Sans'] line-clamp-3 break-words">
+          <p className="font-normal text-[14px] leading-[19.6px] text-[#111111] font-['Plus_Jakarta_Sans'] max-w-[21rem] line-clamp-3 break-words">
             {product.description}
           </p>
         </div>
 
         {/* Expert Info & Price Section */}
-        <div className="flex flex-col gap-3 w-full mt-auto">
+        <div className="flex flex-col w-full mt-auto">
           {/* Expert Section */}
-          <div className="flex items-start gap-3 w-full">
+          <div className="flex items-start gap-3 mb-2 w-full">
             {/* Avatar */}
             <Avatar className="w-9 h-9 rounded-full flex-shrink-0">
               <AvatarImage
@@ -430,7 +430,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </Avatar>
 
             {/* Expert Info */}
-            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+            <div className="flex flex-col flex-1 min-w-0">
               <p className="font-semibold text-[14px] text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
                 {product.expert.first_name || "Expert"}
               </p>
@@ -463,7 +463,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           product.product_type !== "consultation" ? (
             <Button
               disabled={isFreeProduct && isSaved}
-              className="w-full bg-[#2E54A5] hover:bg-blue-700 text-[#E7ECFA] font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans'] mt-2 flex items-center justify-center"
+              className="w-full bg-[#2E54A5] hover:bg-blue-700 text-[#E7ECFA] font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans'] flex items-center justify-center"
             >
               Saved
             </Button>
