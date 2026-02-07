@@ -473,7 +473,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               disabled={isFreeProduct && (isSaved || isCheckingStatus)}
               className="w-full bg-[#2E54A5] hover:bg-blue-700 text-[#E7ECFA] font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans'] mt-2"
             >
-              {isFreeProduct ? (isSaved ? "View" : "Save") : " Purchase"}
+              {isFreeProduct ? (isSaved ? "Saved" : "Save") : " Purchase"}
             </Button>
           )}
         </div>
