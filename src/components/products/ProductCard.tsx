@@ -218,9 +218,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const handlePurchaseClick = async () => {
-    const isConsultation = product.product_type === "consultation";
-
-    if (isFreeProduct && !isConsultation) {
+    if (isFreeProduct) {
       handleSaveFreeContent();
       return;
     }
@@ -235,6 +233,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }
 
     // If already purchased and NOT a consultation, view content instead
+    const isConsultation = product.product_type === "consultation";
     if (isPurchased && !isConsultation) {
       handleViewContent();
       return;
