@@ -1,12 +1,14 @@
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenant } from "@/contexts/TenantContext";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, MessageCircle } from "lucide-react";
+import { ArrowRight, MessageCircle, Phone } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { UserResources } from "@/components/dashboard/UserResources";
 import AIMomCallModule from "@/components/dashboard/AIMomCallModule";
 const Dashboard: React.FC = () => {
   const { profile } = useAuth();
+  const { isHospitalUser, tenant, config } = useTenant();
   const navigate = useNavigate();
   const firstName = profile?.first_name || "there";
   const isMobile = useIsMobile();
@@ -15,7 +17,7 @@ const Dashboard: React.FC = () => {
       className={`${isMobile ? "px-4 py-6" : "max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}
     >
       {/* Welcome Section */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-brand-primary mb-2">
           Hi {firstName}!
         </h1>
@@ -24,6 +26,43 @@ const Dashboard: React.FC = () => {
           advice, and support.
         </p>
       </div>
+
+      {/* Hospital Banner (Tenant Scope) */}
+      {isHospitalUser && config && tenant && (
+        <div className="bg-brand-primary/5 rounded-xl p-5 mb-6 border border-brand-primary/20 flex flex-col sm:flex-row items-center sm:items-start gap-4 transition-all" style={{borderColor: config.branding?.primary_color}}>
+          {config.branding?.logo_url ? (
+            <img src={config.branding.logo_url} alt="Hospital Logo" className="w-16 h-16 object-contain bg-white rounded-md p-1 shadow-sm" />
+          ) : (
+             <div className="w-16 h-16 bg-white rounded-md p-1 shadow-sm flex items-center justify-center font-bold text-2xl text-brand-primary border border-gray-100">
+               {tenant.name.charAt(0)}
+             </div>
+          )}
+          <div className="text-center sm:text-left flex-1">
+            <h2 className="text-lg font-bold text-brand-dark mb-1" style={{color: config.branding?.primary_color}}>
+              {config.branding?.display_name || tenant.name}
+            </h2>
+            <p className="text-sm text-gray-700 mb-3">
+              We're here to support you on your parenting journey with exclusive resources tailored for your family.
+            </p>
+            {config.departments && config.departments.length > 0 && (
+              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                {config.departments.map((dept, idx) => (
+                   dept.phone ? (
+                     <a key={idx} href={`tel:${dept.phone.replace(/[^0-9]/g, '')}`} className="inline-flex items-center text-xs font-semibold px-2.5 py-1.5 bg-white border border-gray-200 shadow-sm rounded-md hover:bg-gray-50 text-brand-dark transition group">
+                       <Phone className="w-3 h-3 mr-1.5 text-gray-400 group-hover:text-brand-primary" />
+                       {dept.name}: {dept.phone}
+                     </a>
+                   ) : (
+                     <span key={idx} className="inline-flex items-center text-xs font-semibold px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
+                       {dept.name}
+                     </span>
+                   )
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 24/7 Support Card - Featured */}
       <div

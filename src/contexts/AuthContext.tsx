@@ -10,7 +10,7 @@ interface AuthContextType {
   profile: Profile | null
   session: Session | null
   loading: boolean
-  signUp: (email: string, password: string, firstName: string) => Promise<{ user: User | null; error: AuthError | null }>
+  signUp: (email: string, password: string, firstName: string, tenantId?: string | null, source?: string | null) => Promise<{ user: User | null; error: AuthError | null }>
   signIn: (email: string, password: string) => Promise<{ user: User | null; error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>
@@ -124,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe()
   }, [fetchProfile])
 
-  const signUp = async (email: string, password: string, firstName: string) => {
+  const signUp = async (email: string, password: string, firstName: string, tenantId?: string | null, source?: string | null) => {
     try {
       console.log('Signing up user:', email)
       
@@ -150,6 +150,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Fetching profile after signup...')
         // Give the database trigger a moment to create the profile
         await new Promise(resolve => setTimeout(resolve, 200))
+        
+        // Update profile with MT fields if present
+        if (tenantId || source) {
+          await supabase.from('profiles').update({
+            tenant_id: tenantId,
+            acquisition_source: source || 'organic'
+          }).eq('id', data.user.id)
+        }
         const profile = await fetchProfile(data.user.id)
         if (!profile) {
           console.error('Profile not found after signup, retrying...')

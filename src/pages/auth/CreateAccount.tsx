@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AuthLayout from '../../components/layouts/AuthLayout';
 import BackButton from '../../components/ui/BackButton';
 import { Input } from '../../components/ui/input';
@@ -9,9 +9,11 @@ import GoogleAuthButton from '../../components/ui/GoogleAuthButton';
 import { Checkbox } from '../../components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 const CreateAccount: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signUp, user, profile } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -22,6 +24,18 @@ const CreateAccount: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [waitingForProfile, setWaitingForProfile] = useState(false);
+  
+  // MT.3 Tenant Detection
+  const tenantSlug = searchParams.get('tenant');
+  const querySource = searchParams.get('source');
+  const [tenantInfo, setTenantInfo] = useState<any>(null);
+
+  useEffect(() => {
+    if (tenantSlug) {
+      supabase.from('tenants').select('*').eq('slug', tenantSlug).single()
+        .then(({ data }) => setTenantInfo(data));
+    }
+  }, [tenantSlug]);
 
   // Watch for profile to be loaded after signup
   useEffect(() => {
@@ -69,7 +83,8 @@ const CreateAccount: React.FC = () => {
     console.log('Creating account for:', formData.email);
     
     try {
-      const { user, error } = await signUp(formData.email, formData.password, formData.firstName);
+      const acquisitionSource = querySource || (tenantSlug ? 'qr_hospital' : 'organic');
+      const { user, error } = await signUp(formData.email, formData.password, formData.firstName, tenantInfo?.id, acquisitionSource);
       
       if (error) {
         console.error('Sign-up error:', error);
@@ -148,8 +163,8 @@ const CreateAccount: React.FC = () => {
 
         {/* Content */}
         <div className="text-center space-y-2">
-          <h1 className="text-5xl font-bold text-indigo-700">
-            Create Account
+          <h1 className="text-4xl md:text-5xl font-bold text-indigo-700 transition-colors" style={tenantInfo?.config?.branding?.primary_color ? { color: tenantInfo.config.branding.primary_color } : {}}>
+            {tenantInfo ? `Welcome to ${tenantInfo.name}` : 'Create Account'}
           </h1>
           <p className="text-gray-500 text-lg">
             Time is precious so we'll make this quick!
@@ -240,7 +255,8 @@ const CreateAccount: React.FC = () => {
 
           <Button
             type="submit"
-            className="w-full bg-primary text-white hover:bg-action-primary font-semibold rounded-2xl px-6 py-3 text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            className="w-full bg-indigo-700 text-white hover:opacity-90 font-semibold rounded-2xl px-6 py-3 text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
+            style={tenantInfo?.config?.branding?.primary_color ? { backgroundColor: tenantInfo.config.branding.primary_color, color: 'white' } : {}}
             disabled={!isFormValid || isLoading}
           >
             {isLoading ? 'Creating Account...' : 'Create Account'}

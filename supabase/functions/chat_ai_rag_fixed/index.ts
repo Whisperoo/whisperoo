@@ -27,6 +27,31 @@ serve(async (req) => {
 
     const { message, sessionId, childId } = await req.json();
 
+    // 1.1 & 1.2 High-Risk Flags & Intent Classification
+    const ESCALATION_KEYWORDS = [
+      "suicide", "bleeding", "emergency", "fever over", "self-harm", "harm", "kill",
+      "choking", "seizure", "not breathing", "unconscious", "blue lips", "high fever", 
+      "head injury", "poisoning", "anaphylaxis", "allergic reaction", "swallowed", "overdose",
+      "want to die", "kill myself", "end my life", "hurting myself", "cutting", "depression", 
+      "depressed", "hopeless", "worthless", "abuse", "domestic violence", "hitting", "shaking baby", 
+      "unsafe", "neglect", "911", "call 911", "ambulance", "hospital now"
+    ];
+    
+    const MEDICAL_KEYWORDS = [
+      "diagnose", "prescription", "medication", "dosage", "symptoms of", 
+      "treatment", "medicine", "tylenol", "advil", "ibuprofen", "motrin", "doctor"
+    ];
+
+    const messageLower = message.toLowerCase();
+    const matchedEscalationKeywords = ESCALATION_KEYWORDS.filter(keyword => messageLower.includes(keyword));
+    const isEscalation = matchedEscalationKeywords.length > 0;
+    
+    const isMedicalQuestion = !isEscalation && MEDICAL_KEYWORDS.some(keyword => messageLower.includes(keyword));
+    
+    let intent = 'general';
+    if (isEscalation) intent = 'escalation';
+    else if (isMedicalQuestion) intent = 'medical_question';
+
     let currentSessionId = sessionId;
     if (!currentSessionId) {
       const { data: newSession, error: sessionError } = await supabase
@@ -44,26 +69,47 @@ serve(async (req) => {
       currentSessionId = newSession.id;
     }
 
-    // Store user message
+    // 1.4 Store user message with audit logging and detailed flag reason
+    const metadataToStore: any = { 
+      child_id: childId, 
+      flagged: isEscalation,
+      intent: intent
+    };
+    if (isEscalation) {
+      metadataToStore.flag_reason = `Escalation keywords detected: ${matchedEscalationKeywords.join(', ')}`;
+    }
+
     const { error: messageError } = await supabase
       .from('messages')
       .insert({
         session_id: currentSessionId,
         role: 'user',
         content: message,
-        metadata: { child_id: childId }
+        metadata: metadataToStore,
+        is_flagged_for_review: isEscalation
       });
 
     if (messageError) throw messageError;
 
-    // Get enhanced chat context
-    const context = await getEnhancedChatContext(supabase, user.id, childId, currentSessionId);
+    let aiResponse = "";
+    let matchedExperts = [];
 
-    // RAG-FIRST Expert matching (FIXED: Semantic search first, keywords as fallback)
-    const matchedExperts = await findMatchingExpertsRAGFirst(supabase, message);
+    if (isEscalation) {
+      // 1.1 Override Generation with Escalation Response
+      aiResponse = "Please see your provider immediately or call emergency services if this is a medical emergency. As an AI parenting assistant, I am not equipped to handle medical emergencies or provide clinical diagnoses. Your safety and your child's safety is the highest priority.";
+    } else {
+      // Get enhanced chat context
+      const context = await getEnhancedChatContext(supabase, user.id, childId, currentSessionId);
 
-    // Generate AI response
-    const aiResponse = await generateEnhancedAIResponse(message, context, matchedExperts);
+      // RAG-FIRST Expert matching
+      matchedExperts = await findMatchingExpertsRAGFirst(supabase, message);
+      
+      // RAG-FIRST Compliance Training Match
+      const complianceContext = await getComplianceTrainingContext(supabase, message);
+
+      // Generate AI response
+      aiResponse = await generateEnhancedAIResponse(message, context, matchedExperts, intent, complianceContext);
+    }
 
     // Store AI response
     const { error: aiMessageError } = await supabase
@@ -121,6 +167,48 @@ serve(async (req) => {
     );
   }
 });
+
+// Fetch compliance training examples for system prompt self-learning
+async function getComplianceTrainingContext(supabase, message) {
+  try {
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) return "";
+
+    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${openaiApiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'text-embedding-3-small', input: message, encoding_format: 'float' })
+    });
+
+    if (!embeddingResponse.ok) return "";
+
+    const embeddingData = await embeddingResponse.json();
+    const queryEmbedding = embeddingData.data[0].embedding;
+
+    const { data: complianceMatches, error } = await supabase.rpc('match_compliance_training', {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.20,
+      match_count: 2
+    });
+
+    if (error || !complianceMatches || complianceMatches.length === 0) return "";
+
+    let context = `\n\nCOMPLIANCE TRAINING EXAMPLES (Self-Learned Guidelines):`;
+    context += `\nThe testing team has flagged similar past interactions. Please review these approved examples for how to handle this query properly:`;
+    
+    complianceMatches.forEach((match, idx) => {
+      context += `\nExample ${idx + 1} (${match.classification.replace(/_/g, ' ')}):`;
+      context += `\n- Similar User Query: ${match.user_query}`;
+      context += `\n- Approved Correct Response / Guidelines: Avoid repeating the error related to ${match.classification}. Take a safer, more appropriate approach similar to: "${match.ai_response.substring(0, 200)}..."`;
+    });
+    
+    return context + "\n\nCRITICAL: Adjust your response style to align with these approved training examples.";
+
+  } catch (err) {
+    console.error('Error fetching compliance context:', err);
+    return "";
+  }
+}
 
 // RAG-FIRST Expert matching (FIXED)
 async function findMatchingExpertsRAGFirst(supabase, message) {
@@ -400,15 +488,25 @@ async function getEnhancedChatContext(supabase, userId, childId, sessionId) {
 }
 
 // Enhanced AI response generation with better context handling
-async function generateEnhancedAIResponse(message, context, matchedExperts) {
+async function generateEnhancedAIResponse(message, context, matchedExperts, intent = 'general', complianceContext = '') {
   const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
   if (!openaiApiKey) {
     return "I'm sorry, I'm having trouble connecting to my AI service right now. Please try again later.";
   }
 
   let systemPrompt = `You are Whisperoo's AI parenting assistant. Provide helpful, personalized responses.
+CRITICAL MEDICAL GUARDRAIL: Under no circumstances should you diagnose medical conditions, suggest medications, or replace a doctor's advice. You are strictly for educational and supportive purposes. If a parent asks for clinical advice or details severe symptoms, gently but firmly advise them to consult their healthcare provider immediately.`;
 
-PARENT: ${context.parentProfile?.first_name || 'Parent'}
+  // 1.2 Inject explicit medical disclaimer rule if medical question detected
+  if (intent === 'medical_question') {
+    systemPrompt += `\n\nMEDICAL INTENT DETECTED: The user has asked a medical-related question. You MUST include a concise disclaimer in your response stating that you are an AI assistant and not a doctor, and gently advise them to consult their pediatrician or view our expert list before providing any educational context.`;
+  }
+  
+  if (complianceContext) {
+    systemPrompt += complianceContext;
+  }
+
+  systemPrompt += `\n\nPARENT: ${context.parentProfile?.first_name || 'Parent'}
 - Role: ${context.parentProfile?.role || 'Not specified'}
 - Parenting Styles: ${context.parentProfile?.parenting_styles?.join(', ') || 'Not specified'}`;
 

@@ -1,7 +1,8 @@
-import React from 'react';
-import { User } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, ShieldAlert } from 'lucide-react';
 import MarkdownText from './MarkdownText';
 import ExpertSuggestionCard from './ExpertSuggestionCard';
+import ComplianceFeedbackDialog from './ComplianceFeedbackDialog';
 
 interface ExpertSuggestion {
   id: string;
@@ -51,6 +52,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild })
   // Get doctor suggestions from metadata
   const expertSuggestions = message.metadata?.expert_suggestions || [];
   const hasExpertSuggestions = !isUser && expertSuggestions.length > 0;
+  
+  const [isComplianceOpen, setIsComplianceOpen] = useState(false);
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
@@ -101,9 +104,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild })
               )}
             </div>
             
-            {/* Timestamp */}
-            <div className={`text-xs mt-2 ${isUser ? 'text-white/70' : 'text-gray-500'}`}>
-              {timestamp}
+            {/* Timestamp & Flag */}
+            <div className={`flex items-center justify-between text-xs mt-2 ${isUser ? 'text-white/70' : 'text-gray-500'}`}>
+              <span>{timestamp}</span>
+              {!isUser && (
+                <button 
+                  onClick={() => setIsComplianceOpen(true)}
+                  className="flex items-center text-gray-400 hover:text-red-500 transition-colors ml-4"
+                  title="Flag for Compliance Training"
+                >
+                  <ShieldAlert className="w-3 h-3 mr-1" />
+                  Flag
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -122,6 +135,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild })
           </div>
         )}
       </div>
+      
+      {!isUser && (
+        <ComplianceFeedbackDialog
+          isOpen={isComplianceOpen}
+          onClose={() => setIsComplianceOpen(false)}
+          messageContent={message.content}
+        />
+      )}
     </div>
   );
 };

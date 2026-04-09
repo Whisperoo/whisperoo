@@ -101,6 +101,7 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          is_flagged_for_review: boolean | null
           metadata: Json | null
           role: string
           session_id: string
@@ -109,6 +110,7 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
+          is_flagged_for_review?: boolean | null
           metadata?: Json | null
           role: string
           session_id: string
@@ -117,6 +119,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
+          is_flagged_for_review?: boolean | null
           metadata?: Json | null
           role?: string
           session_id?: string
@@ -423,6 +426,7 @@ export type Database = {
       profiles: {
         Row: {
           account_type: string | null
+          acquisition_source: string | null
           created_at: string | null
           custom_role: string | null
           email: string
@@ -454,16 +458,19 @@ export type Database = {
           has_kids: boolean | null
           id: string
           kids_count: number | null
+          language_preference: string | null
           onboarded: boolean | null
           parenting_styles: string[]
           personal_context: string | null
           profile_image_url: string | null
           role: Database["public"]["Enums"]["user_role"] | null
+          tenant_id: string | null
           topics_of_interest: string[]
           updated_at: string | null
         }
         Insert: {
           account_type?: string | null
+          acquisition_source?: string | null
           created_at?: string | null
           custom_role?: string | null
           email: string
@@ -495,16 +502,19 @@ export type Database = {
           has_kids?: boolean | null
           id: string
           kids_count?: number | null
+          language_preference?: string | null
           onboarded?: boolean | null
           parenting_styles?: string[]
           personal_context?: string | null
           profile_image_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          tenant_id?: string | null
           topics_of_interest?: string[]
           updated_at?: string | null
         }
         Update: {
           account_type?: string | null
+          acquisition_source?: string | null
           created_at?: string | null
           custom_role?: string | null
           email?: string
@@ -536,15 +546,25 @@ export type Database = {
           has_kids?: boolean | null
           id?: string
           kids_count?: number | null
+          language_preference?: string | null
           onboarded?: boolean | null
           parenting_styles?: string[]
           personal_context?: string | null
           profile_image_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          tenant_id?: string | null
           topics_of_interest?: string[]
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       purchases: {
         Row: {
@@ -669,6 +689,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tenants: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          slug: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          slug: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          slug?: string
+        }
+        Relationships: []
       }
     }
     Views: {

@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { TenantProvider } from "@/contexts/TenantContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -16,6 +17,7 @@ import DebugSignup from "./pages/DebugSignup";
 import ExpertDetails from "./pages/ExpertDetails";
 import ExpertProfileSettings from "./pages/ExpertProfileSettings";
 import ExpertProfiles from "./pages/ExpertProfiles";
+import CompliancePortal from "./pages/admin/CompliancePortal";
 import { HelpSupportPage } from "./pages/HelpSupportPage";
 import { MyPurchasesPage } from "./pages/MyPurchasesPage";
 import NotFound from "./pages/NotFound";
@@ -51,13 +53,14 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <NavigationProvider>
-              <Routes>
-                <Route path="/" element={<Splash />} />
+        <TenantProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <NavigationProvider>
+                <Routes>
+                  <Route path="/" element={<Splash />} />
                 <Route path="/auth/create" element={<CreateAccount />} />
                 <Route
                   path="/auth/create-simple"
@@ -261,6 +264,14 @@ const App = () => {
                   }
                 />
                 <Route
+                  path="/compliance/training"
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <CompliancePortal />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/help"
                   element={
                     <ProtectedRoute requireAuth={true} requireOnboarding={true}>
@@ -280,6 +291,7 @@ const App = () => {
             </NavigationProvider>
           </BrowserRouter>
         </TooltipProvider>
+        </TenantProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
