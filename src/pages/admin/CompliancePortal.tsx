@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import Chat from '../Chat';
 
 interface ComplianceLog {
@@ -17,6 +18,8 @@ interface ComplianceLog {
 const CompliancePortal: React.FC = () => {
   const [logs, setLogs] = useState<ComplianceLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState<string>('');
 
   useEffect(() => {
     fetchLogs();
@@ -35,6 +38,31 @@ const CompliancePortal: React.FC = () => {
       setLogs(data || []);
     }
     setLoading(false);
+  };
+
+  const startEditing = (log: ComplianceLog) => {
+    setEditingId(log.id);
+    setEditContent(log.ai_response);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditContent('');
+  };
+
+  const saveEdit = async (id: string) => {
+    const { error } = await supabase
+      .from('compliance_training')
+      .update({ ai_response: editContent })
+      .eq('id', id);
+
+    if (error) {
+      toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Response updated', description: 'The AI response has been modified successfully.' });
+      setLogs(logs.map(log => log.id === id ? { ...log, ai_response: editContent } : log));
+      setEditingId(null);
+    }
   };
 
   const updateStatus = async (id: string, status: string) => {
@@ -117,7 +145,27 @@ const CompliancePortal: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">AI Response</h3>
-                  <div className="text-sm text-gray-900 bg-brand-primary/5 p-4 rounded-lg border border-brand-primary/10 shadow-sm whitespace-pre-wrap">{log.ai_response}</div>
+                  {editingId === log.id ? (
+                    <div className="space-y-3 mt-2">
+                       <Textarea 
+                         value={editContent} 
+                         onChange={(e) => setEditContent(e.target.value)} 
+                         className="min-h-[200px] text-sm md:text-base leading-relaxed bg-white border-brand-primary/30 focus:border-brand-primary"
+                       />
+                       <div className="flex space-x-2">
+                         <Button size="sm" onClick={() => saveEdit(log.id)} className="bg-brand-primary text-white hover:bg-brand-primary/90">Save Changes</Button>
+                         <Button size="sm" variant="outline" onClick={cancelEditing}>Cancel</Button>
+                       </div>
+                    </div>
+                  ) : (
+                    <div className="group relative">
+                      <div className="text-sm text-gray-900 bg-brand-primary/5 p-4 rounded-lg border border-brand-primary/10 shadow-sm whitespace-pre-wrap">{log.ai_response}</div>
+                      <Button size="sm" variant="secondary" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 hover:bg-white text-brand-primary shadow-sm" onClick={() => startEditing(log)}>
+                        <Edit2 className="w-3 h-3 mr-1" />
+                        Edit Response
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
