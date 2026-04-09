@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
+import { Input } from '../ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
@@ -17,10 +18,17 @@ const ComplianceFeedbackDialog: React.FC<ComplianceFeedbackDialogProps> = ({
   isOpen, onClose, messageContent, userQuery 
 }) => {
   const [classification, setClassification] = useState<string>('missed_escalation');
+  const [customClassification, setCustomClassification] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    
+    // Use custom classification if "other" is selected
+    const finalClassification = classification === 'other' 
+      ? (customClassification.trim() || 'Other') 
+      : classification;
+
     try {
       const authObj = await supabase.auth.getUser();
       const user = authObj.data.user;
@@ -28,7 +36,7 @@ const ComplianceFeedbackDialog: React.FC<ComplianceFeedbackDialogProps> = ({
       const { error } = await supabase.from('compliance_training').insert({
         user_query: userQuery || "Unable to capture query",
         ai_response: messageContent,
-        classification: classification,
+        classification: finalClassification,
         status: 'draft',
         tester_id: user?.id
       });
@@ -71,9 +79,22 @@ const ComplianceFeedbackDialog: React.FC<ComplianceFeedbackDialogProps> = ({
                 <SelectItem value="bad_medical_advice">Bad Medical Advice</SelectItem>
                 <SelectItem value="inappropriate_tone">Inappropriate Tone</SelectItem>
                 <SelectItem value="false_positive">False Positive (Unnecessary Escalation)</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {classification === 'other' && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+              <label className="text-sm font-medium">Please specify</label>
+              <Input 
+                placeholder="Describe the issue..." 
+                value={customClassification}
+                onChange={(e) => setCustomClassification(e.target.value)}
+                maxLength={50}
+              />
+            </div>
+          )}
           
           <div className="space-y-2">
             <label className="text-sm font-medium">AI Response Context</label>

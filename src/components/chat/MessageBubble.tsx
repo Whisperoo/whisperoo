@@ -40,9 +40,10 @@ interface Child {
 interface MessageBubbleProps {
   message: Message;
   selectedChild?: Child | null;
+  isComplianceMode?: boolean;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, isComplianceMode = false }) => {
   const isUser = message.role === 'user';
   const timestamp = new Date(message.created_at).toLocaleTimeString([], { 
     hour: '2-digit', 
@@ -107,7 +108,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild })
             {/* Timestamp & Flag */}
             <div className={`flex items-center justify-between text-xs mt-2 ${isUser ? 'text-white/70' : 'text-gray-500'}`}>
               <span>{timestamp}</span>
-              {!isUser && (
+              {!isUser && isComplianceMode && (
                 <button 
                   onClick={() => setIsComplianceOpen(true)}
                   className="flex items-center text-gray-400 hover:text-red-500 transition-colors ml-4"

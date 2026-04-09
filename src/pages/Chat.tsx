@@ -26,7 +26,12 @@ interface Child {
   is_expecting: boolean;
   expected_name?: string;
 }
-const Chat: React.FC = () => {
+interface ChatProps {
+  isComplianceMode?: boolean;
+  isEmbedded?: boolean;
+}
+
+const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = false }) => {
   const {
     profile,
     user
@@ -254,7 +259,7 @@ const Chat: React.FC = () => {
         </div>
       </div>;
   }
-  return <div className="min-h-screen flex flex-col bg-gray-50">
+  return <div className={`${isEmbedded ? 'h-[750px] border border-gray-200 rounded-xl overflow-hidden' : 'min-h-screen'} flex flex-col bg-gray-50`}>
       {/* Chat Controls Header */}
       <div className="bg-white border-b border-gray-200 p-3 sm:p-4">
         <div className="max-w-4xl mx-auto flex justify-end gap-3">
@@ -297,8 +302,8 @@ const Chat: React.FC = () => {
 
       {/* Messages */}
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-4 overflow-hidden">
-        <div className="h-full overflow-y-auto space-y-4">
-          {messages.map(message => <MessageBubble key={message.id} message={message} selectedChild={selectedChild} />)}
+        <div className="h-full overflow-y-auto space-y-4 pr-1">
+          {messages.map(message => <MessageBubble key={message.id} message={message} selectedChild={selectedChild} isComplianceMode={isComplianceMode} />)}
           {isLoading && <div className="flex justify-start mb-4">
               <div className="flex items-start space-x-3 max-w-xs">
                 <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-white border border-gray-200">

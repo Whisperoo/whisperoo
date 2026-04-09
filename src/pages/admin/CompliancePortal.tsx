@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Chat from '../Chat';
 
 interface ComplianceLog {
   id: string;
@@ -37,30 +38,63 @@ const CompliancePortal: React.FC = () => {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase
-      .from('compliance_training')
-      .update({ status })
-      .eq('id', id);
-      
-    if (error) {
-      toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+    if (status === 'rejected') {
+      const { error } = await supabase
+        .from('compliance_training')
+        .delete()
+        .eq('id', id);
+        
+      if (error) {
+        toast({ title: 'Rejection failed', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Feedback rejected', description: `Entry permanently removed from the queue.` });
+        setLogs(logs.filter(log => log.id !== id));
+      }
     } else {
-      toast({ title: 'Status updated', description: `Entry marked as ${status}` });
-      setLogs(logs.map(log => log.id === id ? { ...log, status } : log));
+      const { error } = await supabase
+        .from('compliance_training')
+        .update({ status })
+        .eq('id', id);
+        
+      if (error) {
+        toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Status updated', description: `Entry approved for training.` });
+        setLogs(logs.map(log => log.id === id ? { ...log, status } : log));
+      }
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-brand-primary mb-2">AI Compliance Training Portal</h1>
-        <p className="text-gray-600">Review flagged AI responses and approve them for self-learning RAG injection.</p>
+        <p className="text-gray-600">Review flagged AI responses and approve them for self-learning RAG injection. Use the chat window to test edge cases.</p>
       </div>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Local Test Chat Box */}
+        <div className="flex flex-col h-full">
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-brand-dark">Test Environment</h2>
+            <p className="text-sm text-gray-500">Interact with the AI to trigger potential issues and flag them.</p>
+          </div>
+          <Chat isComplianceMode={true} isEmbedded={true} />
+        </div>
+
+        {/* Review Log Panel */}
+        <div className="flex flex-col">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-brand-dark">Review Queue</h2>
+            <Button size="sm" variant="outline" onClick={fetchLogs} disabled={loading}>
+              Refresh
+            </Button>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center p-12 text-gray-500">Loading...</div>
+          ) : (
+            <div className="space-y-4 max-h-[750px] overflow-y-auto pr-2 pb-12">
           {logs.map((log) => (
             <div key={log.id} className="bg-white rounded-xl shadow-card p-6 border border-brand-primary/10 hover:border-brand-primary/30 hover:shadow-elevated transition-all duration-200">
               <div className="flex justify-between items-start mb-4">
@@ -112,8 +146,10 @@ const CompliancePortal: React.FC = () => {
           {logs.length === 0 && (
             <p className="text-center text-gray-500 py-12">No training feedback submitted yet.</p>
           )}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
