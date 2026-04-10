@@ -329,6 +329,19 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
         </div>
       </div>
 
+      {/* Disclaimer */}
+      <div className="text-center py-2 px-4">
+        <p className="text-xs text-gray-400">
+          Not medical advice or a substitute for a doctor.{' '}
+          <button
+            onClick={() => navigate('/')}
+            className="underline hover:text-gray-600 transition-colors"
+          >
+            Learn more
+          </button>
+        </p>
+      </div>
+
       {/* Message Input */}
       <div className="bg-white border-t border-gray-200 p-4 shadow-sm">
         <div className="max-w-4xl mx-auto">

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { User, ShieldAlert } from 'lucide-react';
+import { User, ThumbsUp, ThumbsDown } from 'lucide-react';
 import MarkdownText from './MarkdownText';
 import ExpertSuggestionCard from './ExpertSuggestionCard';
 import ComplianceFeedbackDialog from './ComplianceFeedbackDialog';
+import { supabase } from '@/lib/supabase';
+import { toast } from '@/hooks/use-toast';
 
 interface ExpertSuggestion {
   id: string;
@@ -54,7 +56,38 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
   const expertSuggestions = message.metadata?.expert_suggestions || [];
   const hasExpertSuggestions = !isUser && expertSuggestions.length > 0;
   
-  const [isComplianceOpen, setIsComplianceOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [feedbackState, setFeedbackState] = useState<'none' | 'up' | 'down'>('none');
+
+  const handleThumbsUp = async () => {
+    if (feedbackState === 'up') return; // Already submitted
+    setFeedbackState('up');
+    
+    try {
+      const authObj = await supabase.auth.getUser();
+      const user = authObj.data.user;
+
+      await supabase.from('compliance_training').insert({
+        user_query: 'Positive feedback',
+        ai_response: message.content,
+        classification: 'positive',
+        status: 'user_feedback',
+        tester_id: user?.id
+      });
+
+      toast({
+        title: "Thanks for the feedback!",
+        description: "We're glad this was helpful.",
+      });
+    } catch (err) {
+      console.error('Error submitting positive feedback:', err);
+    }
+  };
+
+  const handleThumbsDown = () => {
+    setFeedbackState('down');
+    setIsFeedbackOpen(true);
+  };
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
@@ -105,18 +138,36 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
               )}
             </div>
             
-            {/* Timestamp & Flag */}
+            {/* Timestamp & Feedback */}
             <div className={`flex items-center justify-between text-xs mt-2 ${isUser ? 'text-white/70' : 'text-gray-500'}`}>
               <span>{timestamp}</span>
-              {!isUser && isComplianceMode && (
-                <button 
-                  onClick={() => setIsComplianceOpen(true)}
-                  className="flex items-center text-gray-400 hover:text-red-500 transition-colors ml-4"
-                  title="Flag for Compliance Training"
-                >
-                  <ShieldAlert className="w-3 h-3 mr-1" />
-                  Flag
-                </button>
+              {!isUser && (
+                <div className="flex items-center gap-2 ml-4">
+                  <button 
+                    onClick={handleThumbsUp}
+                    className={`flex items-center transition-colors ${
+                      feedbackState === 'up' 
+                        ? 'text-green-500' 
+                        : 'text-gray-400 hover:text-green-500'
+                    }`}
+                    title="This was helpful"
+                    disabled={feedbackState === 'up'}
+                  >
+                    <ThumbsUp className={`w-3.5 h-3.5 ${feedbackState === 'up' ? 'fill-current' : ''}`} />
+                  </button>
+                  <button 
+                    onClick={handleThumbsDown}
+                    className={`flex items-center transition-colors ${
+                      feedbackState === 'down' 
+                        ? 'text-red-500' 
+                        : 'text-gray-400 hover:text-red-500'
+                    }`}
+                    title="This wasn't helpful"
+                    disabled={feedbackState === 'down'}
+                  >
+                    <ThumbsDown className={`w-3.5 h-3.5 ${feedbackState === 'down' ? 'fill-current' : ''}`} />
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -139,8 +190,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
       
       {!isUser && (
         <ComplianceFeedbackDialog
-          isOpen={isComplianceOpen}
-          onClose={() => setIsComplianceOpen(false)}
+          isOpen={isFeedbackOpen}
+          onClose={() => setIsFeedbackOpen(false)}
           messageContent={message.content}
         />
       )}

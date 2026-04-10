@@ -239,8 +239,16 @@ async function findMatchingExpertsRAGFirst(supabase, message) {
     return semanticExperts;
   }
 
-  // No semantic matches found - let AI handle the response without expert recommendations
-  console.log(`No semantic expert matches found for query: "${message}"`);
+  // FALLBACK: Check specialty-specific keywords when semantic search finds nothing
+  console.log('Attempting keyword fallback for expert matching...');
+  const keywordExperts = await findMatchingExpertsByKeywords(supabase, message);
+  if (keywordExperts.length > 0) {
+    console.log('Found experts via keyword fallback:', keywordExperts.map(e => e.name));
+    return keywordExperts;
+  }
+
+  // No matches found - let AI handle the response without expert recommendations
+  console.log(`No expert matches found for query: "${message}"`);
   return [];
 }
 
@@ -300,7 +308,7 @@ async function findMatchingExpertsBySemantic(supabase, message) {
 
     // Filter by similarity score and return formatted results - let AI decide relevance
     const filteredExperts = similarExperts
-      .filter(expert => expert.similarity >= 0.35)  // Still relevant but more inclusive
+      .filter(expert => expert.similarity >= 0.30)  // Lowered to catch colloquial phrasing
       .map(expert => ({
         id: expert.expert_id,
         name: expert.first_name || 'Expert',
@@ -323,6 +331,99 @@ async function findMatchingExpertsBySemantic(supabase, message) {
 
   } catch (error) {
     console.error('Error in semantic expert matching:', error);
+    return [];
+  }
+}
+
+// Keyword-based fallback for expert matching when semantic search misses
+async function findMatchingExpertsByKeywords(supabase, message) {
+  const messageLower = message.toLowerCase();
+
+  // Specialty keyword maps
+  const SPECIALTY_KEYWORDS = [
+    {
+      specialties: ['Pelvic Floor', 'Pelvic Health', 'Postpartum Recovery'],
+      keywords: ['pee', 'leak', 'leaking', 'incontinence', 'pelvic', 'sneeze', 'kegel',
+                 'bladder', 'pelvic floor', 'prolapse', 'diastasis', 'core recovery',
+                 'postpartum body', 'perineal', 'vaginal pressure']
+    },
+    {
+      specialties: ['Sleep Training', 'Sleep', 'Infant Sleep'],
+      keywords: ['sleep', 'bedtime', 'nap', 'night waking', 'sleep training',
+                 'won\'t sleep', 'crying at night', 'sleep regression']
+    },
+    {
+      specialties: ['Breastfeeding', 'Lactation', 'Feeding'],
+      keywords: ['breastfeed', 'nursing', 'lactation', 'latch', 'milk supply',
+                 'bottle', 'pumping', 'weaning', 'formula']
+    },
+    {
+      specialties: ['Chiropractic', 'Pediatric Chiropractic'],
+      keywords: ['chiropractic', 'alignment', 'tension', 'colic', 'torticollis',
+                 'spine', 'nervous system']
+    },
+    {
+      specialties: ['Yoga', 'Prenatal Yoga', 'Postnatal Yoga'],
+      keywords: ['yoga', 'prenatal exercise', 'postnatal exercise', 'mindfulness',
+                 'breathing exercise', 'meditation', 'stretch']
+    },
+    {
+      specialties: ['Family Dynamics', 'Lifestyle', 'Emotional Support'],
+      keywords: ['overwhelmed', 'relationship', 'partner', 'family dynamics',
+                 'identity', 'balance', 'stress', 'mental health', 'postpartum depression']
+    }
+  ];
+
+  // Find which specialties match the user's message
+  const matchedSpecialtyGroups = SPECIALTY_KEYWORDS.filter(group =>
+    group.keywords.some(keyword => messageLower.includes(keyword))
+  );
+
+  if (matchedSpecialtyGroups.length === 0) return [];
+
+  // Get all matched specialty names
+  const matchedSpecialties = matchedSpecialtyGroups.flatMap(g => g.specialties);
+
+  try {
+    // Query experts whose specialties overlap with matched keywords
+    const { data: experts, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('account_type', 'expert')
+      .eq('expert_verified', true)
+      .eq('expert_profile_visibility', true)
+      .eq('expert_accepts_new_clients', true)
+      .order('first_name');
+
+    if (error || !experts) return [];
+
+    // Filter experts whose specialties overlap with matched keywords
+    const matchingExperts = experts.filter(expert => {
+      const expertSpecs = expert.expert_specialties || [];
+      return expertSpecs.some(spec =>
+        matchedSpecialties.some(ms =>
+          spec.toLowerCase().includes(ms.toLowerCase()) ||
+          ms.toLowerCase().includes(spec.toLowerCase())
+        )
+      );
+    });
+
+    return matchingExperts.map(expert => ({
+      id: expert.id,
+      name: expert.first_name || 'Expert',
+      specialty: expert.expert_specialties?.[0] || 'General',
+      bio: expert.expert_bio || 'Experienced professional ready to help.',
+      profile_image_url: expert.profile_image_url,
+      rating: expert.expert_rating || 5.0,
+      total_reviews: expert.expert_total_reviews || 0,
+      consultation_fee: expert.expert_consultation_rate
+        ? Math.round(expert.expert_consultation_rate * 100)
+        : 10000,
+      experience_years: expert.expert_experience_years,
+      location: expert.expert_office_location
+    }));
+  } catch (err) {
+    console.error('Error in keyword expert fallback:', err);
     return [];
   }
 }
@@ -607,7 +708,7 @@ GUIDELINES:
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages,
-        max_tokens: 300,
+        max_tokens: 1024,
         temperature: 0.2
       })
     });

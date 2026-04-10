@@ -86,9 +86,9 @@ const MarkdownText: React.FC<MarkdownTextProps> = ({ content, className = "" }) 
     if (currentList) {
       // Always render as bullet lists
       elements.push(
-        <ul key={`ul-${elements.length}`} className="list-disc list-inside space-y-1 my-2">
+        <ul key={`ul-${elements.length}`} className="list-disc list-outside pl-5 space-y-1 my-1">
           {currentList.items.map((item, index) => (
-            <li key={index} className="ml-2">
+            <li key={index}>
               {processInlineMarkdown(item)}
             </li>
           ))}
@@ -105,7 +105,7 @@ const MarkdownText: React.FC<MarkdownTextProps> = ({ content, className = "" }) 
     if (trimmedLine === '') {
       finishCurrentList();
       if (elements.length > 0) {
-        elements.push(<br key={`br-${lineIndex}`} />);
+        elements.push(<div key={`spacer-${lineIndex}`} className="h-1" />);
       }
       return;
     }
@@ -120,7 +120,7 @@ const MarkdownText: React.FC<MarkdownTextProps> = ({ content, className = "" }) 
         finishCurrentList();
         const headingText = content.slice(0, -1); // Remove the trailing colon
         elements.push(
-          <p key={`heading-${lineIndex}`} className="mb-2 mt-4 font-semibold">
+          <p key={`heading-${lineIndex}`} className="mb-1 mt-3 font-semibold">
             {processInlineMarkdown(headingText)}
           </p>
         );
@@ -146,7 +146,7 @@ const MarkdownText: React.FC<MarkdownTextProps> = ({ content, className = "" }) 
         finishCurrentList();
         const headingText = content.slice(0, -1); // Remove the trailing colon
         elements.push(
-          <p key={`heading-${lineIndex}`} className="mb-2 mt-4 font-semibold">
+          <p key={`heading-${lineIndex}`} className="mb-1 mt-3 font-semibold">
             {processInlineMarkdown(headingText)}
           </p>
         );

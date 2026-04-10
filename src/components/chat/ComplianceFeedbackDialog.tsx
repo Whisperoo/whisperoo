@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
-import { Input } from '../ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
@@ -17,17 +16,12 @@ interface ComplianceFeedbackDialogProps {
 const ComplianceFeedbackDialog: React.FC<ComplianceFeedbackDialogProps> = ({ 
   isOpen, onClose, messageContent, userQuery 
 }) => {
-  const [classification, setClassification] = useState<string>('missed_escalation');
-  const [customClassification, setCustomClassification] = useState<string>('');
+  const [classification, setClassification] = useState<string>('no_answer');
+  const [additionalFeedback, setAdditionalFeedback] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    
-    // Use custom classification if "other" is selected
-    const finalClassification = classification === 'other' 
-      ? (customClassification.trim() || 'Other') 
-      : classification;
 
     try {
       const authObj = await supabase.auth.getUser();
@@ -35,18 +29,24 @@ const ComplianceFeedbackDialog: React.FC<ComplianceFeedbackDialogProps> = ({
 
       const { error } = await supabase.from('compliance_training').insert({
         user_query: userQuery || "Unable to capture query",
-        ai_response: messageContent,
-        classification: finalClassification,
-        status: 'draft',
+        ai_response: additionalFeedback.trim() 
+          ? `${messageContent}\n\n---\nUser feedback: ${additionalFeedback.trim()}`
+          : messageContent,
+        classification: classification,
+        status: 'user_feedback',
         tester_id: user?.id
       });
 
       if (error) throw error;
       
       toast({
-        title: "Feedback Submitted",
-        description: "Thank you for helping train the AI.",
+        title: "Feedback Sent",
+        description: "Thank you for helping us improve Whisperoo.",
       });
+      
+      // Reset form
+      setClassification('no_answer');
+      setAdditionalFeedback('');
       onClose();
     } catch (err: any) {
       toast({
@@ -63,45 +63,40 @@ const ComplianceFeedbackDialog: React.FC<ComplianceFeedbackDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>AI Compliance Feedback</DialogTitle>
-          <DialogDescription>Flag this response for the AI training review queue.</DialogDescription>
+          <DialogTitle>Help us improve this answer</DialogTitle>
+          <DialogDescription>
+            Your feedback helps us make Whisperoo better for you and other parents.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Issue Type</label>
+            <label className="text-sm font-medium">What didn't feel right?</label>
             <Select value={classification} onValueChange={setClassification}>
               <SelectTrigger>
-                <SelectValue placeholder="Select issue type" />
+                <SelectValue placeholder="Select a reason" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="missed_escalation">Missed Escalation</SelectItem>
-                <SelectItem value="bad_medical_advice">Bad Medical Advice</SelectItem>
-                <SelectItem value="inappropriate_tone">Inappropriate Tone</SelectItem>
-                <SelectItem value="false_positive">False Positive (Unnecessary Escalation)</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="no_answer">This doesn't answer my question</SelectItem>
+                <SelectItem value="too_generic">Feels too generic or not personalized</SelectItem>
+                <SelectItem value="unsafe_concerning">This felt unsafe or concerning</SelectItem>
+                <SelectItem value="tone_off">Tone felt off</SelectItem>
+                <SelectItem value="slow_buggy">Slow or buggy</SelectItem>
+                <SelectItem value="other">Something else</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {classification === 'other' && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-              <label className="text-sm font-medium">Please specify</label>
-              <Input 
-                placeholder="Describe the issue..." 
-                value={customClassification}
-                onChange={(e) => setCustomClassification(e.target.value)}
-                maxLength={50}
-              />
-            </div>
-          )}
-          
           <div className="space-y-2">
-            <label className="text-sm font-medium">AI Response Context</label>
+            <label className="text-sm font-medium text-gray-600">
+              Tell us more information or suggest what would have been more helpful (Optional)
+            </label>
             <Textarea 
-              value={messageContent} 
-              readOnly 
-              className="h-24 bg-gray-50 text-xs text-gray-500" 
+              placeholder="Type your thoughts here..." 
+              value={additionalFeedback}
+              onChange={(e) => setAdditionalFeedback(e.target.value)}
+              className="h-24 resize-none" 
+              maxLength={500}
             />
           </div>
         </div>
@@ -109,7 +104,7 @@ const ComplianceFeedbackDialog: React.FC<ComplianceFeedbackDialogProps> = ({
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Submitting...' : 'Submit to Queue'}
+            {isSubmitting ? 'Sending...' : 'Send Feedback'}
           </Button>
         </DialogFooter>
       </DialogContent>

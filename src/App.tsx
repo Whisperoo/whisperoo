@@ -18,6 +18,7 @@ import ExpertDetails from "./pages/ExpertDetails";
 import ExpertProfileSettings from "./pages/ExpertProfileSettings";
 import ExpertProfiles from "./pages/ExpertProfiles";
 import CompliancePortal from "./pages/admin/CompliancePortal";
+import SuperAdminPortal from "./pages/admin/SuperAdminPortal";
 import { HelpSupportPage } from "./pages/HelpSupportPage";
 import { MyPurchasesPage } from "./pages/MyPurchasesPage";
 import NotFound from "./pages/NotFound";
@@ -268,6 +269,14 @@ const App = () => {
                   element={
                     <ProtectedRoute requireAuth={true}>
                       <CompliancePortal />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/super"
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <SuperAdminPortal />
                     </ProtectedRoute>
                   }
                 />
