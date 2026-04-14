@@ -55,8 +55,13 @@ const Login: React.FC = () => {
           description: "You have successfully signed in.",
         });
 
-        // Navigate to dashboard - ProtectedRoute will handle onboarding redirect if needed
-        navigate("/dashboard");
+        // Specific redirection for super admin
+        if (user.email?.toLowerCase() === "engineering@whisperoo.app") {
+          navigate("/admin/super");
+        } else {
+          // Navigate to dashboard - ProtectedRoute will handle onboarding redirect if needed
+          navigate("/dashboard");
+        }
       }
     } catch (error) {
       console.error("Login error:", error);
