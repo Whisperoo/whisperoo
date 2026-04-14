@@ -28,6 +28,7 @@ const CreateAccount: React.FC = () => {
   // MT.3 Tenant Detection
   const tenantSlug = searchParams.get('tenant');
   const querySource = searchParams.get('source');
+  const queryDept = searchParams.get('dept');
   const [tenantInfo, setTenantInfo] = useState<any>(null);
 
   useEffect(() => {
@@ -84,7 +85,8 @@ const CreateAccount: React.FC = () => {
     
     try {
       const acquisitionSource = querySource || (tenantSlug ? 'qr_hospital' : 'organic');
-      const { user, error } = await signUp(formData.email, formData.password, formData.firstName, tenantInfo?.id, acquisitionSource);
+      const acquisitionDept = queryDept || null;
+      const { user, error } = await signUp(formData.email, formData.password, formData.firstName, tenantInfo?.id, acquisitionSource, acquisitionDept);
       
       if (error) {
         console.error('Sign-up error:', error);
@@ -167,7 +169,9 @@ const CreateAccount: React.FC = () => {
             {tenantInfo ? `Welcome to ${tenantInfo.name}` : 'Create Account'}
           </h1>
           <p className="text-gray-500 text-lg">
-            Time is precious so we'll make this quick!
+            {tenantInfo && queryDept 
+              ? `Signing up via ${tenantInfo.config?.branding?.display_name || tenantInfo.name} — ${queryDept.toUpperCase()} Department`
+              : 'Time is precious so we\'ll make this quick!'}
           </p>
         </div>
 

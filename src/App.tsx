@@ -42,6 +42,7 @@ import OnboardingKidsAges from "./pages/onboarding/OnboardingKidsAges";
 import OnboardingKidsCount from "./pages/onboarding/OnboardingKidsCount";
 import OnboardingParentingStyles from "./pages/onboarding/OnboardingParentingStyles";
 import OnboardingRole from "./pages/onboarding/OnboardingRole";
+import OnboardingHospitalCheck from "./pages/onboarding/OnboardingHospitalCheck";
 import OnboardingTopics from "./pages/onboarding/OnboardingTopics";
 
 const queryClient = new QueryClient();
@@ -82,6 +83,14 @@ const App = () => {
                   element={
                     <ProtectedRoute requireAuth={true}>
                       <OnboardingRole />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/onboarding/hospital-check"
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <OnboardingHospitalCheck />
                     </ProtectedRoute>
                   }
                 />

@@ -97,7 +97,7 @@ const OnboardingKids: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/onboarding/role');
+    navigate('/onboarding/hospital-check');
   };
 
   const handleSkip = () => {

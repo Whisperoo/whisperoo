@@ -303,7 +303,19 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
       {/* Messages */}
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-4 overflow-hidden">
         <div className="h-full overflow-y-auto space-y-4 pr-1">
-          {messages.map(message => <MessageBubble key={message.id} message={message} selectedChild={selectedChild} isComplianceMode={isComplianceMode} />)}
+          {messages.map((message, index) => {
+            // Find the preceding user message for assistant bubbles (used by feedback dialog)
+            let previousUserQuery: string | undefined;
+            if (message.role === 'assistant') {
+              for (let i = index - 1; i >= 0; i--) {
+                if (messages[i].role === 'user') {
+                  previousUserQuery = messages[i].content;
+                  break;
+                }
+              }
+            }
+            return <MessageBubble key={message.id} message={message} selectedChild={selectedChild} isComplianceMode={isComplianceMode} previousUserQuery={previousUserQuery} />;
+          })}
           {isLoading && <div className="flex justify-start mb-4">
               <div className="flex items-start space-x-3 max-w-xs">
                 <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-white border border-gray-200">

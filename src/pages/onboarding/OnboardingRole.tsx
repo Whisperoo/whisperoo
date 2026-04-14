@@ -48,7 +48,7 @@ const OnboardingRole: React.FC = () => {
   const handleNext = () => {
     const finalRole = role === 'other' ? customRole : role;
     if (finalRole) {
-      navigate('/onboarding/kids');
+      navigate('/onboarding/hospital-check');
     }
   };
 

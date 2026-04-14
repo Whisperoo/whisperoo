@@ -43,9 +43,10 @@ interface MessageBubbleProps {
   message: Message;
   selectedChild?: Child | null;
   isComplianceMode?: boolean;
+  previousUserQuery?: string;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, isComplianceMode = false }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, isComplianceMode = false, previousUserQuery }) => {
   const isUser = message.role === 'user';
   const timestamp = new Date(message.created_at).toLocaleTimeString([], { 
     hour: '2-digit', 
@@ -193,6 +194,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
           isOpen={isFeedbackOpen}
           onClose={() => setIsFeedbackOpen(false)}
           messageContent={message.content}
+          userQuery={previousUserQuery}
         />
       )}
     </div>
