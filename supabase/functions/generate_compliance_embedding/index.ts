@@ -68,6 +68,7 @@ serve(async (req) => {
 
     let processed = 0;
     let failed = 0;
+    const errors = [];
 
     for (const entry of entriesToProcess) {
       try {
@@ -93,7 +94,10 @@ serve(async (req) => {
         });
 
         if (!embeddingResponse.ok) {
-          console.error(`Failed to generate embedding for entry ${entry.id}: ${embeddingResponse.status}`);
+          const errBody = await embeddingResponse.text();
+          const errMsg = `OpenAI API error (${embeddingResponse.status}): ${errBody}`;
+          console.error(`Failed to generate embedding for entry ${entry.id}: ${errMsg}`);
+          errors.push({ entry_id: entry.id, error: errMsg });
           failed++;
           continue;
         }
@@ -101,21 +105,27 @@ serve(async (req) => {
         const embeddingData = await embeddingResponse.json();
         const embedding = embeddingData.data[0].embedding;
 
+        console.log(`Generated embedding with ${embedding.length} dimensions for entry ${entry.id}`);
+
         // Update the entry with the generated embedding
         const { error: updateError } = await supabase
           .from('compliance_training')
-          .update({ embedding })
+          .update({ embedding: JSON.stringify(embedding) })
           .eq('id', entry.id);
 
         if (updateError) {
-          console.error(`Failed to save embedding for entry ${entry.id}:`, updateError);
+          const errMsg = `DB update failed: ${updateError.message} (code: ${updateError.code})`;
+          console.error(`Failed to save embedding for entry ${entry.id}:`, errMsg);
+          errors.push({ entry_id: entry.id, error: errMsg });
           failed++;
         } else {
           processed++;
-          console.log(`Generated embedding for entry ${entry.id}`);
+          console.log(`Saved embedding for entry ${entry.id}`);
         }
       } catch (entryError) {
-        console.error(`Error processing entry ${entry.id}:`, entryError);
+        const errMsg = entryError.message || String(entryError);
+        console.error(`Error processing entry ${entry.id}:`, errMsg);
+        errors.push({ entry_id: entry.id, error: errMsg });
         failed++;
       }
     }
@@ -125,7 +135,8 @@ serve(async (req) => {
         message: `Processed ${processed} entries, ${failed} failed`,
         processed,
         failed,
-        total: entriesToProcess.length
+        total: entriesToProcess.length,
+        errors: errors.length > 0 ? errors : undefined
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

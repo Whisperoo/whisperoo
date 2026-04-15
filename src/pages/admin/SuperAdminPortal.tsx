@@ -196,10 +196,20 @@ const SuperAdminPortal: React.FC = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Embedding Generated',
-        description: `Entry is now active in AI training. ${data?.message || ''}`,
-      });
+      if (data?.failed > 0) {
+        const errDetail = data.errors?.[0]?.error || 'Unknown error';
+        toast({
+          title: 'Embedding Failed',
+          description: errDetail,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Embedding Generated ✓',
+          description: 'This entry is now active in AI training.',
+        });
+        fetchEntries(); // Refresh to reflect updated state
+      }
     } catch (err: any) {
       toast({
         title: 'Embedding Failed',
@@ -220,10 +230,20 @@ const SuperAdminPortal: React.FC = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Batch Embedding Complete',
-        description: data?.message || 'All approved entries now have embeddings.',
-      });
+      if (data?.failed > 0 && data?.processed === 0) {
+        const errDetail = data.errors?.[0]?.error || 'Unknown error';
+        toast({
+          title: 'Batch Failed',
+          description: `${data.failed} entries failed. Error: ${errDetail}`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Batch Embedding Complete ✓',
+          description: `${data?.processed || 0} processed, ${data?.failed || 0} failed.`,
+        });
+        if (data?.processed > 0) fetchEntries();
+      }
     } catch (err: any) {
       toast({
         title: 'Batch Failed',
