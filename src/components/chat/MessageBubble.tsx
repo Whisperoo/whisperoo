@@ -69,7 +69,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
       const user = authObj.data.user;
 
       await supabase.from('compliance_training').insert({
-        user_query: 'Positive feedback',
+        user_query: previousUserQuery || 'Positive feedback (query not captured)',
         ai_response: message.content,
         classification: 'positive',
         status: 'user_feedback',
