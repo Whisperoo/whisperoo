@@ -120,7 +120,8 @@ serve(async (req) => {
         content: aiResponse,
         metadata: {
           child_id: childId,
-          expert_suggestions: matchedExperts.length > 0 ? matchedExperts : undefined
+          expert_suggestions: matchedExperts.length > 0 ? matchedExperts : undefined,
+          original_user_query: message
         }
       });
 

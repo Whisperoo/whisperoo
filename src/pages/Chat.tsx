@@ -191,14 +191,15 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
         setCurrentSessionId(data.sessionId);
       }
 
-      // Add AI response to messages
+      // Add AI response to messages — store original query in metadata for feedback
       const aiMessage: Message = {
         id: 'ai-' + Date.now(),
         content: data.response,
         role: 'assistant',
         created_at: new Date().toISOString(),
         metadata: {
-          expert_suggestions: data.expertSuggestions || []
+          expert_suggestions: data.expertSuggestions || [],
+          original_user_query: userMessage
         }
       };
       setMessages(prev => {
@@ -304,13 +305,18 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-4 overflow-hidden">
         <div className="h-full overflow-y-auto space-y-4 pr-1">
           {messages.map((message, index) => {
-            // Find the preceding user message for assistant bubbles (used by feedback dialog)
+            // Get the user's original query for this AI response (used by feedback)
             let previousUserQuery: string | undefined;
             if (message.role === 'assistant') {
-              for (let i = index - 1; i >= 0; i--) {
-                if (messages[i].role === 'user') {
-                  previousUserQuery = messages[i].content;
-                  break;
+              // Primary: read from metadata (set during this session)
+              previousUserQuery = message.metadata?.original_user_query as string | undefined;
+              // Fallback: walk backward through messages array
+              if (!previousUserQuery) {
+                for (let i = index - 1; i >= 0; i--) {
+                  if (messages[i].role === 'user') {
+                    previousUserQuery = messages[i].content;
+                    break;
+                  }
                 }
               }
             }
