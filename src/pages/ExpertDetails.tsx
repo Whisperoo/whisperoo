@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Clock, Star, Award, GraduationCap, CheckCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Star, Award, GraduationCap, CheckCircle, Building2, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { ExpertProductsSection } from '@/components/expert/ExpertProductsSection
 import { PurchaseModal } from '@/components/products/PurchaseModal';
 import { ProductWithDetails } from '@/services/products';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTenant } from '@/contexts/TenantContext';
 
 interface ExpertProfile {
   id: string;
@@ -23,12 +24,14 @@ interface ExpertProfile {
   expert_total_reviews: number;
   expert_availability_status: string;
   expert_verified: boolean;
+  tenant_id?: string | null;
 }
 
 const ExpertDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isHospitalUser, tenant, config } = useTenant();
   const [expert, setExpert] = useState<ExpertProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
@@ -46,7 +49,7 @@ const ExpertDetails: React.FC = () => {
       // Note: expertId is profiles.id where account_type = 'expert'
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, expert_bio, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified')
+        .select('id, first_name, expert_bio, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified, tenant_id')
         .eq('id', expertId)
         .eq('account_type', 'expert')
         .eq('expert_verified', true)
@@ -302,6 +305,59 @@ const ExpertDetails: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* SOW 3.3: Hospital Partner Direct Contact Section */}
+        {isHospitalUser && expert && tenant && config && (
+          (config.expert_boost_ids?.includes(expert.id) || expert.tenant_id === tenant.id)
+        ) && (
+          <Card className="bg-indigo-50 border-indigo-200 shadow-lg mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">
+                    {config.branding?.display_name || tenant.name} Partner
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    This expert is part of your hospital's care network
+                  </p>
+                </div>
+              </div>
+
+              {config.departments && config.departments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Contact your hospital directly:</p>
+                  <div className="flex flex-wrap gap-3">
+                    {config.departments.map((dept, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        {dept.phone && (
+                          <a
+                            href={`tel:${dept.phone.replace(/[^0-9]/g, '')}`}
+                            className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 hover:border-indigo-400 hover:text-indigo-600 transition-all shadow-sm"
+                          >
+                            <Phone className="w-4 h-4 text-indigo-500" />
+                            {dept.name}: {dept.phone}
+                          </a>
+                        )}
+                        {dept.email && (
+                          <a
+                            href={`mailto:${dept.email}`}
+                            className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 hover:border-indigo-400 hover:text-indigo-600 transition-all shadow-sm"
+                          >
+                            <Mail className="w-4 h-4 text-indigo-500" />
+                            Email {dept.name}
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Additional Information */}
         <div className="grid md:grid-cols-2 gap-6">

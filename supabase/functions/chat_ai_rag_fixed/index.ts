@@ -25,6 +25,26 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
+    // SOW 3.2: Fetch user's tenant_id for expert prioritization
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single();
+
+    const userTenantId = userProfile?.tenant_id || null;
+
+    // If user has tenant, fetch expert_boost_ids from tenant config
+    let expertBoostIds: string[] = [];
+    if (userTenantId) {
+      const { data: tenantData } = await supabase
+        .from('tenants')
+        .select('config')
+        .eq('id', userTenantId)
+        .single();
+      expertBoostIds = (tenantData?.config as any)?.expert_boost_ids || [];
+    }
+
     const { message, sessionId, childId } = await req.json();
 
     // 1.1 & 1.2 High-Risk Flags & Intent Classification
@@ -102,7 +122,7 @@ serve(async (req) => {
       const context = await getEnhancedChatContext(supabase, user.id, childId, currentSessionId);
 
       // RAG-FIRST Expert matching
-      matchedExperts = await findMatchingExpertsRAGFirst(supabase, message);
+      matchedExperts = await findMatchingExpertsRAGFirst(supabase, message, userTenantId, expertBoostIds);
       
       // RAG-FIRST Compliance Training Match
       const complianceContext = await getComplianceTrainingContext(supabase, message);
@@ -211,8 +231,27 @@ async function getComplianceTrainingContext(supabase, message) {
   }
 }
 
-// RAG-FIRST Expert matching (FIXED)
-async function findMatchingExpertsRAGFirst(supabase, message) {
+// SOW 3.2: Tenant-aware expert prioritization
+function prioritizeByTenant(experts, userTenantId, expertBoostIds = []) {
+  return experts
+    .map(expert => ({
+      ...expert,
+      is_hospital_partner:
+        (expert.tenant_id && expert.tenant_id === userTenantId) ||
+        expertBoostIds.includes(expert.id)
+    }))
+    .sort((a, b) => {
+      // Tier 1: Hospital-affiliated experts first
+      if (a.is_hospital_partner && !b.is_hospital_partner) return -1;
+      if (!a.is_hospital_partner && b.is_hospital_partner) return 1;
+      // Tier 2: Within same tier, sort by similarity score (if available), then rating
+      if (a.similarity_score && b.similarity_score) return b.similarity_score - a.similarity_score;
+      return (b.rating || 0) - (a.rating || 0);
+    });
+}
+
+// RAG-FIRST Expert matching (FIXED) — now with tenant-aware sorting (SOW 3.1/3.2)
+async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = null, expertBoostIds = []) {
   console.log(`=== Expert Matching Started for: "${message}" ===`);
   const messageLower = message.toLowerCase();
 
@@ -227,30 +266,42 @@ async function findMatchingExpertsRAGFirst(supabase, message) {
     messageLower.includes(query.toLowerCase())
   );
 
+  let experts = [];
+
   if (messageLower.trim() === 'experts' || isGeneralBrowsing) {
     console.log('General browsing query detected - showing all experts');
-    return await getAllAvailableExperts(supabase);
+    experts = await getAllAvailableExperts(supabase);
+  } else {
+    // PRIMARY: Try semantic search first (RAG-FIRST APPROACH)
+    console.log('Attempting semantic search...');
+    const semanticExperts = await findMatchingExpertsBySemantic(supabase, message);
+    if (semanticExperts.length > 0) {
+      console.log('Found experts via semantic search:', semanticExperts.map(e => e.name));
+      experts = semanticExperts;
+    } else {
+      // FALLBACK: Check specialty-specific keywords when semantic search finds nothing
+      console.log('Attempting keyword fallback for expert matching...');
+      const keywordExperts = await findMatchingExpertsByKeywords(supabase, message);
+      if (keywordExperts.length > 0) {
+        console.log('Found experts via keyword fallback:', keywordExperts.map(e => e.name));
+        experts = keywordExperts;
+      }
+    }
   }
 
-  // PRIMARY: Try semantic search first (RAG-FIRST APPROACH)
-  console.log('Attempting semantic search...');
-  const semanticExperts = await findMatchingExpertsBySemantic(supabase, message);
-  if (semanticExperts.length > 0) {
-    console.log('Found experts via semantic search:', semanticExperts.map(e => e.name));
-    return semanticExperts;
+  // SOW 3.2: Apply tenant prioritization if user belongs to a hospital
+  if (userTenantId && experts.length > 0) {
+    console.log(`Applying tenant prioritization for tenant: ${userTenantId}`);
+    experts = prioritizeByTenant(experts, userTenantId, expertBoostIds);
+    const hospitalCount = experts.filter(e => e.is_hospital_partner).length;
+    console.log(`${hospitalCount} hospital-affiliated experts prioritized`);
   }
 
-  // FALLBACK: Check specialty-specific keywords when semantic search finds nothing
-  console.log('Attempting keyword fallback for expert matching...');
-  const keywordExperts = await findMatchingExpertsByKeywords(supabase, message);
-  if (keywordExperts.length > 0) {
-    console.log('Found experts via keyword fallback:', keywordExperts.map(e => e.name));
-    return keywordExperts;
+  if (experts.length === 0) {
+    console.log(`No expert matches found for query: "${message}"`);
   }
 
-  // No matches found - let AI handle the response without expert recommendations
-  console.log(`No expert matches found for query: "${message}"`);
-  return [];
+  return experts;
 }
 
 // Enhanced semantic search with proper similarity thresholds
@@ -325,6 +376,7 @@ async function findMatchingExpertsBySemantic(supabase, message) {
           : 10000,
         experience_years: expert.expert_experience_years,
         location: expert.expert_office_location,
+        tenant_id: expert.tenant_id || null,
         similarity_score: expert.similarity
       }));
 
@@ -421,7 +473,8 @@ async function findMatchingExpertsByKeywords(supabase, message) {
         ? Math.round(expert.expert_consultation_rate * 100)
         : 10000,
       experience_years: expert.expert_experience_years,
-      location: expert.expert_office_location
+      location: expert.expert_office_location,
+      tenant_id: expert.tenant_id || null
     }));
   } catch (err) {
     console.error('Error in keyword expert fallback:', err);
@@ -461,7 +514,8 @@ async function getAllAvailableExperts(supabase) {
         ? Math.round(expert.expert_consultation_rate * 100)
         : 10000,
       experience_years: expert.expert_experience_years,
-      location: expert.expert_office_location
+      location: expert.expert_office_location,
+      tenant_id: expert.tenant_id || null
     }));
 
   } catch (error) {
@@ -631,11 +685,14 @@ CRITICAL MEDICAL GUARDRAIL: Under no circumstances should you diagnose medical c
     systemPrompt += `\n\nCURRENT CONVERSATION FOCUS: ${context.currentChild.first_name || context.currentChild.expected_name}, Age: ${context.currentChild.age || 'Not specified'}`;
   }
 
-  // Add expert recommendations
+  // Add expert recommendations with hospital prioritization (SOW 3.1/3.2)
   if (matchedExperts.length > 0) {
-    systemPrompt += `\n\nAVAILABLE WHISPEROO EXPERTS:`;
+    const hospitalExperts = matchedExperts.filter(e => e.is_hospital_partner);
+
+    systemPrompt += `\n\nAVAILABLE EXPERTS:`;
     matchedExperts.forEach(expert => {
-      systemPrompt += `\n- ${expert.name}, specializing in ${expert.specialty}`;
+      const hospitalTag = expert.is_hospital_partner ? ' [🏥 Hospital Partner]' : '';
+      systemPrompt += `\n- ${expert.name}${hospitalTag}, specializing in ${expert.specialty}`;
       if (expert.experience_years) {
         systemPrompt += ` (${expert.experience_years} years experience)`;
       }
@@ -643,7 +700,12 @@ CRITICAL MEDICAL GUARDRAIL: Under no circumstances should you diagnose medical c
         systemPrompt += ` [Relevance: ${(expert.similarity_score * 100).toFixed(0)}%]`;
       }
     });
-    systemPrompt += `\n\nEXPERT RECOMMENDATIONS: Only mention these experts if their expertise is directly relevant to the user's specific query. Use the relevance scores to judge how well each expert matches. Don't force expert recommendations if the question can be answered with general parenting advice.`;
+
+    if (hospitalExperts.length > 0) {
+      systemPrompt += `\n\nHOSPITAL EXPERT PRIORITY: This user is affiliated with a hospital partner. When recommending experts, prioritize the ones marked with [🏥 Hospital Partner] as they are directly connected to the user's healthcare network. Always recommend hospital-affiliated experts first when their expertise is relevant.`;
+    } else {
+      systemPrompt += `\n\nEXPERT RECOMMENDATIONS: Only mention these experts if their expertise is directly relevant to the user's specific query. Use the relevance scores to judge how well each expert matches. Don't force expert recommendations if the question can be answered with general parenting advice.`;
+    }
   }
 
   // Add session history from previous conversations

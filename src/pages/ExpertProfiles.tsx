@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, Filter } from "lucide-react";
+import { ArrowLeft, Search, Filter, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
+import { useTenant } from "@/contexts/TenantContext";
 
 interface ExpertProfile {
   id: string;
@@ -18,14 +19,17 @@ interface ExpertProfile {
   expert_total_reviews: number;
   expert_availability_status: string;
   expert_verified: boolean;
+  tenant_id?: string | null;
 }
 
 const ExpertProfiles: React.FC = () => {
   const navigate = useNavigate();
+  const { isHospitalUser, tenant, config } = useTenant();
   const [experts, setExperts] = useState<ExpertProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
+  const [hospitalOnly, setHospitalOnly] = useState(false);
 
   useEffect(() => {
     fetchExperts();
@@ -37,7 +41,7 @@ const ExpertProfiles: React.FC = () => {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "id, first_name, expert_bio, expert_specialties, expert_experience_years, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified, expert_profile_visibility, expert_accepts_new_clients",
+          "id, first_name, expert_bio, expert_specialties, expert_experience_years, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified, expert_profile_visibility, expert_accepts_new_clients, tenant_id",
         ) // ✅ Both corrected: visibility & accepts_new_clients
         .eq("account_type", "expert")
         .eq("expert_verified", true)
@@ -70,6 +74,29 @@ const ExpertProfiles: React.FC = () => {
       (expert.expert_specialties || []).includes(selectedSpecialty);
     return matchesSearch && matchesSpecialty;
   });
+
+  // SOW 3.1: Tenant-aware expert sorting — hospital experts first
+  const expertBoostIds = config?.expert_boost_ids || [];
+  const sortedExperts = isHospitalUser && (expertBoostIds.length > 0 || tenant)
+    ? [...filteredExperts].sort((a, b) => {
+        const aIsBoosted = expertBoostIds.includes(a.id) || (tenant && a.tenant_id === tenant.id);
+        const bIsBoosted = expertBoostIds.includes(b.id) || (tenant && b.tenant_id === tenant.id);
+        if (aIsBoosted && !bIsBoosted) return -1;
+        if (!aIsBoosted && bIsBoosted) return 1;
+        return (b.expert_rating || 0) - (a.expert_rating || 0);
+      })
+    : filteredExperts;
+
+  // SOW 3.5: Apply hospital-only filter if toggled
+  const displayExperts = hospitalOnly
+    ? sortedExperts.filter(expert => isExpertBoosted(expert))
+    : sortedExperts;
+
+  const isExpertBoosted = (expert: ExpertProfile) =>
+    isHospitalUser && (
+      expertBoostIds.includes(expert.id) ||
+      (tenant && expert.tenant_id === tenant.id)
+    );
 
   const specialties = [
     ...new Set(experts.flatMap((expert) => expert.expert_specialties || [])),
@@ -140,18 +167,42 @@ const ExpertProfiles: React.FC = () => {
                 </option>
               ))}
           </select>
+          {/* SOW 3.5: Hospital filter toggle — only visible to hospital users */}
+          {isHospitalUser && (expertBoostIds.length > 0 || tenant) && (
+            <button
+              onClick={() => setHospitalOnly(!hospitalOnly)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-all duration-200 whitespace-nowrap ${
+                hospitalOnly
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                  : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              {hospitalOnly ? 'Hospital Only' : 'Hospital Partners'}
+            </button>
+          )}
         </div>
 
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-gray-600">
-            {filteredExperts.length} expert
-            {filteredExperts.length !== 1 ? "s" : ""} found
+            {displayExperts.length} expert
+            {displayExperts.length !== 1 ? "s" : ""} found
+            {isHospitalUser && expertBoostIds.length > 0 && !hospitalOnly && (
+              <span className="text-indigo-600 ml-1">
+                · Hospital partners shown first
+              </span>
+            )}
+            {hospitalOnly && (
+              <span className="text-indigo-600 ml-1">
+                · Showing hospital partners only
+              </span>
+            )}
           </p>
         </div>
 
         {/* Expert Cards Grid */}
-        {filteredExperts.length === 0 ? (
+        {displayExperts.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-500 mb-4">
               <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -163,13 +214,22 @@ const ExpertProfiles: React.FC = () => {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredExperts.map((expert) => (
+            {displayExperts.map((expert) => (
               <Card
                 key={expert.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow duration-200 bg-white border-none"
+                className={`cursor-pointer hover:shadow-lg transition-shadow duration-200 bg-white border-none ${
+                  isExpertBoosted(expert) ? 'ring-2 ring-indigo-200' : ''
+                }`}
                 onClick={() => handleExpertClick(expert.id)}
               >
                 <CardContent className="p-6">
+                  {/* Hospital Partner Badge */}
+                  {isExpertBoosted(expert) && (
+                    <div className="flex items-center gap-1.5 mb-3 text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full w-fit">
+                      <Building2 className="w-3 h-3" />
+                      Recommended by {config?.branding?.display_name || tenant?.name || 'Hospital'}
+                    </div>
+                  )}
                   <div className="flex items-start gap-4">
                     <img
                       src={expert.profile_image_url || "/placeholder.svg"}
