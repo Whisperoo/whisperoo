@@ -250,43 +250,35 @@ function prioritizeByTenant(experts, userTenantId, expertBoostIds = []) {
     });
 }
 
-// RAG-FIRST Expert matching (FIXED) — now with tenant-aware sorting (SOW 3.1/3.2)
+// Holistic Expert matching — now fetches all experts and passes to AI (SOW 3.1/3.2)
 async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = null, expertBoostIds = []) {
   console.log(`=== Expert Matching Started for: "${message}" ===`);
-  const messageLower = message.toLowerCase();
 
-  // First check for general browsing queries (show ALL experts)
-  const generalBrowsingQueries = [
-    'show me experts', 'show experts', 'list experts', 'available experts',
-    'find experts', 'what experts do you have', 'who are your experts',
-    'browse experts', 'see experts', 'expert list'
-  ];
+  // We fetch ALL available experts so the LLM has complete context to holistically recommend them.
+  let experts = await getAllAvailableExperts(supabase);
 
-  const isGeneralBrowsing = generalBrowsingQueries.some(query =>
-    messageLower.includes(query.toLowerCase())
-  );
-
-  let experts = [];
-
-  if (messageLower.trim() === 'experts' || isGeneralBrowsing) {
-    console.log('General browsing query detected - showing all experts');
-    experts = await getAllAvailableExperts(supabase);
-  } else {
-    // PRIMARY: Try semantic search first (RAG-FIRST APPROACH)
-    console.log('Attempting semantic search...');
-    const semanticExperts = await findMatchingExpertsBySemantic(supabase, message);
-    if (semanticExperts.length > 0) {
-      console.log('Found experts via semantic search:', semanticExperts.map(e => e.name));
-      experts = semanticExperts;
-    } else {
-      // FALLBACK: Check specialty-specific keywords when semantic search finds nothing
-      console.log('Attempting keyword fallback for expert matching...');
-      const keywordExperts = await findMatchingExpertsByKeywords(supabase, message);
-      if (keywordExperts.length > 0) {
-        console.log('Found experts via keyword fallback:', keywordExperts.map(e => e.name));
-        experts = keywordExperts;
+  // Still attempt semantic search to get similarity scores for boosting relevance in the context
+  const semanticExperts = await findMatchingExpertsBySemantic(supabase, message);
+  
+  if (semanticExperts.length > 0) {
+    // Merge semantic scores into the full list
+    experts = experts.map(expert => {
+      const semExpert = semanticExperts.find(se => se.id === expert.id);
+      if (semExpert) {
+        return { ...expert, similarity_score: semExpert.similarity_score };
       }
-    }
+      return expert;
+    });
+    // Sort by similarity score, then rating
+    experts.sort((a, b) => {
+      if (a.similarity_score && b.similarity_score) return b.similarity_score - a.similarity_score;
+      if (a.similarity_score && !b.similarity_score) return -1;
+      if (!a.similarity_score && b.similarity_score) return 1;
+      return (b.rating || 0) - (a.rating || 0);
+    });
+  } else {
+    // If no semantic match, we still return all experts but sorted by rating
+    experts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
   }
 
   // SOW 3.2: Apply tenant prioritization if user belongs to a hospital
@@ -295,10 +287,6 @@ async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = nul
     experts = prioritizeByTenant(experts, userTenantId, expertBoostIds);
     const hospitalCount = experts.filter(e => e.is_hospital_partner).length;
     console.log(`${hospitalCount} hospital-affiliated experts prioritized`);
-  }
-
-  if (experts.length === 0) {
-    console.log(`No expert matches found for query: "${message}"`);
   }
 
   return experts;
@@ -651,13 +639,13 @@ async function generateEnhancedAIResponse(message, context, matchedExperts, inte
   }
 
   let systemPrompt = `You are Whisperoo's AI parenting assistant — focused exclusively on pregnancy, postpartum, baby care, and parenting support. Provide helpful, personalized responses ONLY within this scope.
-CRITICAL MEDICAL GUARDRAIL: Under no circumstances should you diagnose medical conditions, suggest medications, or replace a doctor's advice. You are strictly for educational and supportive purposes. If a parent asks for clinical advice or details severe symptoms, gently but firmly advise them to contact their healthcare provider right away. Always end medical safety responses with: "If symptoms are severe, worsening, or you're having trouble breathing, call 911 immediately."
+CRITICAL MEDICAL GUARDRAIL: Under no circumstances should you diagnose medical conditions, suggest medications, or replace a doctor's advice. You are strictly for educational and supportive purposes. If a parent asks for clinical advice or details severe symptoms, gently but firmly advise them to contact their healthcare provider right away.
 SCOPE GUARDRAIL: You MUST only answer questions related to pregnancy, prenatal care, postpartum recovery, baby care, child development, and parenting. If a user asks about anything outside this scope (e.g., cooking recipes unrelated to baby nutrition, tech support, travel advice, politics, general knowledge), respond with: "That's a bit outside the type of support I'm built for. I'm here to help with pregnancy, postpartum, baby, and parenting questions — and guide you to the right next step there. How can I help with that?"
 Do NOT act as a general-purpose AI assistant. Do NOT answer off-topic questions even if you know the answer. Stay in your lane.`;
 
   // 1.2 Inject explicit medical disclaimer rule if medical question detected
   if (intent === 'medical_question') {
-    systemPrompt += `\n\nMEDICAL INTENT DETECTED: The user has asked a medical-related question. You MUST include a concise disclaimer in your response stating that you are an AI assistant and not a doctor, and gently advise them to consult their pediatrician or view our expert list before providing any educational context. Always finish your response with: "If symptoms are severe, worsening, or you're having trouble breathing, call 911 immediately."`;
+    systemPrompt += `\n\nMEDICAL INTENT DETECTED: The user has asked a medical-related question. You MUST include a concise disclaimer in your response stating that you are an AI assistant and not a doctor, and gently advise them to consult their pediatrician or view our expert list before providing any educational context.`;
   }
   
   if (complianceContext) {
@@ -706,7 +694,7 @@ Do NOT act as a general-purpose AI assistant. Do NOT answer off-topic questions 
     if (hospitalExperts.length > 0) {
       systemPrompt += `\n\nHOSPITAL EXPERT PRIORITY: This user is affiliated with a hospital partner. When recommending experts, prioritize the ones marked with [🏥 Hospital Partner] as they are directly connected to the user's healthcare network. Always recommend hospital-affiliated experts first when their expertise is relevant.`;
     } else {
-      systemPrompt += `\n\nEXPERT RECOMMENDATIONS: Only mention these experts if their expertise is directly relevant to the user's specific query. Use the relevance scores to judge how well each expert matches. Don't force expert recommendations if the question can be answered with general parenting advice.`;
+      systemPrompt += `\n\nEXPERT RECOMMENDATIONS: You have access to the full list of available experts. Use your reasoning to select and recommend the most relevant experts based on their specialty and bio. Only mention these experts if their expertise is directly relevant to the user's specific query. Use the relevance scores (if available) to judge how well each expert matches. Don't force expert recommendations if the question can be answered with general parenting advice.`;
     }
   }
 

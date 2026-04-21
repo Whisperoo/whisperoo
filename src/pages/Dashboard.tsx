@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, MessageCircle, Phone, Building2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { UserResources } from "@/components/dashboard/UserResources";
-import AIMomCallModule from "@/components/dashboard/AIMomCallModule";
+// import AIMomCallModule from "@/components/dashboard/AIMomCallModule"; // Hidden for now
 import CareChecklist from "@/components/dashboard/CareChecklist";
 import PostDeliveryPrompt from "@/components/dashboard/PostDeliveryPrompt";
 import AppointmentReminders from "@/components/dashboard/AppointmentReminders";
@@ -174,9 +174,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* AI Mom Call Module - Wrap with overflow control */}
-      <div className="w-full max-w-full overflow-hidden box-border">
+      {/* <div className="w-full max-w-full overflow-hidden box-border">
         <AIMomCallModule />
-      </div>
+      </div> */}
 
       {/* Dynamic User Resources - Wrap with overflow control */}
       <div className="w-full max-w-full overflow-hidden box-border mt-6">

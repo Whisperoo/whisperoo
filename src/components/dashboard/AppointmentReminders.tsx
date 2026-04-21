@@ -42,7 +42,8 @@ const APPOINTMENT_STAGES = [
   'reminder_prenatal_t1',
   'reminder_birth_plan',
   'reminder_48hr_postdischarge',
-  'reminder_3wk_postpartum'
+  'reminder_3wk_postpartum',
+  'reminder_pediatrician_schedule'
 ];
 
 export const AppointmentReminders: React.FC = () => {
@@ -99,6 +100,10 @@ export const AppointmentReminders: React.FC = () => {
           // Rule 4: 3-Week Postpartum (<= 21 days)
           if (ageInDays >= 0 && ageInDays <= 21) {
             qualifiedStages.push({ kid, stageKey: 'reminder_3wk_postpartum', daysRemaining: 21 - ageInDays });
+          }
+          // Rule 5: Pediatrician Check-ups (> 21 days)
+          if (ageInDays > 21) {
+            qualifiedStages.push({ kid, stageKey: 'reminder_pediatrician_schedule' });
           }
         }
       });
