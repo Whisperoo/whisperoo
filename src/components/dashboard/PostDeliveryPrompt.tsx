@@ -1,0 +1,214 @@
+import React, { useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { Baby, Calendar, ArrowRight, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
+
+interface ExpectingKid {
+  id: string;
+  expected_name?: string;
+  first_name?: string;
+  due_date?: string | null;
+}
+
+interface PostDeliveryPromptProps {
+  expectingKids: ExpectingKid[];
+  onBirthRecorded: () => void;
+}
+
+/**
+ * PostDeliveryPrompt — Dashboard card for pregnant users to record baby's birth.
+ * Shown when user has at least one kid with is_expecting = true.
+ * Entering DOB flips the kid record from expecting → born (postpartum).
+ */
+const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, onBirthRecorded }) => {
+  const { user, updateProfile } = useAuth();
+  const [selectedKid, setSelectedKid] = useState<string | null>(
+    expectingKids.length === 1 ? expectingKids[0].id : null
+  );
+  const [birthDate, setBirthDate] = useState('');
+  const [babyName, setBabyName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
+  const handleRecordBirth = async () => {
+    if (!user || !selectedKid || !birthDate) return;
+
+    // Validate birth date is not in the future
+    const bDate = new Date(birthDate);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (bDate > today) {
+      toast({
+        title: 'Invalid date',
+        description: 'Birth date cannot be in the future.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Update the kid record: flip from expecting → born
+      const updateData: Record<string, unknown> = {
+        is_expecting: false,
+        birth_date: birthDate,
+      };
+      if (babyName.trim()) {
+        updateData.first_name = babyName.trim();
+      }
+
+      const { error } = await supabase
+        .from('kids')
+        .update(updateData)
+        .eq('id', selectedKid);
+
+      if (error) throw error;
+
+      // Update parent profile expecting status if no more expecting kids
+      const remainingExpecting = expectingKids.filter(k => k.id !== selectedKid);
+      if (remainingExpecting.length === 0) {
+        await updateProfile({ expecting_status: 'no' });
+      }
+
+      toast({
+        title: 'Congratulations! 🎉',
+        description: 'We\'ve updated your profile. Welcome to the postpartum journey!',
+      });
+
+      onBirthRecorded();
+    } catch (err) {
+      console.error('Error recording birth:', err);
+      toast({
+        title: 'Error',
+        description: 'Could not save birth details. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const kid = expectingKids.find(k => k.id === selectedKid);
+  const kidDisplayName = kid?.expected_name || kid?.first_name || 'your baby';
+
+  if (!showForm) {
+    return (
+      <div className="bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 rounded-xl shadow-card p-5 border border-purple-200/50 transition-all duration-300">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+            <Baby className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-base font-bold text-gray-900 mb-1">
+              Has your baby arrived? 🎉
+            </h3>
+            <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+              Let us know when {kidDisplayName} is born so we can update your care plan with postpartum support and reminders.
+            </p>
+            <Button
+              onClick={() => setShowForm(true)}
+              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold text-sm rounded-lg px-4 py-2 shadow-sm transition-all duration-200"
+            >
+              <Sparkles className="w-4 h-4 mr-1.5" />
+              Record Birth
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 rounded-xl shadow-card p-5 border border-purple-200/50 transition-all duration-300">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-lg flex items-center justify-center shadow-sm">
+          <Baby className="w-5 h-5 text-white" />
+        </div>
+        <h3 className="text-base font-bold text-gray-900">
+          Welcome your little one! 🎉
+        </h3>
+      </div>
+
+      {/* Baby selector if multiple expecting */}
+      {expectingKids.length > 1 && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Which baby arrived?</label>
+          <div className="flex flex-wrap gap-2">
+            {expectingKids.map(k => (
+              <button
+                key={k.id}
+                onClick={() => setSelectedKid(k.id)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  selectedKid === k.id
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:border-purple-300'
+                }`}
+              >
+                {k.expected_name || k.first_name || 'Baby'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Baby name update */}
+      <div className="mb-3">
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          Baby's name
+        </label>
+        <Input
+          value={babyName}
+          onChange={(e) => setBabyName(e.target.value)}
+          placeholder={kidDisplayName}
+          className="w-full rounded-lg border-gray-200 focus:ring-purple-500 focus:border-purple-500"
+        />
+      </div>
+
+      {/* Birth date */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <Calendar className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />
+          Date of birth
+        </label>
+        <Input
+          type="date"
+          value={birthDate}
+          onChange={(e) => setBirthDate(e.target.value)}
+          max={new Date().toISOString().split('T')[0]}
+          className="w-full rounded-lg border-gray-200 focus:ring-purple-500 focus:border-purple-500"
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setShowForm(false)}
+          className="flex-1 rounded-lg text-sm"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleRecordBirth}
+          disabled={!selectedKid || !birthDate || saving}
+          className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-lg text-sm disabled:opacity-50 transition-all duration-200"
+        >
+          {saving ? (
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+              Saving...
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              Save <ArrowRight className="w-3.5 h-3.5" />
+            </div>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default PostDeliveryPrompt;

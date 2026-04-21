@@ -7,12 +7,33 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { UserResources } from "@/components/dashboard/UserResources";
 import AIMomCallModule from "@/components/dashboard/AIMomCallModule";
 import CareChecklist from "@/components/dashboard/CareChecklist";
+import PostDeliveryPrompt from "@/components/dashboard/PostDeliveryPrompt";
+import AppointmentReminders from "@/components/dashboard/AppointmentReminders";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
 const Dashboard: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { isHospitalUser, tenant, config } = useTenant();
   const navigate = useNavigate();
   const firstName = profile?.first_name || "there";
   const isMobile = useIsMobile();
+  
+  const [expectingKids, setExpectingKids] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchKids = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('kids')
+        .select('*')
+        .eq('parent_id', user.id)
+        .eq('is_expecting', true);
+      if (data) setExpectingKids(data);
+    };
+    fetchKids();
+  }, [user, profile?.expecting_status]);
+
   return (
     <main
       className={`${isMobile ? "px-4 py-6" : "max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}
@@ -129,8 +150,26 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
+      {/* Post-Delivery Prompt (Shows if pregnant) */}
+      {expectingKids.length > 0 && (
+        <div className="w-full max-w-full overflow-hidden box-border mb-6">
+          <PostDeliveryPrompt 
+            expectingKids={expectingKids} 
+            onBirthRecorded={() => {
+              // Trigger reload of kids context
+              setExpectingKids([]);
+            }} 
+          />
+        </div>
+      )}
+
+      {/* Appointment Reminders — Checklist style widgets */}
+      <div className="w-full max-w-full overflow-hidden box-border">
+        <AppointmentReminders />
+      </div>
+
       {/* Care Checklist — SOW 4.1 */}
-      <div className="w-full max-w-full overflow-hidden box-border mt-6">
+      <div className="w-full max-w-full overflow-hidden box-border mt-0">
         <CareChecklist />
       </div>
 
