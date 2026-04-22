@@ -1,0 +1,226 @@
+{
+  "dashboard": {
+    "welcome": {
+      "greeting": "¡Hola {{firstName}}!",
+      "subtitle": "¡Bienvenido al club! Tu lugar de referencia para respuestas sobre crianza, consejos de expertos y apoyo."
+    },
+    "hospitalBanner": {
+      "department": "Tu departamento: {{department}}",
+      "supportMessage": "Estamos aquí para apoyarte en tu viaje de crianza con recursos exclusivos adaptados para tu familia."
+    },
+    "expertsLink": {
+      "title": "Expertos Asociados del Hospital",
+      "subtitle": "Ver expertos recomendados por {{hospitalName}}"
+    },
+    "chatCard": {
+      "title": "Iniciar Chat Genie con Whisperoo",
+      "description": "Genie recuerda tu viaje y el de tu familia, por lo que las respuestas son personalizadas, no genéricas. Obtén orientación instantánea, además de recomendaciones de expertos a cualquier hora del día."
+    },
+    "exploreCard": {
+      "title": "Explorar Expertos Verificados de Whisperoo",
+      "description": "Conéctate con profesionales certificados por la junta que se especializan en salud infantil y familiar"
+    }
+  },
+  "appointments": {
+    "header": {
+      "title": "Citas Importantes",
+      "subtitle": "Recordatorios urgentes para tu familia"
+    },
+    "badge": {
+      "actionNeeded": "Acción Requerida"
+    },
+    "labels": {
+      "for": "Para: {{name}}",
+      "baby": "Bebé"
+    }
+  },
+  "postDelivery": {
+    "preview": {
+      "title": "¿Ya llegó tu bebé? 🎉",
+      "description": "Avísanos cuando nazca {{name}} para que podamos actualizar tu plan de cuidado con apoyo y recordatorios posparto.",
+      "recordButton": "Registrar Nacimiento"
+    },
+    "form": {
+      "title": "¡Dale la bienvenida a tu pequeño! 🎉",
+      "whichBaby": "¿Cuál bebé llegó?",
+      "babyNameLabel": "Nombre del bebé",
+      "dateOfBirthLabel": "Fecha de nacimiento",
+      "cancelButton": "Cancelar",
+      "saveButton": "Guardar",
+      "savingButton": "Guardando...",
+      "invalidDate": "Fecha inválida",
+      "invalidDateDescription": "La fecha de nacimiento no puede estar en el futuro.",
+      "successTitle": "¡Felicidades! 🎉",
+      "successDescription": "Hemos actualizado tu perfil. ¡Bienvenida al viaje posparto!",
+      "errorTitle": "Error",
+      "errorDescription": "No se pudieron guardar los datos del nacimiento. Por favor, inténtalo de nuevo."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Bienvenido de nuevo",
+      "resetTitle": "Restablecer contraseña",
+      "subtitle": "Inicia sesión en tu cuenta",
+      "resetSubtitle": "Ingresa tu correo para recibir un enlace de restablecimiento",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "Ingresa tu correo",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Ingresa tu contraseña",
+      "signInButton": "Iniciar sesión",
+      "signingInButton": "Iniciando sesión...",
+      "sendResetLinkButton": "Enviar enlace",
+      "sendingButton": "Enviando...",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "backToSignIn": "Volver a iniciar sesión",
+      "noAccount": "¿No tienes una cuenta?",
+      "createAccountLink": "Crear cuenta",
+      "toast": {
+        "errorSigningIn": "Error al iniciar sesión",
+        "tryAgainLater": "Por favor, inténtalo más tarde.",
+        "welcomeBack": "¡Bienvenido de nuevo!",
+        "signedInSuccess": "Has iniciado sesión con éxito.",
+        "emailRequired": "Correo requerido",
+        "enterEmailAddress": "Por favor ingresa tu correo electrónico.",
+        "emailSent": "¡Correo enviado!",
+        "resetLinkSent": "Enlace de restablecimiento enviado a {{email}}. Revisa tu bandeja de entrada.",
+        "resetFailed": "Error al restablecer",
+        "failedToSendReset": "Error al enviar el correo. Por favor, inténtalo de nuevo.",
+        "tooManyAttempts": "Demasiados intentos. Por favor espera unos minutos.",
+        "enterValidEmail": "Por favor ingresa un correo electrónico válido."
+      }
+    },
+    "createAccount": {
+      "applyExpert": "Aplicar como experto",
+      "title": "Crear cuenta",
+      "welcomeTo": "Bienvenido a {{name}}",
+      "subtitle": "¡El tiempo es valioso, así que lo haremos rápido!",
+      "signingUpVia": "Registrándote a través de {{name}} — Departamento de {{dept}}",
+      "firstNameLabel": "Nombre",
+      "firstNamePlaceholder": "Ingresa tu nombre",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "Ingresa tu correo",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Crea una contraseña",
+      "or": "o",
+      "agreeTerms": "Acepto los Términos de Servicio y la Política de Privacidad",
+      "createButton": "Crear cuenta",
+      "creatingButton": "Creando cuenta...",
+      "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+      "loginLink": "Iniciar sesión",
+      "errors": {
+        "firstNameRequired": "El nombre es obligatorio",
+        "emailRequired": "El correo es obligatorio",
+        "invalidEmail": "Por favor ingresa un correo válido",
+        "passwordRequired": "La contraseña es obligatoria",
+        "passwordLength": "La contraseña debe tener al menos 6 caracteres",
+        "agreeTermsRequired": "Debes aceptar los términos y condiciones"
+      },
+      "toast": {
+        "errorCreating": "Error al crear la cuenta",
+        "tryAgainLater": "Por favor, inténtalo más tarde.",
+        "success": "¡Cuenta creada con éxito!",
+        "welcome": "¡Bienvenido a Whispéroo!"
+      }
+    },
+    "verifyOTP": {
+      "title": "Verificar número",
+      "subtitle": "Enviamos un código a {{phone}}",
+      "codeLabel": "Código de verificación",
+      "codePlaceholder": "Ingresa el código de 6 dígitos",
+      "verifyButton": "Verificar",
+      "verifyingButton": "Verificando...",
+      "resendCode": "Reenviar código"
+    }
+  },
+  "onboarding": {
+    "common": {
+      "greeting": "¡Hola, {{name}}!",
+      "greetingFallback": "allí",
+      "subtitle": "Vamos a personalizar Whisperoo para ti...",
+      "next": "Siguiente",
+      "save": "Guardar",
+      "saving": "Guardando...",
+      "continue": "Continuar"
+    },
+    "role": {
+      "question": "¿Eres mamá o papá?",
+      "mom": "Mamá",
+      "dad": "Papá",
+      "other": "Otro",
+      "addRolePlaceholder": "Agregar rol"
+    },
+    "kids": {
+      "question": "¿Estás esperando un bebé?",
+      "yes": "Sí",
+      "no": "No",
+      "trying": "Intentando",
+      "tellUsAboutBaby": "Cuéntanos sobre tu bebé",
+      "babyNameLabel": "Nombre del bebé (o como lo llamas)",
+      "babyNamePlaceholder": "Nombre del bebé",
+      "whenAreYouDue": "¿Cuándo es tu fecha de parto?",
+      "selectDueDate": "Seleccionar fecha",
+      "dueDate": "Fecha de parto",
+      "toast": {
+        "dueDateRequired": "Fecha requerida",
+        "dueDateRequiredDesc": "Por favor selecciona tu fecha de parto para continuar.",
+        "babyNameRequired": "Nombre requerido",
+        "babyNameRequiredDesc": "Por favor ingresa el nombre de tu bebé para continuar.",
+        "invalidDueDate": "Fecha inválida"
+      }
+    },
+    "kidsCount": {
+      "question": "¿Tienes hijos?",
+      "yes": "Sí",
+      "no": "No",
+      "howMany": "¿Cuántos?",
+      "tellUsAboutChild": "Cuéntanos sobre tu hijo/a",
+      "tellUsAboutChildren": "Cuéntanos sobre tus hijos",
+      "childNumber": "Hijo/a {{index}}",
+      "namePlaceholder": "Nombre",
+      "birthdate": "Fecha de nacimiento",
+      "selectBirthdate": "Seleccionar fecha",
+      "age": "Edad: {{age}}"
+    },
+    "kidsAges": {
+      "tellUsAboutKids": "Cuéntanos sobre tus hijos",
+      "childNumber": "Hijo/a {{index}}",
+      "firstNamePlaceholder": "Nombre"
+    },
+    "hospitalCheck": {
+      "question": "¿Eres paciente en un hospital asociado?",
+      "subtitle": "Si estás afiliada a uno de nuestros hospitales asociados, podemos personalizar tu experiencia con recursos exclusivos.",
+      "yesPatient": "Sí, soy paciente",
+      "noIndependent": "No, uso Whisperoo de forma independiente",
+      "selectHospital": "Selecciona tu hospital",
+      "department": "departamento",
+      "departments": "departamentos",
+      "whichDepartment": "¿Qué departamento?",
+      "toast": {
+        "hospitalLinked": "¡Hospital vinculado!",
+        "connectedTo": "Ahora estás conectada a {{name}}.",
+        "error": "Error",
+        "errorDesc": "No se pudo vincular tu hospital. Puedes actualizar esto más tarde en la configuración."
+      }
+    },
+    "complete": {
+      "title": "¡Todo listo!",
+      "subtitle": "Bienvenida a tu experiencia personalizada en Whisperoo",
+      "description": "Según tus preferencias, hemos personalizado tu experiencia para brindarte el apoyo y los recursos más relevantes.",
+      "enterWhisperoo": "Entrar a Whisperoo"
+    }
+  },
+  "settings": {
+    "language": {
+      "sectionTitle": "Preferencias de Idioma",
+      "sectionDescription": "Elige tu idioma preferido para la interfaz de Whisperoo.",
+      "en": "English",
+      "es": "Español (Spanish)",
+      "vi": "Tiếng Việt (Vietnamese)",
+      "savedToast": "Idioma actualizado",
+      "savedToastDescription": "Tu preferencia de idioma ha sido guardada."
+    }
+  },
+  "common": {
+    "loading": "Cargando..."
+  }
+}

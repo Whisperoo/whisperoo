@@ -8,8 +8,10 @@ import { Input } from '../../components/ui/input';
 import { ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrivacyNotice from '../../components/ui/PrivacyNotice';
+import { useTranslation } from 'react-i18next';
 
 const OnboardingRole: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { profile, updateProfile } = useAuth();
   const [role, setRole] = useState<string>('');
@@ -80,17 +82,17 @@ const OnboardingRole: React.FC = () => {
           {/* Greeting */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-gray-900">
-              Hey, {profile?.first_name || 'there'}!
+              {t('onboarding.common.greeting', { name: profile?.first_name || t('onboarding.common.greetingFallback') })}
             </h1>
             <p className="text-gray-500">
-              Let's personalize Whisperoo for you...
+              {t('onboarding.common.subtitle')}
             </p>
           </div>
 
           {/* Question: Are you a mom or dad? */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-800 text-center">
-              Are you a mom or dad?
+              {t('onboarding.role.question')}
             </h2>
             <div className="space-y-3">
               <RadioButton
@@ -99,7 +101,7 @@ const OnboardingRole: React.FC = () => {
                 checked={role === 'mom'}
                 onChange={setRole}
               >
-                Mom
+                {t('onboarding.role.mom')}
               </RadioButton>
               <RadioButton
                 name="role"
@@ -107,7 +109,7 @@ const OnboardingRole: React.FC = () => {
                 checked={role === 'dad'}
                 onChange={setRole}
               >
-                Dad
+                {t('onboarding.role.dad')}
               </RadioButton>
               <RadioButton
                 name="role"
@@ -115,7 +117,7 @@ const OnboardingRole: React.FC = () => {
                 checked={role === 'other'}
                 onChange={setRole}
               >
-                Other
+                {t('onboarding.role.other')}
               </RadioButton>
               
               {role === 'other' && (
@@ -123,7 +125,7 @@ const OnboardingRole: React.FC = () => {
                   <Input
                     value={customRole}
                     onChange={(e) => setCustomRole(e.target.value)}
-                    placeholder="Add role"
+                    placeholder={t('onboarding.role.addRolePlaceholder')}
                     className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-colors duration-200"
                   />
                 </div>
@@ -142,7 +144,7 @@ const OnboardingRole: React.FC = () => {
               onClick={handleNext}
               className="flex items-center space-x-2 animate-fade-in bg-indigo-600 text-white hover:bg-indigo-700 font-semibold rounded-3xl px-8 py-3.5 text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 border-0 shadow-lg"
             >
-              <span>Next</span>
+              <span>{t('onboarding.common.next')}</span>
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>

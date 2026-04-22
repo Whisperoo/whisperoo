@@ -1,0 +1,226 @@
+{
+  "dashboard": {
+    "welcome": {
+      "greeting": "Chào {{firstName}}!",
+      "subtitle": "Chào mừng bạn đến với câu lạc bộ! Nơi cung cấp các câu trả lời về nuôi dạy con, lời khuyên từ chuyên gia và sự hỗ trợ."
+    },
+    "hospitalBanner": {
+      "department": "Khoa của bạn: {{department}}",
+      "supportMessage": "Chúng tôi ở đây để hỗ trợ bạn trên hành trình nuôi dạy con với các tài nguyên độc quyền dành riêng cho gia đình bạn."
+    },
+    "expertsLink": {
+      "title": "Chuyên gia Đối tác Bệnh viện",
+      "subtitle": "Xem các chuyên gia do {{hospitalName}} đề xuất"
+    },
+    "chatCard": {
+      "title": "Bắt đầu Chat Genie với Whisperoo",
+      "description": "Genie ghi nhớ hành trình của bạn và gia đình nên các câu trả lời được cá nhân hóa, không chung chung. Nhận hướng dẫn tức thì cùng các đề xuất từ chuyên gia bất cứ lúc nào trong ngày."
+    },
+    "exploreCard": {
+      "title": "Khám phá các Chuyên gia Whisperoo đã xác minh",
+      "description": "Kết nối với các chuyên gia có chứng chỉ chuyên môn về sức khỏe trẻ em và gia đình"
+    }
+  },
+  "appointments": {
+    "header": {
+      "title": "Cuộc Hẹn Quan Trọng",
+      "subtitle": "Nhắc nhở khẩn cấp cho gia đình bạn"
+    },
+    "badge": {
+      "actionNeeded": "Cần Hành Động"
+    },
+    "labels": {
+      "for": "Cho: {{name}}",
+      "baby": "Em bé"
+    }
+  },
+  "postDelivery": {
+    "preview": {
+      "title": "Em bé đã chào đời chưa? 🎉",
+      "description": "Hãy cho chúng tôi biết khi {{name}} chào đời để chúng tôi có thể cập nhật kế hoạch chăm sóc của bạn với sự hỗ trợ và nhắc nhở sau sinh.",
+      "recordButton": "Ghi Nhận Ngày Sinh"
+    },
+    "form": {
+      "title": "Chào đón thành viên nhỏ! 🎉",
+      "whichBaby": "Em bé nào đã chào đời?",
+      "babyNameLabel": "Tên em bé",
+      "dateOfBirthLabel": "Ngày sinh",
+      "cancelButton": "Hủy",
+      "saveButton": "Lưu",
+      "savingButton": "Đang lưu...",
+      "invalidDate": "Ngày không hợp lệ",
+      "invalidDateDescription": "Ngày sinh không thể là ngày trong tương lai.",
+      "successTitle": "Chúc mừng! 🎉",
+      "successDescription": "Chúng tôi đã cập nhật hồ sơ của bạn. Chào mừng bạn đến với hành trình sau sinh!",
+      "errorTitle": "Lỗi",
+      "errorDescription": "Không thể lưu thông tin sinh. Vui lòng thử lại."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Chào mừng trở lại",
+      "resetTitle": "Đặt lại mật khẩu",
+      "subtitle": "Đăng nhập vào tài khoản của bạn",
+      "resetSubtitle": "Nhập email của bạn để nhận liên kết đặt lại",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Nhập email của bạn",
+      "passwordLabel": "Mật khẩu",
+      "passwordPlaceholder": "Nhập mật khẩu",
+      "signInButton": "Đăng nhập",
+      "signingInButton": "Đang đăng nhập...",
+      "sendResetLinkButton": "Gửi liên kết",
+      "sendingButton": "Đang gửi...",
+      "forgotPassword": "Quên mật khẩu?",
+      "backToSignIn": "Quay lại đăng nhập",
+      "noAccount": "Chưa có tài khoản?",
+      "createAccountLink": "Tạo tài khoản",
+      "toast": {
+        "errorSigningIn": "Lỗi đăng nhập",
+        "tryAgainLater": "Vui lòng thử lại sau.",
+        "welcomeBack": "Chào mừng trở lại!",
+        "signedInSuccess": "Bạn đã đăng nhập thành công.",
+        "emailRequired": "Yêu cầu có email",
+        "enterEmailAddress": "Vui lòng nhập địa chỉ email của bạn.",
+        "emailSent": "Đã gửi email!",
+        "resetLinkSent": "Liên kết đặt lại đã được gửi đến {{email}}. Kiểm tra hộp thư của bạn.",
+        "resetFailed": "Đặt lại thất bại",
+        "failedToSendReset": "Không thể gửi email đặt lại. Vui lòng thử lại.",
+        "tooManyAttempts": "Quá nhiều lần thử. Vui lòng đợi vài phút.",
+        "enterValidEmail": "Vui lòng nhập một địa chỉ email hợp lệ."
+      }
+    },
+    "createAccount": {
+      "applyExpert": "Đăng ký làm Chuyên gia",
+      "title": "Tạo tài khoản",
+      "welcomeTo": "Chào mừng đến với {{name}}",
+      "subtitle": "Thời gian rất quý giá nên chúng ta sẽ làm nhanh!",
+      "signingUpVia": "Đăng ký thông qua {{name}} — Khoa {{dept}}",
+      "firstNameLabel": "Tên",
+      "firstNamePlaceholder": "Nhập tên của bạn",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Nhập email của bạn",
+      "passwordLabel": "Mật khẩu",
+      "passwordPlaceholder": "Tạo mật khẩu",
+      "or": "hoặc",
+      "agreeTerms": "Tôi đồng ý với Điều khoản Dịch vụ và Chính sách Bảo mật",
+      "createButton": "Tạo tài khoản",
+      "creatingButton": "Đang tạo tài khoản...",
+      "alreadyHaveAccount": "Đã có tài khoản?",
+      "loginLink": "Đăng nhập",
+      "errors": {
+        "firstNameRequired": "Tên là bắt buộc",
+        "emailRequired": "Email là bắt buộc",
+        "invalidEmail": "Vui lòng nhập địa chỉ email hợp lệ",
+        "passwordRequired": "Mật khẩu là bắt buộc",
+        "passwordLength": "Mật khẩu phải có ít nhất 6 ký tự",
+        "agreeTermsRequired": "Bạn phải đồng ý với các điều khoản và điều kiện"
+      },
+      "toast": {
+        "errorCreating": "Lỗi tạo tài khoản",
+        "tryAgainLater": "Vui lòng thử lại sau.",
+        "success": "Tạo tài khoản thành công!",
+        "welcome": "Chào mừng đến với Whispéroo!"
+      }
+    },
+    "verifyOTP": {
+      "title": "Xác minh số điện thoại",
+      "subtitle": "Chúng tôi đã gửi mã đến {{phone}}",
+      "codeLabel": "Mã xác minh",
+      "codePlaceholder": "Nhập mã gồm 6 chữ số",
+      "verifyButton": "Xác minh",
+      "verifyingButton": "Đang xác minh...",
+      "resendCode": "Gửi lại mã"
+    }
+  },
+  "onboarding": {
+    "common": {
+      "greeting": "Chào {{name}}!",
+      "greetingFallback": "bạn",
+      "subtitle": "Hãy cá nhân hóa Whisperoo cho bạn...",
+      "next": "Tiếp theo",
+      "save": "Lưu",
+      "saving": "Đang lưu...",
+      "continue": "Tiếp tục"
+    },
+    "role": {
+      "question": "Bạn là mẹ hay bố?",
+      "mom": "Mẹ",
+      "dad": "Bố",
+      "other": "Khác",
+      "addRolePlaceholder": "Thêm vai trò"
+    },
+    "kids": {
+      "question": "Bạn đang mang thai phải không?",
+      "yes": "Có",
+      "no": "Không",
+      "trying": "Đang cố gắng",
+      "tellUsAboutBaby": "Kể cho chúng tôi về em bé của bạn",
+      "babyNameLabel": "Tên em bé (hoặc tên ở nhà)",
+      "babyNamePlaceholder": "Tên em bé",
+      "whenAreYouDue": "Ngày dự sinh của bạn là khi nào?",
+      "selectDueDate": "Chọn ngày dự sinh",
+      "dueDate": "Ngày dự sinh",
+      "toast": {
+        "dueDateRequired": "Yêu cầu ngày dự sinh",
+        "dueDateRequiredDesc": "Vui lòng chọn ngày dự sinh để tiếp tục.",
+        "babyNameRequired": "Yêu cầu tên em bé",
+        "babyNameRequiredDesc": "Vui lòng nhập tên em bé để tiếp tục.",
+        "invalidDueDate": "Ngày không hợp lệ"
+      }
+    },
+    "kidsCount": {
+      "question": "Bạn đã có con chưa?",
+      "yes": "Có",
+      "no": "Chưa",
+      "howMany": "Bao nhiêu bé?",
+      "tellUsAboutChild": "Kể cho chúng tôi về con của bạn",
+      "tellUsAboutChildren": "Kể cho chúng tôi về các con của bạn",
+      "childNumber": "Bé {{index}}",
+      "namePlaceholder": "Tên",
+      "birthdate": "Ngày sinh",
+      "selectBirthdate": "Chọn ngày sinh",
+      "age": "Tuổi: {{age}}"
+    },
+    "kidsAges": {
+      "tellUsAboutKids": "Kể cho chúng tôi về các con của bạn",
+      "childNumber": "Bé {{index}}",
+      "firstNamePlaceholder": "Tên"
+    },
+    "hospitalCheck": {
+      "question": "Bạn có phải là bệnh nhân tại bệnh viện đối tác không?",
+      "subtitle": "Nếu bạn liên kết với một trong những bệnh viện đối tác của chúng tôi, chúng tôi có thể cá nhân hóa trải nghiệm của bạn với các tài nguyên độc quyền.",
+      "yesPatient": "Có, tôi là bệnh nhân",
+      "noIndependent": "Không, tôi sử dụng Whisperoo độc lập",
+      "selectHospital": "Chọn bệnh viện của bạn",
+      "department": "khoa",
+      "departments": "khoa",
+      "whichDepartment": "Khoa nào?",
+      "toast": {
+        "hospitalLinked": "Đã liên kết bệnh viện!",
+        "connectedTo": "Bạn hiện đã kết nối với {{name}}.",
+        "error": "Lỗi",
+        "errorDesc": "Không thể liên kết bệnh viện của bạn. Bạn có thể cập nhật sau trong phần cài đặt."
+      }
+    },
+    "complete": {
+      "title": "Bạn đã hoàn tất!",
+      "subtitle": "Chào mừng bạn đến với trải nghiệm Whisperoo được cá nhân hóa",
+      "description": "Dựa trên sở thích của bạn, chúng tôi đã tùy chỉnh trải nghiệm của bạn để cung cấp sự hỗ trợ và tài nguyên phù hợp nhất.",
+      "enterWhisperoo": "Vào Whisperoo"
+    }
+  },
+  "settings": {
+    "language": {
+      "sectionTitle": "Tùy chọn Ngôn ngữ",
+      "sectionDescription": "Chọn ngôn ngữ ưu tiên của bạn cho giao diện Whisperoo.",
+      "en": "English",
+      "es": "Español (Spanish)",
+      "vi": "Tiếng Việt (Vietnamese)",
+      "savedToast": "Đã cập nhật ngôn ngữ",
+      "savedToastDescription": "Tùy chọn ngôn ngữ của bạn đã được lưu."
+    }
+  },
+  "common": {
+    "loading": "Đang tải..."
+  }
+}

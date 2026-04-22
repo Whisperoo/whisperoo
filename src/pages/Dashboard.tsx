@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +14,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 const Dashboard: React.FC = () => {
+  const { t } = useTranslation();
   const { profile, user } = useAuth();
   const { isHospitalUser, tenant, config } = useTenant();
   const navigate = useNavigate();
@@ -41,11 +43,10 @@ const Dashboard: React.FC = () => {
       {/* Welcome Section */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-brand-primary mb-2">
-          Hi {firstName}!
+          {t('dashboard.welcome.greeting', { firstName })}
         </h1>
         <p className="text-gray-600">
-          Welcome to the club! Your go-to place for parenting answers, expert
-          advice, and support.
+          {t('dashboard.welcome.subtitle')}
         </p>
       </div>
 
@@ -66,11 +67,11 @@ const Dashboard: React.FC = () => {
             {/* Show user's department if captured */}
             {profile?.acquisition_department && (
               <p className="text-xs font-semibold text-indigo-600 mb-2">
-                Your department: {(profile.acquisition_department as string).toUpperCase()}
+                {t('dashboard.hospitalBanner.department', { department: (profile.acquisition_department as string).toUpperCase() })}
               </p>
             )}
             <p className="text-sm text-gray-700 mb-3">
-              We're here to support you on your parenting journey with exclusive resources tailored for your family.
+              {t('dashboard.hospitalBanner.supportMessage')}
             </p>
             {config.departments && config.departments.length > 0 && (
               <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
@@ -111,10 +112,10 @@ const Dashboard: React.FC = () => {
             </div>
             <div>
               <h3 className="text-sm font-bold text-indigo-900">
-                Hospital Partner Experts
+                {t('dashboard.expertsLink.title')}
               </h3>
               <p className="text-xs text-indigo-600">
-                View experts recommended by {config?.branding?.display_name || tenant.name}
+                {t('dashboard.expertsLink.subtitle', { hospitalName: config?.branding?.display_name || tenant.name })}
               </p>
             </div>
           </div>
@@ -138,15 +139,13 @@ const Dashboard: React.FC = () => {
               <MessageCircle className="w-5 h-5 text-brand-primary" />
             </div>
             <h2 className="text-lg font-semibold text-brand-primary">
-              Start Chat Genie with Whisperoo
+              {t('dashboard.chatCard.title')}
             </h2>
           </div>
           <ArrowRight className="w-5 h-5 text-brand-primary" />
         </div>
         <p className="text-gray-600 leading-relaxed">
-          Genie remembers you and your family’s journey so answers are tailored,
-          not generic. Get instant guidance, plus expert recommendations at any
-          hour of the day.
+          {t('dashboard.chatCard.description')}
         </p>
       </div>
 
@@ -190,13 +189,12 @@ const Dashboard: React.FC = () => {
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-brand-primary">
-            Explore Whisperoo Verified Experts
+            {t('dashboard.exploreCard.title')}
           </h2>
           <ArrowRight className="w-5 h-5 text-brand-primary" />
         </div>
         <p className="text-gray-600 leading-relaxed">
-          Connect with board-certified professionals who specialize in child and
-          family health
+          {t('dashboard.exploreCard.description')}
         </p>
       </div>
     </main>

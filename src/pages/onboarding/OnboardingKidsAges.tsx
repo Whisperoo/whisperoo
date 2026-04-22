@@ -7,8 +7,10 @@ import { Input } from '../../components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveKidsData } from '../../utils/kids';
 import PrivacyNotice from '../../components/ui/PrivacyNotice';
+import { useTranslation } from 'react-i18next';
 
 const OnboardingKidsAges: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { profile } = useAuth();
   const kidsCount = profile?.kids_count || 1;
@@ -82,30 +84,30 @@ const OnboardingKidsAges: React.FC = () => {
           {/* Greeting */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-gray-900">
-              Hey, {profile?.first_name || 'there'}
+              {t('onboarding.common.greeting', { name: profile?.first_name || t('onboarding.common.greetingFallback') })}
             </h1>
             <p className="text-gray-500">
-              Let's personalize Whisperoo for you...
+              {t('onboarding.common.subtitle')}
             </p>
           </div>
 
           {/* Question: What are their ages? */}
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-800 text-center">
-              Tell us about your kids
+              {t('onboarding.kidsAges.tellUsAboutKids')}
             </h2>
             
             <div className="space-y-6">
               {Array.from({ length: kidsCount }, (_, index) => (
                 <div key={index} className="space-y-3 p-6 bg-gray-50 rounded-3xl">
                   <label className="text-gray-700 font-medium text-center block">
-                    Child {index + 1}
+                    {t('onboarding.kidsAges.childNumber', { index: index + 1 })}
                   </label>
                   <div className="space-y-3">
                     <Input
                       value={kidsData[index]?.name || ''}
                       onChange={(e) => handleNameChange(index, e.target.value)}
-                      placeholder="First name"
+                      placeholder={t('onboarding.kidsAges.firstNamePlaceholder')}
                       className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-colors duration-200"
                     />
                     <Input
@@ -132,7 +134,7 @@ const OnboardingKidsAges: React.FC = () => {
               onClick={handleSave}
               className="w-full max-w-sm bg-indigo-600 text-white hover:bg-indigo-700 font-semibold rounded-3xl px-8 py-3.5 text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 border-0 shadow-lg animate-fade-in"
             >
-              Save
+              {t('onboarding.common.save')}
             </Button>
           </div>
         )}

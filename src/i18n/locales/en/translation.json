@@ -1,0 +1,226 @@
+{
+  "dashboard": {
+    "welcome": {
+      "greeting": "Hi {{firstName}}!",
+      "subtitle": "Welcome to the club! Your go-to place for parenting answers, expert advice, and support."
+    },
+    "hospitalBanner": {
+      "department": "Your department: {{department}}",
+      "supportMessage": "We're here to support you on your parenting journey with exclusive resources tailored for your family."
+    },
+    "expertsLink": {
+      "title": "Hospital Partner Experts",
+      "subtitle": "View experts recommended by {{hospitalName}}"
+    },
+    "chatCard": {
+      "title": "Start Chat Genie with Whisperoo",
+      "description": "Genie remembers you and your family's journey so answers are tailored, not generic. Get instant guidance, plus expert recommendations at any hour of the day."
+    },
+    "exploreCard": {
+      "title": "Explore Whisperoo Verified Experts",
+      "description": "Connect with board-certified professionals who specialize in child and family health"
+    }
+  },
+  "appointments": {
+    "header": {
+      "title": "Important Appointments",
+      "subtitle": "Time-sensitive reminders for your family"
+    },
+    "badge": {
+      "actionNeeded": "Action Needed"
+    },
+    "labels": {
+      "for": "For: {{name}}",
+      "baby": "Baby"
+    }
+  },
+  "postDelivery": {
+    "preview": {
+      "title": "Has your baby arrived? 🎉",
+      "description": "Let us know when {{name}} is born so we can update your care plan with postpartum support and reminders.",
+      "recordButton": "Record Birth"
+    },
+    "form": {
+      "title": "Welcome your little one! 🎉",
+      "whichBaby": "Which baby arrived?",
+      "babyNameLabel": "Baby's name",
+      "dateOfBirthLabel": "Date of birth",
+      "cancelButton": "Cancel",
+      "saveButton": "Save",
+      "savingButton": "Saving...",
+      "invalidDate": "Invalid date",
+      "invalidDateDescription": "Birth date cannot be in the future.",
+      "successTitle": "Congratulations! 🎉",
+      "successDescription": "We've updated your profile. Welcome to the postpartum journey!",
+      "errorTitle": "Error",
+      "errorDescription": "Could not save birth details. Please try again."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome Back",
+      "resetTitle": "Reset Password",
+      "subtitle": "Sign in to your account",
+      "resetSubtitle": "Enter your email to receive a reset link",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "signInButton": "Sign In",
+      "signingInButton": "Signing In...",
+      "sendResetLinkButton": "Send Reset Link",
+      "sendingButton": "Sending...",
+      "forgotPassword": "Forgot your password?",
+      "backToSignIn": "Back to Sign In",
+      "noAccount": "Don't have an account?",
+      "createAccountLink": "Create Account",
+      "toast": {
+        "errorSigningIn": "Error signing in",
+        "tryAgainLater": "Please try again later.",
+        "welcomeBack": "Welcome back!",
+        "signedInSuccess": "You have successfully signed in.",
+        "emailRequired": "Email required",
+        "enterEmailAddress": "Please enter your email address.",
+        "emailSent": "Email sent!",
+        "resetLinkSent": "Reset link sent to {{email}}. Check your inbox.",
+        "resetFailed": "Reset failed",
+        "failedToSendReset": "Failed to send reset email. Please try again.",
+        "tooManyAttempts": "Too many attempts. Please wait a few minutes.",
+        "enterValidEmail": "Please enter a valid email address."
+      }
+    },
+    "createAccount": {
+      "applyExpert": "Apply As Expert",
+      "title": "Create Account",
+      "welcomeTo": "Welcome to {{name}}",
+      "subtitle": "Time is precious so we'll make this quick!",
+      "signingUpVia": "Signing up via {{name}} — {{dept}} Department",
+      "firstNameLabel": "First Name",
+      "firstNamePlaceholder": "Enter your first name",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Create a password",
+      "or": "or",
+      "agreeTerms": "I agree to the Terms of Service and Privacy Policy",
+      "createButton": "Create Account",
+      "creatingButton": "Creating Account...",
+      "alreadyHaveAccount": "Already have an account?",
+      "loginLink": "Login",
+      "errors": {
+        "firstNameRequired": "First name is required",
+        "emailRequired": "Email is required",
+        "invalidEmail": "Please enter a valid email address",
+        "passwordRequired": "Password is required",
+        "passwordLength": "Password must be at least 6 characters",
+        "agreeTermsRequired": "You must agree to the terms and conditions"
+      },
+      "toast": {
+        "errorCreating": "Error creating account",
+        "tryAgainLater": "Please try again later.",
+        "success": "Account created successfully!",
+        "welcome": "Welcome to Whispéroo!"
+      }
+    },
+    "verifyOTP": {
+      "title": "Verify Phone Number",
+      "subtitle": "We sent a code to {{phone}}",
+      "codeLabel": "Verification Code",
+      "codePlaceholder": "Enter 6-digit code",
+      "verifyButton": "Verify",
+      "verifyingButton": "Verifying...",
+      "resendCode": "Resend Code"
+    }
+  },
+  "onboarding": {
+    "common": {
+      "greeting": "Hey, {{name}}!",
+      "greetingFallback": "there",
+      "subtitle": "Let's personalize Whisperoo for you...",
+      "next": "Next",
+      "save": "Save",
+      "saving": "Saving...",
+      "continue": "Continue"
+    },
+    "role": {
+      "question": "Are you a mom or dad?",
+      "mom": "Mom",
+      "dad": "Dad",
+      "other": "Other",
+      "addRolePlaceholder": "Add role"
+    },
+    "kids": {
+      "question": "Are you expecting?",
+      "yes": "Yes",
+      "no": "No",
+      "trying": "Trying",
+      "tellUsAboutBaby": "Tell us about your baby",
+      "babyNameLabel": "Baby's name (or what you're calling them)",
+      "babyNamePlaceholder": "Baby name",
+      "whenAreYouDue": "When are you due?",
+      "selectDueDate": "Select due date",
+      "dueDate": "Due Date",
+      "toast": {
+        "dueDateRequired": "Due date required",
+        "dueDateRequiredDesc": "Please select your due date to continue.",
+        "babyNameRequired": "Baby name required",
+        "babyNameRequiredDesc": "Please enter your baby's name to continue.",
+        "invalidDueDate": "Invalid due date"
+      }
+    },
+    "kidsCount": {
+      "question": "Do you have kids?",
+      "yes": "Yes",
+      "no": "No",
+      "howMany": "How many?",
+      "tellUsAboutChild": "Tell us about your child",
+      "tellUsAboutChildren": "Tell us about your children",
+      "childNumber": "Child {{index}}",
+      "namePlaceholder": "Name",
+      "birthdate": "Birthdate",
+      "selectBirthdate": "Select birthdate",
+      "age": "Age: {{age}}"
+    },
+    "kidsAges": {
+      "tellUsAboutKids": "Tell us about your kids",
+      "childNumber": "Child {{index}}",
+      "firstNamePlaceholder": "First name"
+    },
+    "hospitalCheck": {
+      "question": "Are you a patient at a partner hospital?",
+      "subtitle": "If you're affiliated with one of our hospital partners, we can personalize your experience with exclusive resources.",
+      "yesPatient": "Yes, I'm a patient",
+      "noIndependent": "No, I'm using Whisperoo independently",
+      "selectHospital": "Select your hospital",
+      "department": "department",
+      "departments": "departments",
+      "whichDepartment": "Which department?",
+      "toast": {
+        "hospitalLinked": "Hospital linked!",
+        "connectedTo": "You're now connected to {{name}}.",
+        "error": "Error",
+        "errorDesc": "Could not link your hospital. You can update this later in settings."
+      }
+    },
+    "complete": {
+      "title": "You're All Set!",
+      "subtitle": "Welcome to your personalized Whisperoo experience",
+      "description": "Based on your preferences, we've customized your experience to provide the most relevant support and resources.",
+      "enterWhisperoo": "Enter Whisperoo"
+    }
+  },
+  "settings": {
+    "language": {
+      "sectionTitle": "Language Preferences",
+      "sectionDescription": "Choose your preferred language for the Whisperoo interface.",
+      "en": "English",
+      "es": "Español (Spanish)",
+      "vi": "Tiếng Việt (Vietnamese)",
+      "savedToast": "Language updated",
+      "savedToastDescription": "Your language preference has been saved."
+    }
+  },
+  "common": {
+    "loading": "Loading..."
+  }
+}

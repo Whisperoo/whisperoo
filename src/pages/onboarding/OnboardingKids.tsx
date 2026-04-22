@@ -13,8 +13,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/pop
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import PrivacyNotice from '../../components/ui/PrivacyNotice';
+import { useTranslation } from 'react-i18next';
 
 const OnboardingKids: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { profile, updateProfile } = useAuth();
   const [expectingStatus, setExpectingStatus] = useState<string>('');
@@ -59,8 +61,8 @@ const OnboardingKids: React.FC = () => {
     // For expecting status, ensure due date and name are provided if "yes" is selected
     if (expectingStatus === 'yes' && !dueDate) {
       toast({
-        title: "Due date required",
-        description: "Please select your due date to continue.",
+        title: t('onboarding.kids.toast.dueDateRequired'),
+        description: t('onboarding.kids.toast.dueDateRequiredDesc'),
         variant: "destructive",
       });
       return;
@@ -68,8 +70,8 @@ const OnboardingKids: React.FC = () => {
     
     if (expectingStatus === 'yes' && !expectedBabyName.trim()) {
       toast({
-        title: "Baby name required",
-        description: "Please enter your baby's name to continue.",
+        title: t('onboarding.kids.toast.babyNameRequired'),
+        description: t('onboarding.kids.toast.babyNameRequiredDesc'),
         variant: "destructive",
       });
       return;
@@ -85,7 +87,7 @@ const OnboardingKids: React.FC = () => {
       const validation = validateDueDate(selectedDate);
       if (!validation.isValid) {
         toast({
-          title: "Invalid due date",
+          title: t('onboarding.kids.toast.invalidDueDate'),
           description: validation.error,
           variant: "destructive",
         });
@@ -122,17 +124,17 @@ const OnboardingKids: React.FC = () => {
           {/* Greeting */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-gray-900">
-              Hey, {profile?.first_name || 'there'}!
+              {t('onboarding.common.greeting', { name: profile?.first_name || t('onboarding.common.greetingFallback') })}
             </h1>
             <p className="text-gray-500">
-              Let's personalize Whisperoo for you...
+              {t('onboarding.common.subtitle')}
             </p>
           </div>
 
           {/* Question: Are you expecting? */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-800 text-center">
-              Are you expecting?
+              {t('onboarding.kids.question')}
             </h2>
             <div className="space-y-3">
               <RadioButton
@@ -141,7 +143,7 @@ const OnboardingKids: React.FC = () => {
                 checked={expectingStatus === 'yes'}
                 onChange={setExpectingStatus}
               >
-                Yes
+                {t('onboarding.kids.yes')}
               </RadioButton>
               <RadioButton
                 name="expecting"
@@ -149,7 +151,7 @@ const OnboardingKids: React.FC = () => {
                 checked={expectingStatus === 'no'}
                 onChange={setExpectingStatus}
               >
-                No
+                {t('onboarding.kids.no')}
               </RadioButton>
               <RadioButton
                 name="expecting"
@@ -157,7 +159,7 @@ const OnboardingKids: React.FC = () => {
                 checked={expectingStatus === 'trying'}
                 onChange={setExpectingStatus}
               >
-                Trying
+                {t('onboarding.kids.trying')}
               </RadioButton>
             </div>
           </div>
@@ -166,18 +168,18 @@ const OnboardingKids: React.FC = () => {
           {expectingStatus === 'yes' && (
             <div className="space-y-6 animate-fade-in">
               <h3 className="text-lg font-medium text-gray-700 text-center">
-                Tell us about your baby
+                {t('onboarding.kids.tellUsAboutBaby')}
               </h3>
               
               {/* Baby Name Input */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700 text-center">
-                  Baby's name (or what you're calling them)
+                  {t('onboarding.kids.babyNameLabel')}
                 </label>
                 <Input
                   value={expectedBabyName}
                   onChange={(e) => setExpectedBabyName(e.target.value)}
-                  placeholder="Baby name"
+                  placeholder={t('onboarding.kids.babyNamePlaceholder')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-action-primary focus:border-transparent transition-colors duration-200"
                 />
               </div>
@@ -185,7 +187,7 @@ const OnboardingKids: React.FC = () => {
               {/* Due Date Input */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700 text-center">
-                  When are you due?
+                  {t('onboarding.kids.whenAreYouDue')}
                 </label>
                 <div className="space-y-2">
                 <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
@@ -203,7 +205,7 @@ const OnboardingKids: React.FC = () => {
                           {formatDueDate(dueDate)}
                         </span>
                       ) : (
-                        <span>Select due date</span>
+                        <span>{t('onboarding.kids.selectDueDate')}</span>
                       )}
                     </Button>
                   </PopoverTrigger>
@@ -224,7 +226,7 @@ const OnboardingKids: React.FC = () => {
                 </Popover>
                 {dueDate && (
                   <p className="text-sm text-gray-500 text-center">
-                    Due Date
+                    {t('onboarding.kids.dueDate')}
                   </p>
                 )}
               </div>
@@ -237,7 +239,7 @@ const OnboardingKids: React.FC = () => {
             <div className="text-center text-sm text-gray-500">
               <div className="inline-flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-action-primary"></div>
-                <span>Saving...</span>
+                <span>{t('onboarding.common.saving')}</span>
               </div>
             </div>
           )}
@@ -254,7 +256,7 @@ const OnboardingKids: React.FC = () => {
               disabled={isSaving}
               className="flex items-center space-x-2 animate-fade-in bg-action-primary text-white hover:bg-indigo-800 font-semibold rounded-3xl px-8 py-3.5 text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-action-primary border-0 shadow-lg disabled:opacity-50"
             >
-              <span>Next</span>
+              <span>{t('onboarding.common.next')}</span>
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>

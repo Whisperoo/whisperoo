@@ -7,8 +7,10 @@ import { Button } from "../../components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase"; // Import your Supabase client
+import { useTranslation } from "react-i18next";
 
 const Login: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [formData, setFormData] = useState({
@@ -41,7 +43,7 @@ const Login: React.FC = () => {
       if (error) {
         console.error("Sign-in error:", error);
         toast({
-          title: "Error signing in",
+          title: t('auth.login.toast.errorSigningIn'),
           description: error.message,
           variant: "destructive",
         });
@@ -51,8 +53,8 @@ const Login: React.FC = () => {
       if (user) {
         console.log("Sign-in successful:", user.id);
         toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
+          title: t('auth.login.toast.welcomeBack'),
+          description: t('auth.login.toast.signedInSuccess'),
         });
 
         // Specific redirection for super admin
@@ -66,8 +68,8 @@ const Login: React.FC = () => {
     } catch (error) {
       console.error("Login error:", error);
       toast({
-        title: "Error signing in",
-        description: "Please try again later.",
+        title: t('auth.login.toast.errorSigningIn'),
+        description: t('auth.login.toast.tryAgainLater'),
         variant: "destructive",
       });
     } finally {
@@ -78,8 +80,8 @@ const Login: React.FC = () => {
   const handleResetPassword = async () => {
     if (!resetEmail) {
       toast({
-        title: "Email required",
-        description: "Please enter your email address.",
+        title: t('auth.login.toast.emailRequired'),
+        description: t('auth.login.toast.enterEmailAddress'),
         variant: "destructive",
       });
       return;
@@ -118,8 +120,8 @@ const Login: React.FC = () => {
       }
 
       toast({
-        title: "Email sent!",
-        description: `Reset link sent to ${resetEmail}. Check your inbox.`,
+        title: t('auth.login.toast.emailSent'),
+        description: t('auth.login.toast.resetLinkSent', { email: resetEmail }),
       });
 
       // Show success message
@@ -129,16 +131,16 @@ const Login: React.FC = () => {
       console.error("Password reset error:", error);
 
       // User-friendly error messages
-      let errorMessage = "Failed to send reset email. Please try again.";
+      let errorMessage = t('auth.login.toast.failedToSendReset');
 
       if (error.message?.includes("rate limit")) {
-        errorMessage = "Too many attempts. Please wait a few minutes.";
+        errorMessage = t('auth.login.toast.tooManyAttempts');
       } else if (error.message?.includes("email")) {
-        errorMessage = "Please enter a valid email address.";
+        errorMessage = t('auth.login.toast.enterValidEmail');
       }
 
       toast({
-        title: "Reset failed",
+        title: t('auth.login.toast.resetFailed'),
         description: errorMessage,
         variant: "destructive",
       });
@@ -154,12 +156,12 @@ const Login: React.FC = () => {
 
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-indigo-700">
-            {resetMode ? "Reset Password" : "Welcome Back"}
+            {resetMode ? t('auth.login.resetTitle') : t('auth.login.title')}
           </h1>
           <p className="text-gray-500">
             {resetMode
-              ? "Enter your email to receive a reset link"
-              : "Sign in to your account"}
+              ? t('auth.login.resetSubtitle')
+              : t('auth.login.subtitle')}
           </p>
         </div>
 
@@ -168,13 +170,13 @@ const Login: React.FC = () => {
             // Reset Password Mode
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                Email
+                {t('auth.login.emailLabel')}
               </label>
               <Input
                 type="email"
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder={t('auth.login.emailPlaceholder')}
                 className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200"
               />
             </div>
@@ -183,7 +185,7 @@ const Login: React.FC = () => {
             <>
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Email
+                  {t('auth.login.emailLabel')}
                 </label>
                 <Input
                   type="email"
@@ -191,14 +193,14 @@ const Login: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  placeholder="Enter your email"
+                  placeholder={t('auth.login.emailPlaceholder')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Password
+                  {t('auth.login.passwordLabel')}
                 </label>
                 <Input
                   type="password"
@@ -206,7 +208,7 @@ const Login: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
-                  placeholder="Enter your password"
+                  placeholder={t('auth.login.passwordPlaceholder')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200"
                 />
               </div>
@@ -224,11 +226,11 @@ const Login: React.FC = () => {
           >
             {isLoading
               ? resetMode
-                ? "Sending..."
-                : "Signing In..."
+                ? t('auth.login.sendingButton')
+                : t('auth.login.signingInButton')
               : resetMode
-              ? "Send Reset Link"
-              : "Sign In"}
+              ? t('auth.login.sendResetLinkButton')
+              : t('auth.login.signInButton')}
           </Button>
           {/* Add this right before the form closing tag */}
           {process.env.NODE_ENV === "development" && resetMode && (
@@ -248,7 +250,7 @@ const Login: React.FC = () => {
                 onClick={() => setResetMode(true)}
                 className="text-sm text-indigo-700 font-medium hover:underline"
               >
-                Forgot your password?
+                {t('auth.login.forgotPassword')}
               </button>
             </div>
           )}
@@ -262,7 +264,7 @@ const Login: React.FC = () => {
                 }}
                 className="text-sm text-indigo-700 font-medium hover:underline"
               >
-                Back to Sign In
+                {t('auth.login.backToSignIn')}
               </button>
             </div>
           )}
@@ -270,12 +272,12 @@ const Login: React.FC = () => {
           {!resetMode && (
             <div>
               <p className="text-gray-500">
-                Don't have an account?{" "}
+                {t('auth.login.noAccount')}{" "}
                 <Link
                   to="/auth/create"
                   className="text-indigo-700 font-medium hover:underline"
                 >
-                  Create Account
+                  {t('auth.login.createAccountLink')}
                 </Link>
               </p>
             </div>

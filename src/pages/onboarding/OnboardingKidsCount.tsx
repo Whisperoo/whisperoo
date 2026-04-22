@@ -9,8 +9,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { saveKidsData, getValidKids } from '../../utils/kids';
 import PrivacyNotice from '../../components/ui/PrivacyNotice';
 import { calculateAge, validateBirthDate } from '../../utils/age';
+import { useTranslation } from 'react-i18next';
 
 const OnboardingKidsCount: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { profile, updateProfile } = useAuth();
   const [hasKids, setHasKids] = useState<string>('');
@@ -118,10 +120,10 @@ const OnboardingKidsCount: React.FC = () => {
           {/* Greeting */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-gray-900">
-              Hey, {profile?.first_name || 'there'}!
+              {t('onboarding.common.greeting', { name: profile?.first_name || t('onboarding.common.greetingFallback') })}
             </h1>
             <p className="text-gray-500">
-              Let's personalize Whisperoo for you...
+              {t('onboarding.common.subtitle')}
             </p>
           </div>
 
@@ -130,7 +132,7 @@ const OnboardingKidsCount: React.FC = () => {
               {/* Question 1: Do you have kids? */}
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-gray-800 text-center">
-                  Do you have kids?
+                  {t('onboarding.kidsCount.question')}
                 </h2>
                 <div className="flex space-x-4 justify-center">
                   <button
@@ -141,7 +143,7 @@ const OnboardingKidsCount: React.FC = () => {
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    Yes
+                    {t('onboarding.kidsCount.yes')}
                   </button>
                   <button
                     onClick={() => setHasKids('no')}
@@ -151,7 +153,7 @@ const OnboardingKidsCount: React.FC = () => {
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    No
+                    {t('onboarding.kidsCount.no')}
                   </button>
                 </div>
               </div>
@@ -160,7 +162,7 @@ const OnboardingKidsCount: React.FC = () => {
               {hasKids === 'yes' && (
                 <div className="space-y-4 animate-fade-in">
                   <h3 className="text-lg font-medium text-gray-700 text-center">
-                    How many?
+                    {t('onboarding.kidsCount.howMany')}
                   </h3>
                   <div className="flex items-center justify-center space-x-6">
                     <button
@@ -188,34 +190,34 @@ const OnboardingKidsCount: React.FC = () => {
             /* Kids Details Form */
             <div className="space-y-6">
               <h2 className="text-xl font-semibold text-gray-800 text-center">
-                Tell us about your {kidsCount === 1 ? 'child' : 'children'}
+                {kidsCount === 1 ? t('onboarding.kidsCount.tellUsAboutChild') : t('onboarding.kidsCount.tellUsAboutChildren')}
               </h2>
               {kidsData.map((kid, index) => (
                 <div key={index} className="space-y-3 p-6 bg-gray-50 rounded-3xl">
                   <h3 className="text-md font-medium text-gray-700">
-                    Child {index + 1}
+                    {t('onboarding.kidsCount.childNumber', { index: index + 1 })}
                   </h3>
                   <div className="space-y-3">
                     <Input
                       value={kid.name}
                       onChange={(e) => handleNameChange(index, e.target.value)}
-                      placeholder="Name"
+                      placeholder={t('onboarding.kidsCount.namePlaceholder')}
                       className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-action-primary focus:border-transparent transition-colors duration-200"
                     />
                     <div className="space-y-2">
                       <label className="block text-sm font-medium text-gray-700">
-                        Birthdate
+                        {t('onboarding.kidsCount.birthdate')}
                       </label>
                       <Input
                         type="date"
                         value={kid.birthdate}
                         onChange={(e) => handleBirthdateChange(index, e.target.value)}
-                        placeholder="Select birthdate"
+                        placeholder={t('onboarding.kidsCount.selectBirthdate')}
                         className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-action-primary focus:border-transparent transition-colors duration-200"
                       />
                       {kid.birthdate && validateBirthDate(kid.birthdate).isValid && (
                         <p className="text-sm text-gray-600 px-2">
-                          Age: {calculateAge(kid.birthdate)}
+                          {t('onboarding.kidsCount.age', { age: calculateAge(kid.birthdate) })}
                         </p>
                       )}
                       {kid.birthdate && !validateBirthDate(kid.birthdate).isValid && (
@@ -241,7 +243,7 @@ const OnboardingKidsCount: React.FC = () => {
               onClick={handleNext}
               className="flex items-center space-x-2 animate-fade-in bg-action-primary text-white hover:bg-indigo-800 font-semibold rounded-3xl px-8 py-3.5 text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-action-primary border-0 shadow-lg"
             >
-              <span>{showKidsDetails ? 'Next' : (hasKids === 'yes' ? 'Continue' : 'Next')}</span>
+              <span>{showKidsDetails ? t('onboarding.common.next') : (hasKids === 'yes' ? t('onboarding.common.continue') : t('onboarding.common.next'))}</span>
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>

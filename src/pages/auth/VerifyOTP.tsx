@@ -5,8 +5,10 @@ import AuthLayout from '../../components/layouts/AuthLayout';
 import BackButton from '../../components/ui/BackButton';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 const VerifyOTP: React.FC = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [otp, setOtp] = useState('');
@@ -39,22 +41,22 @@ const VerifyOTP: React.FC = () => {
         
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-indigo-700">
-            Verify Phone Number
+            {t('auth.verifyOTP.title')}
           </h1>
           <p className="text-gray-500">
-            We sent a code to {phone}
+            {t('auth.verifyOTP.subtitle', { phone })}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              Verification Code
+              {t('auth.verifyOTP.codeLabel')}
             </label>
             <Input
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
-              placeholder="Enter 6-digit code"
+              placeholder={t('auth.verifyOTP.codePlaceholder')}
               maxLength={6}
               className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200"
             />
@@ -65,13 +67,13 @@ const VerifyOTP: React.FC = () => {
             className="w-full bg-indigo-700 text-white hover:bg-indigo-800 font-semibold rounded-2xl px-6 py-3 text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-700"
             disabled={otp.length !== 6 || isLoading}
           >
-            {isLoading ? 'Verifying...' : 'Verify'}
+            {isLoading ? t('auth.verifyOTP.verifyingButton') : t('auth.verifyOTP.verifyButton')}
           </Button>
         </form>
 
         <div className="text-center">
           <button className="text-indigo-700 font-medium hover:underline">
-            Resend Code
+            {t('auth.verifyOTP.resendCode')}
           </button>
         </div>
       </div>

@@ -10,8 +10,10 @@ import { Checkbox } from '../../components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from 'react-i18next';
 
 const CreateAccount: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signUp, user, profile } = useAuth();
@@ -52,23 +54,23 @@ const CreateAccount: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
+      newErrors.firstName = t('auth.createAccount.errors.firstNameRequired');
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('auth.createAccount.errors.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('auth.createAccount.errors.invalidEmail');
     }
 
     if (!formData.password.trim()) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('auth.createAccount.errors.passwordRequired');
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = t('auth.createAccount.errors.passwordLength');
     }
 
     if (!formData.agreeToTerms) {
-      newErrors.agreeToTerms = 'You must agree to the terms and conditions';
+      newErrors.agreeToTerms = t('auth.createAccount.errors.agreeTermsRequired');
     }
 
     setErrors(newErrors);
@@ -91,7 +93,7 @@ const CreateAccount: React.FC = () => {
       if (error) {
         console.error('Sign-up error:', error);
         toast({
-          title: "Error creating account",
+          title: t('auth.createAccount.toast.errorCreating'),
           description: error.message,
           variant: "destructive",
         });
@@ -101,8 +103,8 @@ const CreateAccount: React.FC = () => {
       if (user) {
         console.log('Account created successfully:', user.id);
         toast({
-          title: "Account created successfully!",
-          description: "Welcome to Whispéroo!",
+          title: t('auth.createAccount.toast.success'),
+          description: t('auth.createAccount.toast.welcome'),
         });
         
         // Wait for profile to be loaded
@@ -111,16 +113,16 @@ const CreateAccount: React.FC = () => {
       } else {
         console.error('No user returned from signUp');
         toast({
-          title: "Error creating account",
-          description: "No user data received. Please try again.",
+          title: t('auth.createAccount.toast.errorCreating'),
+          description: t('auth.createAccount.toast.tryAgainLater'),
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Sign-up error:', error);
       toast({
-        title: "Error creating account",
-        description: "Please try again later.",
+        title: t('auth.createAccount.toast.errorCreating'),
+        description: t('auth.createAccount.toast.tryAgainLater'),
         variant: "destructive",
       });
     } finally {
@@ -159,19 +161,19 @@ const CreateAccount: React.FC = () => {
             to="/auth/login" 
             className="text-indigo-700 text-sm font-medium hover:underline"
           >
-            Apply As Expert
+            {t('auth.createAccount.applyExpert')}
           </Link>
         </div>
 
         {/* Content */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl md:text-5xl font-bold text-indigo-700 transition-colors" style={tenantInfo?.config?.branding?.primary_color ? { color: tenantInfo.config.branding.primary_color } : {}}>
-            {tenantInfo ? `Welcome to ${tenantInfo.name}` : 'Create Account'}
+            {tenantInfo ? t('auth.createAccount.welcomeTo', { name: tenantInfo.name }) : t('auth.createAccount.title')}
           </h1>
           <p className="text-gray-500 text-lg">
             {tenantInfo && queryDept 
-              ? `Signing up via ${tenantInfo.config?.branding?.display_name || tenantInfo.name} — ${queryDept.toUpperCase()} Department`
-              : 'Time is precious so we\'ll make this quick!'}
+              ? t('auth.createAccount.signingUpVia', { name: tenantInfo.config?.branding?.display_name || tenantInfo.name, dept: queryDept.toUpperCase() })
+              : t('auth.createAccount.subtitle')}
           </p>
         </div>
 
@@ -179,12 +181,12 @@ const CreateAccount: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              First Name
+              {t('auth.createAccount.firstNameLabel')}
             </label>
             <Input
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              placeholder="Enter your first name"
+              placeholder={t('auth.createAccount.firstNamePlaceholder')}
               className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200 ${
                 errors.firstName ? 'border-red-500' : ''
               }`}
@@ -198,13 +200,13 @@ const CreateAccount: React.FC = () => {
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              Email
+              {t('auth.createAccount.emailLabel')}
             </label>
             <Input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="Enter your email"
+              placeholder={t('auth.createAccount.emailPlaceholder')}
               className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200 ${
                 errors.email ? 'border-red-500' : ''
               }`}
@@ -218,13 +220,13 @@ const CreateAccount: React.FC = () => {
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              Password
+              {t('auth.createAccount.passwordLabel')}
             </label>
             <Input
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              placeholder="Create a password"
+              placeholder={t('auth.createAccount.passwordPlaceholder')}
               className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200 ${
                 errors.password ? 'border-red-500' : ''
               }`}
@@ -236,7 +238,7 @@ const CreateAccount: React.FC = () => {
             )}
           </div>
 
-          <Divider label="or" />
+          <Divider label={t('auth.createAccount.or')} />
 
           <GoogleAuthButton onClick={handleGoogleAuth} />
 
@@ -247,7 +249,7 @@ const CreateAccount: React.FC = () => {
                 onCheckedChange={(checked) => setFormData({ ...formData, agreeToTerms: checked === true })}
               />
               <span className="text-sm text-gray-700 leading-5">
-                I agree to the Terms of Service and Privacy Policy
+                {t('auth.createAccount.agreeTerms')}
               </span>
             </label>
             {errors.agreeToTerms && (
@@ -263,16 +265,16 @@ const CreateAccount: React.FC = () => {
             style={tenantInfo?.config?.branding?.primary_color ? { backgroundColor: tenantInfo.config.branding.primary_color, color: 'white' } : {}}
             disabled={!isFormValid || isLoading}
           >
-            {isLoading ? 'Creating Account...' : 'Create Account'}
+            {isLoading ? t('auth.createAccount.creatingButton') : t('auth.createAccount.createButton')}
           </Button>
         </form>
 
         {/* Footer */}
         <div className="text-center">
           <p className="text-gray-500">
-            Already have an account?{' '}
+            {t('auth.createAccount.alreadyHaveAccount')}{' '}
             <Link to="/auth/login" className="text-indigo-700 font-medium hover:underline">
-              Login
+              {t('auth.createAccount.loginLink')}
             </Link>
           </p>
         </div>

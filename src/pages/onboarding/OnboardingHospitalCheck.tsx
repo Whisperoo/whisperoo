@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import PrivacyNotice from '../../components/ui/PrivacyNotice';
+import { useTranslation } from 'react-i18next';
 
 interface ActiveTenant {
   id: string;
@@ -28,6 +29,7 @@ interface ActiveTenant {
 }
 
 const OnboardingHospitalCheck: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { profile, updateProfile } = useAuth();
   const [activeTenants, setActiveTenants] = useState<ActiveTenant[]>([]);
@@ -95,16 +97,16 @@ const OnboardingHospitalCheck: React.FC = () => {
         if (error) throw error;
 
         toast({
-          title: 'Hospital linked!',
-          description: `You're now connected to ${selectedTenant?.config?.branding?.display_name || selectedTenant?.name}.`,
+          title: t('onboarding.hospitalCheck.toast.hospitalLinked'),
+          description: t('onboarding.hospitalCheck.toast.connectedTo', { name: selectedTenant?.config?.branding?.display_name || selectedTenant?.name }),
         });
 
         navigate('/onboarding/kids');
       } catch (err: any) {
         console.error('Error linking hospital:', err);
         toast({
-          title: 'Error',
-          description: 'Could not link your hospital. You can update this later in settings.',
+          title: t('onboarding.hospitalCheck.toast.error'),
+          description: t('onboarding.hospitalCheck.toast.errorDesc'),
           variant: 'destructive',
         });
         navigate('/onboarding/kids');
@@ -154,10 +156,10 @@ const OnboardingHospitalCheck: React.FC = () => {
               </div>
             </div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Are you a patient at a partner hospital?
+              {t('onboarding.hospitalCheck.question')}
             </h1>
             <p className="text-gray-500 text-sm">
-              If you're affiliated with one of our hospital partners, we can personalize your experience with exclusive resources.
+              {t('onboarding.hospitalCheck.subtitle')}
             </p>
           </div>
 
@@ -169,7 +171,7 @@ const OnboardingHospitalCheck: React.FC = () => {
               checked={isPatient === 'yes'}
               onChange={setIsPatient}
             >
-              Yes, I'm a patient
+              {t('onboarding.hospitalCheck.yesPatient')}
             </RadioButton>
             <RadioButton
               name="isPatient"
@@ -177,7 +179,7 @@ const OnboardingHospitalCheck: React.FC = () => {
               checked={isPatient === 'no'}
               onChange={setIsPatient}
             >
-              No, I'm using Whisperoo independently
+              {t('onboarding.hospitalCheck.noIndependent')}
             </RadioButton>
           </div>
 
@@ -185,7 +187,7 @@ const OnboardingHospitalCheck: React.FC = () => {
           {isPatient === 'yes' && (
             <div className="space-y-4 animate-fade-in">
               <h3 className="text-lg font-semibold text-gray-800 text-center">
-                Select your hospital
+                {t('onboarding.hospitalCheck.selectHospital')}
               </h3>
               <div className="space-y-3">
                 {activeTenants.map((tenant) => (
@@ -218,7 +220,7 @@ const OnboardingHospitalCheck: React.FC = () => {
                       </p>
                       {tenant.config?.departments && tenant.config.departments.length > 0 && (
                         <p className="text-xs text-gray-500 mt-0.5">
-                          {tenant.config.departments.length} department{tenant.config.departments.length > 1 ? 's' : ''}
+                          {tenant.config.departments.length} {tenant.config.departments.length > 1 ? t('onboarding.hospitalCheck.departments') : t('onboarding.hospitalCheck.department')}
                         </p>
                       )}
                     </div>
@@ -238,7 +240,7 @@ const OnboardingHospitalCheck: React.FC = () => {
                 <div className="space-y-3 animate-fade-in">
                   <h3 className="text-base font-semibold text-gray-700 text-center flex items-center justify-center gap-2">
                     <Stethoscope className="w-4 h-4" />
-                    Which department?
+                    {t('onboarding.hospitalCheck.whichDepartment')}
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
                     {departments.map((dept, idx) => (
@@ -272,7 +274,7 @@ const OnboardingHospitalCheck: React.FC = () => {
               disabled={isSaving}
               className="flex items-center space-x-2 animate-fade-in bg-indigo-600 text-white hover:bg-indigo-700 font-semibold rounded-3xl px-8 py-3.5 text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 border-0 shadow-lg disabled:opacity-50"
             >
-              <span>{isSaving ? 'Saving...' : 'Next'}</span>
+              <span>{isSaving ? t('onboarding.common.saving') : t('onboarding.common.next')}</span>
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>

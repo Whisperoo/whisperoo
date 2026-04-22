@@ -4,8 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import OnboardingLayout from '../../components/layouts/OnboardingLayout';
 import { Button } from '../../components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const OnboardingComplete: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { updateProfile } = useAuth();
 
@@ -27,23 +29,23 @@ const OnboardingComplete: React.FC = () => {
       <div className="text-center space-y-8">
         <div className="space-y-4">
           <h1 className="text-4xl font-bold text-action-primary">
-            You're All Set!
+            {t('onboarding.complete.title')}
           </h1>
           <p className="text-gray-500 text-lg">
-            Welcome to your personalized Whisperoo experience
+            {t('onboarding.complete.subtitle')}
           </p>
         </div>
 
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-md p-8 max-w-md mx-auto">
           <p className="text-gray-700 mb-6">
-            Based on your preferences, we've customized your experience to provide the most relevant support and resources.
+            {t('onboarding.complete.description')}
           </p>
           
           <Button 
             onClick={handleContinue} 
             className="w-full bg-action-primary text-white hover:bg-indigo-800 font-semibold rounded-2xl px-6 py-3 text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-action-primary"
           >
-            Enter Whisperoo
+            {t('onboarding.complete.enterWhisperoo')}
           </Button>
         </div>
       </div>

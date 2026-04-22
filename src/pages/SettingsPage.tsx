@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, MessageSquare, Calendar, Info } from 'lucide-react';
+import { Trash2, MessageSquare, Calendar, Info, Globe } from 'lucide-react';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -111,8 +112,9 @@ const SettingsPage: React.FC = () => {
 
         <div className="max-w-4xl mx-auto">
           <Tabs defaultValue="chat" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="chat">Chat History</TabsTrigger>
+              <TabsTrigger value="language">Language</TabsTrigger>
               <TabsTrigger value="account">Account</TabsTrigger>
               <TabsTrigger value="about">About</TabsTrigger>
             </TabsList>
@@ -170,6 +172,24 @@ const SettingsPage: React.FC = () => {
                           </Button>
                         </div>)}
                     </div>}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Language Tab */}
+            <TabsContent value="language" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center text-xl">
+                    <Globe className="w-5 h-5 mr-2" />
+                    Language & Localization
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Whisperoo supports English, Spanish, and Vietnamese. Your selection will be remembered across devices.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <LanguageSwitcher />
                 </CardContent>
               </Card>
             </TabsContent>
