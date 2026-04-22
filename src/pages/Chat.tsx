@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import MessageBubble from '@/components/chat/MessageBubble';
 import ChildSwitcher from '@/components/chat/ChildSwitcher';
 import { ChatHistorySettings } from '@/components/chat/ChatHistorySettings';
+import { useTranslation } from 'react-i18next';
 
 // Supabase client is now imported from lib/supabase
 
@@ -32,6 +33,7 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = false }) => {
+  const { t } = useTranslation();
   const {
     profile,
     user
@@ -180,7 +182,8 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
         body: {
           message: userMessage,
           sessionId: currentSessionId,
-          childId: selectedChild?.id
+          childId: selectedChild?.id,
+          language: profile?.preferred_language || 'en'
         }
       });
       if (error) throw error;
@@ -228,7 +231,7 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
       // Show error message
       const errorMessage: Message = {
         id: 'error-' + Date.now(),
-        content: "I'm sorry, I'm having trouble responding right now. Please try again.",
+        content: t('chat.errorMessage'),
         role: 'assistant',
         created_at: new Date().toISOString()
       };
@@ -256,7 +259,7 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
   if (!profile) {
     return <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Please log in to access chat support.</p>
+          <p className="text-gray-600">{t('chat.loginRequired')}</p>
         </div>
       </div>;
   }
@@ -271,8 +274,8 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
             className="text-sm gap-2"
           >
             <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Conversation History Settings</span>
-            <span className="sm:hidden">History</span>
+            <span className="hidden sm:inline">{t('chat.historySettings')}</span>
+            <span className="sm:hidden">{t('chat.historySettingsMobile')}</span>
           </Button>
           <Button 
             variant="outline" 
@@ -281,7 +284,7 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
             disabled={isGeneratingSummary} 
             className="text-sm disabled:opacity-50"
           >
-            {isGeneratingSummary ? 'Saving...' : 'New Chat'}
+            {isGeneratingSummary ? t('chat.saving') : t('chat.newChat')}
           </Button>
         </div>
       </div>
@@ -293,11 +296,15 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
               <img src="/stork-avatar.png" alt="Whisperoo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-brand-primary">
-              Hi {profile.first_name}, I'm your 24/7 support!
+              {t('chat.welcomeTitle', { name: profile.first_name })}
             </h2>
-            <p className="text-gray-600 mb-6 text-base sm:text-lg leading-relaxed">I'm ready to offer guidance, share ideas, and suggest trusted experts who can support you even further. I remember our past conversations to better support you over time. You can access your conversation history using the settings button above, and you'll always have the option to view or delete those notes whenever you like.</p>
+            <p className="text-gray-600 mb-6 text-base sm:text-lg leading-relaxed">
+              {t('chat.welcomeDesc1')}
+            </p>
             
-            <p className="text-xs sm:text-sm text-gray-500 mt-8 italic">Note: Whisperoo’s AI Chat Genie provides general information and support only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your pediatrician, physician, or other qualified healthcare provider with any questions you may have regarding your child’s health or well-being.</p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-8 italic">
+              {t('chat.welcomeDesc2')}
+            </p>
           </div>
         </div>}
 
@@ -338,7 +345,7 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
                     animationDelay: '0.2s'
                   }}></div>
                     </div>
-                    <span className="text-sm text-gray-500">Typing...</span>
+                    <span className="text-sm text-gray-500">{t('chat.typing')}</span>
                   </div>
                 </div>
               </div>
@@ -350,12 +357,12 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
       {/* Disclaimer */}
       <div className="text-center py-2 px-4">
         <p className="text-xs text-gray-400">
-          Not medical advice or a substitute for a doctor.{' '}
+          {t('chat.disclaimer')}{' '}
           <button
             onClick={() => navigate('/')}
             className="underline hover:text-gray-600 transition-colors"
           >
-            Learn more
+            {t('chat.learnMore')}
           </button>
         </p>
       </div>
@@ -365,11 +372,11 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="flex-1 relative">
-              <Input value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder={selectedChild ? `Type anything...` : "Type anything..."} className="rounded-3xl py-3 sm:py-4 text-base shadow-sm" disabled={isLoading} />
+              <Input value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder={t('chat.placeholder')} className="rounded-3xl py-3 sm:py-4 text-base shadow-sm" disabled={isLoading} />
             </div>
             <Button onClick={sendMessage} disabled={!inputMessage.trim() || isLoading} className="rounded-3xl px-6 sm:px-8 py-3 sm:py-4 flex items-center space-x-2 font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
               <Send className="w-4 h-4" />
-              <span className="hidden sm:inline">Send</span>
+              <span className="hidden sm:inline">{t('chat.send')}</span>
             </Button>
           </div>
         </div>

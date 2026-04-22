@@ -27,7 +27,6 @@ import { ProductPurchasePage } from "./pages/ProductPurchasePage";
 import { ProductsPage } from "./pages/ProductsPage";
 import ProfilePage from "./pages/ProfilePage";
 import { PurchaseSuccessPage } from "./pages/PurchaseSuccessPage";
-import SettingsPage from "./pages/SettingsPage";
 import Splash from "./pages/Splash";
 import TestForm from "./pages/TestForm";
 import TestSupabase from "./pages/TestSupabase";
@@ -221,16 +220,6 @@ const App = () => {
                     <ProtectedRoute requireAuth={true} requireOnboarding={true}>
                       <AppLayout>
                         <ProfilePage />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute requireAuth={true} requireOnboarding={true}>
-                      <AppLayout>
-                        <SettingsPage />
                       </AppLayout>
                     </ProtectedRoute>
                   }

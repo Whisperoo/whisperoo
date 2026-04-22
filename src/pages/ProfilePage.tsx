@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Edit3, Baby, Heart, Users, Calendar } from 'lucide-react'
+import { Edit3, Baby, Heart, Users, Calendar, Globe, Trash2, MessageSquare } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +10,11 @@ import { supabase } from '@/lib/supabase'
 import { calculateAge } from '@/utils/age'
 import { formatDueDate } from '@/utils/kids'
 import ProfileEditModal from '@/components/ui/ProfileEditModal'
+import LanguageSwitcher from '@/components/common/LanguageSwitcher'
+import { useTranslation } from 'react-i18next'
+import { toast } from '@/hooks/use-toast'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { useNavigate } from 'react-router-dom'
 
 interface Child {
   id: string
@@ -20,16 +25,35 @@ interface Child {
   expected_name?: string
 }
 
+interface Session {
+  id: string;
+  title: string | null;
+  summary: string | null;
+  last_message_at: string | null;
+  created_at: string | null;
+  child_id: string | null;
+}
+
 const ProfilePage: React.FC = () => {
+  const { t } = useTranslation()
   const { profile } = useAuth()
+  const navigate = useNavigate()
   const [children, setChildren] = useState<Child[]>([])
   const [loading, setLoading] = useState(true)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  
+  // Chat History State
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [sessionsLoading, setSessionsLoading] = useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Fetch children data
   useEffect(() => {
     if (profile?.id) {
       fetchChildren()
+      fetchSessions()
     }
   }, [profile?.id])
 
@@ -50,6 +74,64 @@ const ProfilePage: React.FC = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const fetchSessions = async () => {
+    if (!profile?.id) return
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('last_message_at', { ascending: false, nullsFirst: false })
+      if (error) throw error
+      setSessions(data || [])
+    } catch (error) {
+      console.error('Error fetching sessions:', error)
+    } finally {
+      setSessionsLoading(false)
+    }
+  }
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return t('settings.never')
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    })
+  }
+
+  const handleDeleteSession = async () => {
+    if (!sessionToDelete) return
+    setDeleting(true)
+    try {
+      const { error } = await supabase.from('sessions').delete().eq('id', sessionToDelete.id)
+      if (error) throw error
+      setSessions(prev => prev.filter(s => s.id !== sessionToDelete.id))
+      toast({
+        title: t('settings.toastDeletedTitle'),
+        description: t('settings.toastDeletedDesc')
+      })
+    } catch (error) {
+      console.error('Error deleting session:', error)
+      toast({
+        title: t('settings.toastErrorTitle'),
+        description: t('settings.toastErrorDesc'),
+        variant: 'destructive'
+      })
+    } finally {
+      setDeleting(false)
+      setDeleteDialogOpen(false)
+      setSessionToDelete(null)
+    }
+  }
+
+  const openDeleteDialog = (session: Session) => {
+    setSessionToDelete(session)
+    setDeleteDialogOpen(true)
   }
 
   const getInitials = (name: string) => {
@@ -95,8 +177,8 @@ const ProfilePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">No Profile Found</h2>
-          <p className="text-gray-600 mt-2">Please log in to view your profile.</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('profile.noProfileTitle')}</h2>
+          <p className="text-gray-600 mt-2">{t('profile.noProfileDesc')}</p>
         </div>
       </div>
     )
@@ -107,8 +189,8 @@ const ProfilePage: React.FC = () => {
       <div className="max-w-6xl mx-auto p-6">
         {/* Page Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">My Profile</h1>
-          <p className="text-gray-600 text-lg">Your family information and preferences</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('profile.pageTitle')}</h1>
+          <p className="text-gray-600 text-lg">{t('profile.pageSubtitle')}</p>
         </div>
 
         <div className="space-y-6">
@@ -135,7 +217,10 @@ const ProfilePage: React.FC = () => {
                     <span className="text-lg text-indigo-600 font-medium capitalize">
                       {profile.role === 'other' && profile.custom_role 
                         ? profile.custom_role 
-                        : profile.role || 'Parent'
+                        : profile.role === 'mom' ? t('profile.roleMom')
+                        : profile.role === 'dad' ? t('profile.roleDad')
+                        : profile.role === 'caregiver' ? t('profile.roleCaregiver')
+                        : t('profile.roleParent')
                       }
                     </span>
                   </div>
@@ -150,7 +235,7 @@ const ProfilePage: React.FC = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-xl text-indigo-700 flex items-center">
                 <Users className="w-5 h-5 mr-2" />
-                Family Overview
+                {t('profile.familyOverview')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -158,22 +243,22 @@ const ProfilePage: React.FC = () => {
                 <div className="text-center p-4 bg-indigo-50 rounded-lg">
                   <div className="text-2xl font-bold text-indigo-700">{bornChildren.length}</div>
                   <div className="text-sm text-indigo-600">
-                    {bornChildren.length === 1 ? 'Child' : 'Children'}
+                    {bornChildren.length === 1 ? t('profile.child') : t('profile.children')}
                   </div>
                 </div>
                 
                 {profile.expecting_status === 'yes' && (
                   <div className="text-center p-4 bg-pink-50 rounded-lg">
                     <div className="text-2xl font-bold text-pink-700">{expectedBabies.length}</div>
-                    <div className="text-sm text-pink-600">Expecting</div>
+                    <div className="text-sm text-pink-600">{t('profile.expecting')}</div>
                   </div>
                 )}
                 
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
                   <Badge className={`text-sm font-medium ${getExpectingStatusColor(profile.expecting_status || 'no')}`}>
-                    {profile.expecting_status === 'yes' ? 'Expecting' : 
-                     profile.expecting_status === 'trying' ? 'Trying to Conceive' : 
-                     'Not Expecting'}
+                    {profile.expecting_status === 'yes' ? t('profile.expecting') : 
+                     profile.expecting_status === 'trying' ? t('profile.tryingToConceive') : 
+                     t('profile.notExpecting')}
                   </Badge>
                 </div>
               </div>
@@ -186,14 +271,14 @@ const ProfilePage: React.FC = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-xl text-indigo-700 flex items-center">
                   <Heart className="w-5 h-5 mr-2" />
-                  My Family
+                  {t('profile.myFamily')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Born Children */}
                 {bornChildren.length > 0 && (
                   <div className="space-y-3">
-                    <h4 className="font-medium text-gray-700">Children</h4>
+                    <h4 className="font-medium text-gray-700">{t('profile.children')}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {bornChildren.map((child) => (
                         <div key={child.id} className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
@@ -220,7 +305,7 @@ const ProfilePage: React.FC = () => {
                 {expectedBabies.length > 0 && (
                   <div className="space-y-3">
                     {bornChildren.length > 0 && <Separator />}
-                    <h4 className="font-medium text-gray-700">Expected Arrivals</h4>
+                    <h4 className="font-medium text-gray-700">{t('profile.expectedArrivals')}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {expectedBabies.map((baby) => (
                         <div key={baby.id} className="flex items-center space-x-3 p-3 bg-pink-50 rounded-lg">
@@ -229,11 +314,11 @@ const ProfilePage: React.FC = () => {
                           </div>
                           <div>
                             <p className="font-medium text-gray-900">
-                              {baby.expected_name || 'Expected Baby'}
+                              {baby.expected_name || t('profile.expectedBaby')}
                             </p>
                             {baby.due_date && (
                               <p className="text-sm text-gray-600">
-                                Due: {formatDueDate(baby.due_date)}
+                                {t('profile.due', { date: formatDueDate(baby.due_date) })}
                               </p>
                             )}
                           </div>
@@ -250,12 +335,12 @@ const ProfilePage: React.FC = () => {
           {(profile.parenting_styles?.length > 0 || profile.topics_of_interest?.length > 0) && (
             <Card className="bg-white border-indigo-100">
               <CardHeader className="pb-3">
-                <CardTitle className="text-xl text-indigo-700">Parenting Preferences</CardTitle>
+                <CardTitle className="text-xl text-indigo-700">{t('profile.parentingPreferences')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {profile.parenting_styles?.length > 0 && (
                   <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Parenting Styles</h4>
+                    <h4 className="font-medium text-gray-700 mb-2">{t('profile.parentingStyles')}</h4>
                     <div className="flex flex-wrap gap-2">
                       {profile.parenting_styles.map((style) => (
                         <Badge key={style} variant="secondary" className="bg-indigo-100 text-indigo-700">
@@ -269,7 +354,7 @@ const ProfilePage: React.FC = () => {
                 {profile.topics_of_interest?.length > 0 && (
                   <div>
                     {profile.parenting_styles?.length > 0 && <Separator />}
-                    <h4 className="font-medium text-gray-700 mb-2">Topics of Interest</h4>
+                    <h4 className="font-medium text-gray-700 mb-2">{t('profile.topicsOfInterest')}</h4>
                     <div className="flex flex-wrap gap-2">
                       {profile.topics_of_interest.map((topic) => (
                         <Badge key={topic} variant="outline" className="border-purple-200 text-purple-700">
@@ -283,11 +368,92 @@ const ProfilePage: React.FC = () => {
             </Card>
           )}
 
+          {/* Chat History Management */}
+          <Card className="bg-white border-indigo-100">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl text-indigo-700 flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2" />
+                {t('settings.chatHistoryTitle')}
+              </CardTitle>
+              <p className="text-sm text-gray-600">{t('settings.chatHistoryDesc')}</p>
+            </CardHeader>
+            <CardContent>
+              {sessionsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">{t('settings.loading')}</p>
+                </div>
+              ) : sessions.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">{t('settings.noSessions')}</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {t('settings.startChatPrompt')}
+                  </p>
+                  <Button onClick={() => navigate('/chat')} className="mt-4 bg-indigo-600 hover:bg-indigo-700">
+                    {t('settings.startChattingBtn')}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {sessions.map(session => (
+                    <div key={session.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h4 className="font-medium text-gray-900">
+                            {session.title || t('settings.untitledChat')}
+                          </h4>
+                          {session.child_id && (
+                            <Badge variant="outline" className="text-xs">
+                              {t('settings.childSpecific')}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                          {session.summary || t('settings.noSummary')}
+                        </p>
+                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                          <span className="flex items-center">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {t('settings.created', { date: formatDate(session.created_at) })}
+                          </span>
+                          <span className="flex items-center">
+                            <MessageSquare className="w-3 h-3 mr-1" />
+                            {t('settings.lastActivity', { date: formatDate(session.last_message_at) })}
+                          </span>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => openDeleteDialog(session)} className="ml-4 text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Language Preference */}
+          <Card className="bg-white border-indigo-100">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl text-indigo-700 flex items-center">
+                <Globe className="w-5 h-5 mr-2" />
+                {t('profile.languagePreference')}
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                {t('profile.languagePreferenceDesc')}
+              </p>
+            </CardHeader>
+            <CardContent>
+              <LanguageSwitcher />
+            </CardContent>
+          </Card>
+
           {/* Personal Story */}
           {profile.personal_context && (
             <Card className="bg-white border-indigo-100">
               <CardHeader className="pb-3">
-                <CardTitle className="text-xl text-indigo-700">My Story</CardTitle>
+                <CardTitle className="text-xl text-indigo-700">{t('profile.myStory')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-indigo-500">
@@ -307,7 +473,7 @@ const ProfilePage: React.FC = () => {
               size="lg"
             >
               <Edit3 className="w-5 h-5 mr-2" />
-              Edit Profile
+              {t('profile.editProfile')}
             </Button>
           </div>
         </div>
@@ -319,6 +485,26 @@ const ProfilePage: React.FC = () => {
         onClose={handleEditModalClose}
         onChildrenChange={fetchChildren}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('settings.deleteDialogTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('settings.deleteDialogDesc')}
+              <br /><br />
+              <strong>{t('settings.deleteDialogSession')}</strong> {sessionToDelete?.title || t('settings.untitledChat')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t('settings.cancelBtn')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSession} disabled={deleting} className="bg-red-600 hover:bg-red-700">
+              {deleting ? t('settings.deletingBtn') : t('settings.deleteBtn')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

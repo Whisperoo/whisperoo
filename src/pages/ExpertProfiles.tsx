@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 import { useTenant } from "@/contexts/TenantContext";
+import { useTranslation } from "react-i18next";
 
 interface ExpertProfile {
   id: string;
@@ -23,6 +24,7 @@ interface ExpertProfile {
 }
 
 const ExpertProfiles: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { isHospitalUser, tenant, config } = useTenant();
   const [experts, setExperts] = useState<ExpertProfile[]>([]);
@@ -134,11 +136,10 @@ const ExpertProfiles: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Whisperoo Verified Experts
+            {t('experts.title')}
           </h1>
           <p className="text-gray-600 mt-1">
-            Connect with board-certified professionals who specialize in child
-            and family health
+            {t('experts.subtitle')}
           </p>
         </div>
 
@@ -147,7 +148,7 @@ const ExpertProfiles: React.FC = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search by name, specialty, or expertise..."
+              placeholder={t('experts.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 bg-white"
@@ -158,7 +159,7 @@ const ExpertProfiles: React.FC = () => {
             onChange={(e) => setSelectedSpecialty(e.target.value)}
             className="px-4 w-full md:w-fit py-2 bg-white border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            <option value="">All Specialties</option>
+            <option value="">{t('experts.allSpecialties')}</option>
             {specialties
               .filter((specialty) => specialty && specialty.trim())
               .map((specialty) => (
@@ -178,7 +179,7 @@ const ExpertProfiles: React.FC = () => {
               }`}
             >
               <Building2 className="w-4 h-4" />
-              {hospitalOnly ? 'Hospital Only' : 'Hospital Partners'}
+              {hospitalOnly ? t('experts.hospitalOnly') : t('experts.hospitalPartners')}
             </button>
           )}
         </div>
@@ -186,16 +187,18 @@ const ExpertProfiles: React.FC = () => {
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-gray-600">
-            {displayExperts.length} expert
-            {displayExperts.length !== 1 ? "s" : ""} found
+            {displayExperts.length === 1 
+              ? t('experts.expertFound', { count: 1 })
+              : t('experts.expertsFound', { count: displayExperts.length })
+            }
             {isHospitalUser && expertBoostIds.length > 0 && !hospitalOnly && (
               <span className="text-indigo-600 ml-1">
-                · Hospital partners shown first
+                {t('experts.hospitalPartnersFirst')}
               </span>
             )}
             {hospitalOnly && (
               <span className="text-indigo-600 ml-1">
-                · Showing hospital partners only
+                {t('experts.showingHospitalOnly')}
               </span>
             )}
           </p>
@@ -206,9 +209,9 @@ const ExpertProfiles: React.FC = () => {
           <div className="text-center py-12">
             <div className="text-gray-500 mb-4">
               <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">No experts found matching your criteria</p>
+              <p className="text-lg">{t('experts.noExpertsFound')}</p>
               <p className="text-sm">
-                Try adjusting your search or filter options
+                {t('experts.tryAdjusting')}
               </p>
             </div>
           </div>
@@ -227,7 +230,7 @@ const ExpertProfiles: React.FC = () => {
                   {isExpertBoosted(expert) && (
                     <div className="flex items-center gap-1.5 mb-3 text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full w-fit">
                       <Building2 className="w-3 h-3" />
-                      Recommended by {config?.branding?.display_name || tenant?.name || 'Hospital'}
+                      {t('experts.recommendedBy', { name: config?.branding?.display_name || tenant?.name || 'Hospital' })}
                     </div>
                   )}
                   <div className="flex items-start gap-4">
@@ -241,7 +244,7 @@ const ExpertProfiles: React.FC = () => {
                         {expert.first_name}
                       </h3>
                       <p className="text-indigo-600 font-medium text-sm">
-                        {expert.expert_specialties?.[0] || "General Expert"}
+                        {expert.expert_specialties?.[0] || t('experts.generalExpert')}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex items-center">
@@ -249,8 +252,8 @@ const ExpertProfiles: React.FC = () => {
                           <span className="text-sm text-gray-600 ml-1">
                             {expert.expert_rating
                               ? expert.expert_rating.toFixed(1)
-                              : "New"}{" "}
-                            ({expert.expert_total_reviews || 0} reviews)
+                              : t('experts.new')}{" "}
+                            ({t('experts.reviews', { count: expert.expert_total_reviews || 0 })})
                           </span>
                         </div>
                       </div>
@@ -259,10 +262,10 @@ const ExpertProfiles: React.FC = () => {
                       </p>
                       <div className="flex items-center justify-between mt-3">
                         <span className="text-sm text-gray-500">
-                          {expert.expert_experience_years || 0} years experience
+                          {t('experts.yearsExperience', { count: expert.expert_experience_years || 0 })}
                         </span>
                         <span className="text-sm font-medium text-indigo-600">
-                          Book consultation
+                          {t('experts.bookConsultation')}
                         </span>
                       </div>
                     </div>

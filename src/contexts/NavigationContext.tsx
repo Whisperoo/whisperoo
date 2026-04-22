@@ -118,13 +118,6 @@ const routeConfig: Record<string, { title: string; breadcrumbs: Array<{ title: s
       { title: 'Profile' }
     ]
   },
-  '/settings': {
-    title: 'Settings',
-    breadcrumbs: [
-      { title: 'Dashboard', path: '/dashboard' },
-      { title: 'Settings' }
-    ]
-  },
   '/help': {
     title: 'Help & Support',
     breadcrumbs: [
@@ -198,13 +191,15 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
   // Account navigation items (Profile only for non-experts)
   const accountNavItems: NavigationItem[] = [
     // Only show Profile for non-expert users
-    ...(profile?.account_type !== 'expert' ? [{
-      id: 'profile',
-      title: 'Profile',
-      path: '/profile',
-      icon: 'User',
-      visible: true
-    }] : [])
+    ...(profile?.account_type !== 'expert' ? [
+      {
+        id: 'profile',
+        title: 'Profile',
+        path: '/profile',
+        icon: 'User',
+        visible: true
+      }
+    ] : [])
   ];
 
   // Expert navigation items (only visible for experts)

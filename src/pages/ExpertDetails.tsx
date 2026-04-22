@@ -10,6 +10,7 @@ import { PurchaseModal } from '@/components/products/PurchaseModal';
 import { ProductWithDetails } from '@/services/products';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTenant } from '@/contexts/TenantContext';
+import { useTranslation } from 'react-i18next';
 
 interface ExpertProfile {
   id: string;
@@ -28,6 +29,7 @@ interface ExpertProfile {
 }
 
 const ExpertDetails: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -207,9 +209,9 @@ const ExpertDetails: React.FC = () => {
         <div className="max-w-4xl mx-auto text-center">
           <Button onClick={() => navigate('/experts')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Experts
+            {t('experts.backToExperts')}
           </Button>
-          <p className="mt-4 text-gray-600">Expert not found</p>
+          <p className="mt-4 text-gray-600">{t('experts.expertNotFound')}</p>
         </div>
       </div>
     );
@@ -232,7 +234,7 @@ const ExpertDetails: React.FC = () => {
                 />
                 <div className="flex items-center justify-center mt-3">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-1" />
-                  <span className="text-sm text-green-600 font-medium">Verified</span>
+                  <span className="text-sm text-green-600 font-medium">{t('experts.verified')}</span>
                 </div>
               </div>
 
@@ -244,23 +246,23 @@ const ExpertDetails: React.FC = () => {
                       {expert.first_name}
                     </h1>
                     <p className="text-xl text-indigo-600 font-semibold mb-3">
-                      {expert.expert_specialties?.[0] || 'General Expert'}
+                      {expert.expert_specialties?.[0] || t('experts.generalExpert')}
                     </p>
                     
                     <div className="flex flex-wrap items-center gap-4 mb-4">
                       <div className="flex items-center">
                         <Star className="h-5 w-5 text-yellow-400 mr-1" />
                         <span className="text-lg font-medium">
-                          {expert.expert_rating ? expert.expert_rating.toFixed(1) : 'New'}
+                          {expert.expert_rating ? expert.expert_rating.toFixed(1) : t('experts.new')}
                         </span>
                         <span className="text-gray-600 ml-1">
-                          ({expert.expert_total_reviews || 0} reviews)
+                          ({t('experts.reviews', { count: expert.expert_total_reviews || 0 })})
                         </span>
                       </div>
                       
                       <div className="flex items-center text-gray-600">
                         <Clock className="h-4 w-4 mr-1" />
-                        <span>{expert.expert_experience_years || 0} years experience</span>
+                        <span>{t('experts.yearsExperience', { count: expert.expert_experience_years || 0 })}</span>
                       </div>
                     </div>
 
@@ -269,7 +271,7 @@ const ExpertDetails: React.FC = () => {
                       variant={expert.expert_availability_status === 'available' ? 'default' : 'secondary'}
                       className="mb-4"
                     >
-                      {expert.expert_availability_status === 'available' ? 'Available for Consultations' : 'Currently Unavailable'}
+                      {expert.expert_availability_status === 'available' ? t('experts.availableForConsultations') : t('experts.currentlyUnavailable')}
                     </Badge>
                   </div>
 
@@ -277,18 +279,18 @@ const ExpertDetails: React.FC = () => {
                   {expert.expert_availability_status === 'available' && (
                     <div className="text-center md:text-right">
                       <div className="bg-indigo-50 rounded-lg p-4">
-                        <p className="text-sm text-gray-600 mb-1">Consultation</p>
+                        <p className="text-sm text-gray-600 mb-1">{t('experts.consultation')}</p>
                         <p className="text-lg font-semibold text-indigo-600">
                           {consultationProduct && consultationProduct.price > 0
                             ? `$${consultationProduct.price.toFixed(0)}`
-                            : 'Contact for rates'
+                            : t('experts.contactForRates')
                           }
                         </p>
                         <Button
                           className="w-full mt-3"
                           onClick={handleBookConsultation}
                         >
-                          Book Consultation
+                          {t('experts.bookConsultation')}
                         </Button>
                       </div>
                     </div>
@@ -318,17 +320,17 @@ const ExpertDetails: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900">
-                    {config.branding?.display_name || tenant.name} Partner
+                    {t('experts.partner', { name: config.branding?.display_name || tenant.name })}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    This expert is part of your hospital's care network
+                    {t('experts.partOfCareNetwork')}
                   </p>
                 </div>
               </div>
 
               {config.departments && config.departments.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-gray-700 mb-2">Contact your hospital directly:</p>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">{t('experts.contactHospitalDirectly')}</p>
                   <div className="flex flex-wrap gap-3">
                     {config.departments.map((dept, idx) => (
                       <div key={idx} className="flex items-center gap-2">
@@ -347,7 +349,7 @@ const ExpertDetails: React.FC = () => {
                             className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 hover:border-indigo-400 hover:text-indigo-600 transition-all shadow-sm"
                           >
                             <Mail className="w-4 h-4 text-indigo-500" />
-                            Email {dept.name}
+                            {t('experts.emailDepartment', { name: dept.name })}
                           </a>
                         )}
                       </div>
@@ -367,7 +369,7 @@ const ExpertDetails: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Award className="h-5 w-5 mr-2 text-indigo-600" />
-                  Credentials
+                  {t('experts.credentials')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -388,7 +390,7 @@ const ExpertDetails: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <GraduationCap className="h-5 w-5 mr-2 text-indigo-600" />
-                  All Specialties
+                  {t('experts.allSpecialties')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
