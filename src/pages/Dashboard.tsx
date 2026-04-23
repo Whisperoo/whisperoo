@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, MessageCircle, Phone, Building2 } from "lucide-react";
+import { ArrowRight, MessageCircle, Phone, Building2, Mail } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { UserResources } from "@/components/dashboard/UserResources";
 // import AIMomCallModule from "@/components/dashboard/AIMomCallModule"; // Hidden for now
@@ -195,6 +195,36 @@ const Dashboard: React.FC = () => {
         </div>
         <p className="text-gray-600 leading-relaxed">
           {t('dashboard.exploreCard.description')}
+        </p>
+      </div>
+
+      {/* Contact / Concierge Card */}
+      <div className="bg-white rounded-xl shadow-card p-6 mt-6 border border-gray-200">
+        <div className="flex items-start space-x-4 mb-5">
+          <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0">
+            <MessageCircle className="w-6 h-6 text-brand-primary" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-gray-900 mb-1">{t('dashboard.contactCard.title')}</h2>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              {t('dashboard.contactCard.description')}
+            </p>
+          </div>
+        </div>
+        <a
+          href="mailto:support@whisperoo.com?subject=Support%20Request"
+          className="flex items-center justify-center w-full bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 shadow-sm mb-3"
+        >
+          {t('dashboard.contactCard.button')}
+        </a>
+        <p className="text-center text-sm text-gray-500">
+          {t('dashboard.contactCard.orEmail')}{" "}
+          <a
+            href="mailto:support@whisperoo.com"
+            className="font-semibold text-brand-primary underline underline-offset-2 hover:opacity-80 transition-opacity"
+          >
+            support@whisperoo.com
+          </a>
         </p>
       </div>
     </main>

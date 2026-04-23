@@ -19,6 +19,12 @@
     "exploreCard": {
       "title": "Khám phá các Chuyên gia Whisperoo đã xác minh",
       "description": "Kết nối với các chuyên gia có chứng chỉ chuyên môn về sức khỏe trẻ em và gia đình"
+    },
+    "contactCard": {
+      "title": "Không tìm thấy những gì bạn cần?",
+      "description": "Nhắn tin cho người hỗ trợ miễn phí của chúng tôi — một người thật có thể chỉ bạn đến đúng tài nguyên, chuyên gia hoặc bước tiếp theo.",
+      "button": "Nhắn tin cho Người hỗ trợ",
+      "orEmail": "Hoặc email"
     }
   },
   "appointments": {

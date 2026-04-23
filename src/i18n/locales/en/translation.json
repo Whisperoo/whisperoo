@@ -19,6 +19,12 @@
     "exploreCard": {
       "title": "Explore Whisperoo Verified Experts",
       "description": "Connect with board-certified professionals who specialize in child and family health"
+    },
+    "contactCard": {
+      "title": "Not seeing what you need?",
+      "description": "Message our free support concierge \u2014 a real person who can point you to the right resource, expert, or next step.",
+      "button": "Message the Concierge",
+      "orEmail": "Or email"
     }
   },
   "appointments": {

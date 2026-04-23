@@ -19,6 +19,12 @@
     "exploreCard": {
       "title": "Explorar Expertos Verificados de Whisperoo",
       "description": "Conéctate con profesionales certificados por la junta que se especializan en salud infantil y familiar"
+    },
+    "contactCard": {
+      "title": "¿No encuentras lo que necesitas?",
+      "description": "Envíale un mensaje a nuestro conserje de soporte gratuito — una persona real que puede orientarte al recurso, experto o próximo paso correcto.",
+      "button": "Enviar mensaje al Conserje",
+      "orEmail": "O envía un correo a"
     }
   },
   "appointments": {
