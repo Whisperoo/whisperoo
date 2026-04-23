@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => ({
     },
   },
   preview: {
+    host: "::",
+    port: Number(process.env.PORT) || 4173,
     headers: {
       'Permissions-Policy': 'fullscreen=(self)',
     },
