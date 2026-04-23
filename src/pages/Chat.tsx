@@ -183,7 +183,7 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
           message: userMessage,
           sessionId: currentSessionId,
           childId: selectedChild?.id,
-          language: profile?.preferred_language || 'en'
+          language: profile?.language_preference || 'en'
         }
       });
       if (error) throw error;

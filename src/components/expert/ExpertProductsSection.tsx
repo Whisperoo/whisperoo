@@ -64,7 +64,7 @@ export const ExpertProductsSection: React.FC<ExpertProductsSectionProps> = ({
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (productId: string) => productService.deleteProduct(productId),
+    mutationFn: (productId: string) => productService.deleteProductPermanently(productId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expert-products', expertId] });
       queryClient.invalidateQueries({ queryKey: ['products'] });

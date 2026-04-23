@@ -426,6 +426,7 @@ export type Database = {
       profiles: {
         Row: {
           account_type: string | null
+          acquisition_department: string | null
           acquisition_source: string | null
           created_at: string | null
           custom_role: string | null
@@ -470,6 +471,7 @@ export type Database = {
         }
         Insert: {
           account_type?: string | null
+          acquisition_department?: string | null
           acquisition_source?: string | null
           created_at?: string | null
           custom_role?: string | null
@@ -514,6 +516,7 @@ export type Database = {
         }
         Update: {
           account_type?: string | null
+          acquisition_department?: string | null
           acquisition_source?: string | null
           created_at?: string | null
           custom_role?: string | null

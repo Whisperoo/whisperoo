@@ -68,7 +68,7 @@ const CareChecklist: React.FC = () => {
 
       // 2. Calculate stages
       const kidsWithStages = kids
-        .map(kid => ({ kid, stage: calculateStage(kid) }))
+        .map(kid => ({ kid: kid as Kid, stage: calculateStage(kid) }))
         .filter((entry): entry is { kid: Kid; stage: StageInfo } => entry.stage !== null);
 
       if (kidsWithStages.length === 0) {
