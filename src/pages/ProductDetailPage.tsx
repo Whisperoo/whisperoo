@@ -27,12 +27,14 @@ import { ContentViewer } from "@/components/content/ContentViewer";
 import { ProductContentPreview } from "@/components/products/ProductContentPreview";
 import { ProductPreviewModal } from "@/components/products/ProductPreviewModal";
 import { toast } from "@/components/ui/sonner";
+import { useTranslation } from "react-i18next";
 export const ProductDetailPage: React.FC = () => {
   const { productId } = useParams<{
     productId: string;
   }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [isPurchased, setIsPurchased] = useState(false);
   const [productFiles, setProductFiles] = useState<ProductFile[]>([]);
   const [showPreview, setShowPreview] = useState(false);
@@ -152,14 +154,14 @@ export const ProductDetailPage: React.FC = () => {
 
       // Update local state
       setIsPurchased(true);
-      toast.success("Content saved successfully!", {
-        description: "Free content has been added to your library.",
+      toast.success(t('products.saveSuccessTitle'), {
+        description: t('products.saveSuccessDesc'),
         duration: 4000,
       });
     } catch (error) {
       console.error("Error saving free content:", error);
-      toast.error("Failed to save content", {
-        description: "An unexpected error occurred. Please try again.",
+      toast.error(t('products.saveErrorTitle'), {
+        description: t('products.saveErrorUnexpected'),
         duration: 4000,
       });
     }
@@ -225,7 +227,7 @@ export const ProductDetailPage: React.FC = () => {
     return (
       <div className="container mx-auto p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center">Loading...</div>
+          <div className="text-center">{t('products.loading')}</div>
         </div>
       </div>
     );
@@ -236,9 +238,9 @@ export const ProductDetailPage: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <Card>
             <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground">Product not found</p>
+              <p className="text-muted-foreground">{t('products.notFound')}</p>
               <Button onClick={() => navigate(-1)} className="mt-4">
-                Go Back
+                {t('products.back')}
               </Button>
             </CardContent>
           </Card>
@@ -252,7 +254,7 @@ export const ProductDetailPage: React.FC = () => {
         {/* Back Button */}
         <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t('products.back')}
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -349,7 +351,9 @@ export const ProductDetailPage: React.FC = () => {
                   {/* Lessons Count for Courses */}
                   {isCourse && (
                     <Badge className="absolute top-4 right-4 bg-blue-600 hover:bg-blue-700">
-                      {productFiles.length || product.total_files_count} lessons
+                      {isCourse
+                      ? t('products.lessons', { count: productFiles.length || product.total_files_count })
+                      : ''}
                     </Badge>
                   )}
 
@@ -377,7 +381,7 @@ export const ProductDetailPage: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {isCourse ? "About This Course" : "About This Product"}
+                  {isCourse ? t('products.aboutThisCourse') : t('products.aboutThisProduct')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -408,7 +412,7 @@ export const ProductDetailPage: React.FC = () => {
                     </Avatar>
                     <div>
                       <p className="font-medium">{product.expert.first_name}</p>
-                      <p className="text-sm text-muted-foreground">Expert</p>
+                      <p className="text-sm text-muted-foreground">{t('products.expert')}</p>
                     </div>
                   </div>
                 )}
@@ -450,16 +454,13 @@ export const ProductDetailPage: React.FC = () => {
                   {isPurchased && purchaseInfo ? (
                     <div className="space-y-2">
                       <div className="text-lg text-muted-foreground">
-                        You paid
+                        {t('products.youPaid')}
                       </div>
                       <div className="text-3xl font-bold">
                         {formatCurrency(purchaseInfo.amount)}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Purchased on{" "}
-                        {new Date(
-                          purchaseInfo.purchased_at,
-                        ).toLocaleDateString()}
+                        {t('products.purchasedOn', { date: new Date(purchaseInfo.purchased_at).toLocaleDateString() })}
                       </div>
                     </div>
                   ) : (
@@ -467,7 +468,7 @@ export const ProductDetailPage: React.FC = () => {
                       {isCourse
                         ? ""
                         : isFreeProduct
-                          ? "Free"
+                          ? t('products.free')
                           : formatCurrency(product.price)}
                     </div>
                   )}
@@ -479,7 +480,7 @@ export const ProductDetailPage: React.FC = () => {
                       size="lg"
                     >
                       <Eye className="h-4 w-4" />
-                      View Content
+                      {t('products.viewContent')}
                     </Button>
                   ) : (
                     <Button
@@ -489,7 +490,7 @@ export const ProductDetailPage: React.FC = () => {
                       className="w-full"
                       size="lg"
                     >
-                      {isFreeProduct ? "Save" : "Purchase Now"}
+                      {isFreeProduct ? t('products.save') : t('products.purchaseNow')}
                     </Button>
                   )}
                 </div>
@@ -500,25 +501,25 @@ export const ProductDetailPage: React.FC = () => {
             {product.product_type !== "consultation" && (
               <Card>
                 <CardHeader>
-                  <CardTitle>What You'll Get</CardTitle>
+                  <CardTitle>{t('products.whatYoullGet')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>Instant content access</span>
+                      <span>{t('products.instantAccess')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>Lifetime access</span>
+                      <span>{t('products.lifetimeAccess')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>Expert-created content</span>
+                      <span>{t('products.expertCreated')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>Mobile-friendly format</span>
+                      <span>{t('products.mobileFriendly')}</span>
                     </li>
                   </ul>
                 </CardContent>

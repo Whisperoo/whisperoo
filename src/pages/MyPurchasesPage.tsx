@@ -10,10 +10,12 @@ import { ContentGrid } from "@/components/content/ContentGrid";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 export const MyPurchasesPage: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const { t } = useTranslation();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Get tab from URL params, default to 'content'
@@ -354,16 +356,19 @@ export const MyPurchasesPage: React.FC = () => {
       <div className="container mx-auto p-6 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-[#1C3263] mb-2">My Content</h1>
+          <h1 className="text-4xl font-bold text-[#1C3263] mb-2">{t('purchases.pageTitle')}</h1>
           <p className="text-black text-lg">
-            Your purchased expert resources and consultation bookings
+            {t('purchases.pageSubtitle')}
           </p>
           {purchases && purchases.length > 0 && (
             <div className="mt-4 hidden md:block text-sm text-gray-500">
-              {contentPurchases.length} content{" "}
-              {contentPurchases.length === 1 ? "item" : "items"} •{" "}
-              {consultations.length}{" "}
-              {consultations.length === 1 ? "booking" : "bookings"}
+              {contentPurchases.length === 1
+                ? t('purchases.contentItem', { count: contentPurchases.length })
+                : t('purchases.contentItems', { count: contentPurchases.length })}{" "}
+              •{" "}
+              {consultations.length === 1
+                ? t('purchases.booking', { count: consultations.length })
+                : t('purchases.bookings_count', { count: consultations.length })}
             </div>
           )}
         </div>
@@ -372,10 +377,10 @@ export const MyPurchasesPage: React.FC = () => {
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="content">
-              All Content ({contentPurchases.length})
+              {t('purchases.tabContent', { count: contentPurchases.length })}
             </TabsTrigger>
             <TabsTrigger value="bookings">
-              My Bookings ({consultations.length})
+              {t('purchases.tabBookings', { count: consultations.length })}
             </TabsTrigger>
           </TabsList>
 
@@ -385,7 +390,7 @@ export const MyPurchasesPage: React.FC = () => {
               <div className="text-center py-16">
                 <div className="inline-flex items-center gap-3 text-gray-600">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                  <span className="text-lg">Loading your library...</span>
+                  <span className="text-lg">{t('purchases.loadingLibrary')}</span>
                 </div>
               </div>
             ) : error ? (
@@ -394,17 +399,17 @@ export const MyPurchasesPage: React.FC = () => {
                   <div className="text-red-500 mb-4">
                     <Receipt className="h-12 w-12 mx-auto mb-3" />
                     <p className="text-lg font-medium">
-                      Oops! Something went wrong
+                      {t('purchases.errorTitle')}
                     </p>
                     <p className="text-sm text-gray-600 mt-2">
-                      We couldn't load your purchases right now.
+                      {t('purchases.errorDesc')}
                     </p>
                   </div>
                   <Button
                     onClick={() => window.location.reload()}
                     className="mt-4"
                   >
-                    Try Again
+                    {t('purchases.tryAgain')}
                   </Button>
                 </CardContent>
               </Card>
@@ -417,18 +422,17 @@ export const MyPurchasesPage: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                        No Content Yet
+                        {t('purchases.noContentTitle')}
                       </h3>
                       <p className="text-gray-600 text-lg leading-relaxed max-w-md mx-auto">
-                        You haven't purchased any expert content yet. Browse our
-                        collection of guides, courses, and resources.
+                        {t('purchases.noContentDesc')}
                       </p>
                     </div>
                     <Button
                       onClick={() => (window.location.href = "/products")}
                       size="lg"
                     >
-                      Browse Products
+                      {t('purchases.browseProducts')}
                     </Button>
                   </div>
                 </CardContent>
@@ -449,7 +453,7 @@ export const MyPurchasesPage: React.FC = () => {
               <div className="text-center py-16">
                 <div className="inline-flex items-center gap-3 text-gray-600">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                  <span className="text-lg">Loading your bookings...</span>
+                  <span className="text-lg">{t('purchases.loadingBookings')}</span>
                 </div>
               </div>
             ) : consultations.length === 0 ? (
@@ -461,18 +465,17 @@ export const MyPurchasesPage: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                        No Bookings Yet
+                        {t('purchases.noBookingsTitle')}
                       </h3>
                       <p className="text-gray-600 text-lg leading-relaxed max-w-md mx-auto">
-                        You haven't booked any consultations yet. Browse our
-                        expert profiles to schedule a session.
+                        {t('purchases.noBookingsDesc')}
                       </p>
                     </div>
                     <Button
                       onClick={() => (window.location.href = "/experts")}
                       size="lg"
                     >
-                      Browse Experts
+                      {t('purchases.browseExperts')}
                     </Button>
                   </div>
                 </CardContent>
@@ -486,12 +489,11 @@ export const MyPurchasesPage: React.FC = () => {
                         <div className="flex-1">
                           <h3 className="text-lg font-semibold text-gray-900 mb-1">
                             {(consultation as any).product?.title ||
-                              "Consultation"}
+                              t('purchases.defaultConsultation')}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            with{" "}
                             {(consultation as any).product?.expert
-                              ?.first_name || "Expert"}
+                              ?.first_name || t('purchases.defaultExpert')}
                           </p>
                         </div>
                         <div className="text-right">
@@ -509,12 +511,12 @@ export const MyPurchasesPage: React.FC = () => {
                             {consultation.consultation_completed ? (
                               <>
                                 <CheckCircle className="h-3 w-3 mr-1" />
-                                Completed
+                                {t('purchases.completed')}
                               </>
                             ) : (
                               <>
                                 <Clock className="h-3 w-3 mr-1" />
-                                Pending
+                                {t('purchases.pending')}
                               </>
                             )}
                           </Badge>
@@ -523,17 +525,11 @@ export const MyPurchasesPage: React.FC = () => {
 
                       <div className="text-sm text-gray-600 mb-4">
                         <div>
-                          Booked:{" "}
-                          {new Date(
-                            consultation.purchased_at,
-                          ).toLocaleDateString()}
+                          {t('purchases.booked', { date: new Date(consultation.purchased_at).toLocaleDateString() })}
                         </div>
                         {consultation.consultation_completed_at && (
                           <div>
-                            Completed:{" "}
-                            {new Date(
-                              consultation.consultation_completed_at,
-                            ).toLocaleDateString()}
+                            {t('purchases.completedOn', { date: new Date(consultation.consultation_completed_at).toLocaleDateString() })}
                           </div>
                         )}
                       </div>
@@ -542,14 +538,12 @@ export const MyPurchasesPage: React.FC = () => {
                         {consultation.consultation_completed ? (
                           <div className="text-green-700">
                             <CheckCircle className="h-4 w-4 inline mr-2" />
-                            This consultation has been completed. Thank you for
-                            booking with our expert!
+                            {t('purchases.consultationCompletedMsg')}
                           </div>
                         ) : (
                           <div className="text-blue-700">
                             <Clock className="h-4 w-4 inline mr-2" />
-                            The expert will reach out to you within 24 hours to
-                            schedule your appointment.
+                            {t('purchases.consultationPendingMsg')}
                           </div>
                         )}
                       </div>

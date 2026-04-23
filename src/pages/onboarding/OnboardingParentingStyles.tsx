@@ -1,13 +1,16 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import MultiSelectQuestion from '../../components/ui/MultiSelectQuestion';
 
 const OnboardingParentingStyles: React.FC = () => {
+  const { t } = useTranslation();
+
   const parentingStyleOptions = [
-    "Direct & to the point – Give me the facts quickly and clearly.",
-    "Friendly & encouraging – A positive, motivating nudge helps me best.",
-    "Detailed & thorough – I like context and step-by-step explanations.",
-    "Gentle & patient – I prefer a softer approach with extra reassurance.",
-    "Flexible – Depends on the situation, I can adapt."
+    t('onboarding.parentingStyles.option1'),
+    t('onboarding.parentingStyles.option2'),
+    t('onboarding.parentingStyles.option3'),
+    t('onboarding.parentingStyles.option4'),
+    t('onboarding.parentingStyles.option5'),
   ];
 
   return (
@@ -15,8 +18,8 @@ const OnboardingParentingStyles: React.FC = () => {
       stepIndex={4}
       totalSteps={5}
       id="parenting_styles"
-      question="How do you like to receive information and support?"
-      subtitle="(Totally okay if this changes—go with what fits today.)"
+      question={t('onboarding.parentingStyles.question')}
+      subtitle={t('onboarding.parentingStyles.subtitle')}
       options={parentingStyleOptions}
       nextRoute="/onboarding/topics"
       skipRoute="/onboarding/complete"
@@ -25,4 +28,4 @@ const OnboardingParentingStyles: React.FC = () => {
   );
 };
 
-export default OnboardingParentingStyles;
+export default OnboardingParentingStyles;

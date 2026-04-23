@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, MessageCircle, Shield, Clock, Users, Star, User, Calendar, Monitor, MessageSquare } from 'lucide-react';
@@ -10,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const Splash: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -38,7 +40,7 @@ const Splash: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">{t('splash.loading')}</p>
         </div>
       </div>
     );
@@ -53,7 +55,7 @@ const Splash: React.FC = () => {
             <span className="text-xl font-semibold text-brand-primary">Whisperoo</span>
           </div>
           <Button variant="outline" onClick={handleLogin}>
-            Login
+            {t('splash.login')}
           </Button>
         </div>
       </nav>
@@ -69,33 +71,32 @@ const Splash: React.FC = () => {
                   <span className="text-brand-primary"> Just Where to Turn</span>
                 </h1>
                 <p className="text-xl text-gray-600 leading-relaxed">
-                  Get personalized, expert-backed parenting advice anytime, anywhere. 
-                  Because great parenting doesn't happen on a schedule.
+                  {t('splash.hero.subtitle')}
                 </p>
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button onClick={handleGetStarted} size="lg" className="px-8 py-4 text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200">
-                  Start Your Journey
+                  {t('splash.hero.startJourney')}
                   <MessageCircle className="ml-2 h-5 w-5" />
                 </Button>
                 <Button variant="outline" onClick={handleLogin} size="lg" className="px-8 py-4 text-lg font-semibold">
-                  I Have an Account
+                  {t('splash.hero.haveAccount')}
                 </Button>
               </div>
 
               <div className="flex items-center justify-center space-x-6 text-sm text-gray-500">
                 <div className="flex items-center space-x-1">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Free to start</span>
+                  <span>{t('splash.hero.freeToStart')}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <User className="h-4 w-4 text-green-500" />
-                  <span>Trusted Guidance</span>
+                  <span>{t('splash.hero.trustedGuidance')}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Clock className="h-4 w-4 text-green-500" />
-                  <span>24/7 available</span>
+                  <span>{t('splash.hero.available247')}</span>
                 </div>
               </div>
             </div>
@@ -111,10 +112,10 @@ const Splash: React.FC = () => {
             <div className="space-y-8">
               <div className="text-center lg:text-left mb-8">
                 <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                  Parenting support that fits your life
+                  {t('splash.features.sectionTitle')}
                 </h2>
                 <p className="text-xl text-gray-600">
-                  Whether it's a midnight feeding question or teenage drama, get the guidance you need when you need it most.
+                  {t('splash.features.sectionSubtitle')}
                 </p>
               </div>
 
@@ -123,9 +124,9 @@ const Splash: React.FC = () => {
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                     <MessageCircle className="h-6 w-6 text-blue-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900">Get Direct Answers When You Need It</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">{t('splash.features.aiTitle')}</h3>
                   <p className="text-gray-600">
-                    Trained on real parent and expert advice, our AI tool gives you answers day or night. It's fast, judgment-free, and available 24/7.
+                    {t('splash.features.aiDesc')}
                   </p>
                 </div>
 
@@ -133,9 +134,9 @@ const Splash: React.FC = () => {
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                     <Calendar className="h-6 w-6 text-purple-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900">Book 1:1 Consults with Trusted Pros</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">{t('splash.features.consultsTitle')}</h3>
                   <p className="text-gray-600">
-                    When one-size-fits-all doesn't cut it, connect with Whisperoo's verified professionals from the comfort of your home.
+                    {t('splash.features.consultsDesc')}
                   </p>
                 </div>
 
@@ -143,9 +144,9 @@ const Splash: React.FC = () => {
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                     <Monitor className="h-6 w-6 text-green-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900">Take Expert-Led Programs at Home</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">{t('splash.features.programsTitle')}</h3>
                   <p className="text-gray-600">
-                    From labor prep with top doulas to pelvic floor recovery with licensed PTs, get access to the best parenting programs designed to fit your schedule.
+                    {t('splash.features.programsDesc')}
                   </p>
                 </div>
 
@@ -153,9 +154,9 @@ const Splash: React.FC = () => {
                   <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                     <MessageSquare className="h-6 w-6 text-orange-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900">Ask Anything, Share Everything</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">{t('splash.features.communityTitle')}</h3>
                   <p className="text-gray-600">
-                    Join a supportive community of fellow parents navigating the those sleepless nights, burning questions, milestones, and meltdowns.
+                    {t('splash.features.communityDesc')}
                   </p>
                 </div>
               </div>
@@ -224,10 +225,10 @@ const Splash: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Get started in minutes
+              {t('splash.howItWorks.sectionTitle')}
             </h2>
             <p className="text-xl text-gray-600">
-              Simple setup, powerful results
+              {t('splash.howItWorks.sectionSubtitle')}
             </p>
           </div>
 
@@ -236,9 +237,9 @@ const Splash: React.FC = () => {
               <div className="w-20 h-20 bg-indigo-700 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
                 1
               </div>
-              <h3 className="text-2xl font-semibold text-gray-900">Create Your Account</h3>
+              <h3 className="text-2xl font-semibold text-gray-900">{t('splash.howItWorks.step1Title')}</h3>
               <p className="text-gray-600">
-                Sign up in seconds and tell us about your family's unique situation.
+                {t('splash.howItWorks.step1Desc')}
               </p>
             </div>
 
@@ -246,9 +247,9 @@ const Splash: React.FC = () => {
               <div className="w-20 h-20 bg-peach-500 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
                 2
               </div>
-              <h3 className="text-2xl font-semibold text-gray-900">Set Up Child Profiles</h3>
+              <h3 className="text-2xl font-semibold text-gray-900">{t('splash.howItWorks.step2Title')}</h3>
               <p className="text-gray-600">
-                Add your children's details for personalized, age-appropriate guidance.
+                {t('splash.howItWorks.step2Desc')}
               </p>
             </div>
 
@@ -256,9 +257,9 @@ const Splash: React.FC = () => {
               <div className="w-20 h-20 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
                 3
               </div>
-              <h3 className="text-2xl font-semibold text-gray-900">Start Getting Advice</h3>
+              <h3 className="text-2xl font-semibold text-gray-900">{t('splash.howItWorks.step3Title')}</h3>
               <p className="text-gray-600">
-                Ask questions and receive expert-backed advice tailored to your situation.
+                {t('splash.howItWorks.step3Desc')}
               </p>
             </div>
           </div>
@@ -270,13 +271,13 @@ const Splash: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Trusted by parents everywhere
+              {t('splash.socialProof.sectionTitle')}
             </h2>
             <div className="flex justify-center items-center space-x-2 mb-8">
               <div className="flex space-x-1">
                 {[...Array(5)].map((_, i) => <Star key={i} className="h-6 w-6 text-yellow-400 fill-current" />)}
               </div>
-              <span className="text-lg text-gray-600">Based on parent feedback</span>
+              <span className="text-lg text-gray-600">{t('splash.socialProof.basedOnFeedback')}</span>
             </div>
           </div>
 
@@ -287,11 +288,11 @@ const Splash: React.FC = () => {
                   {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />)}
                 </div>
                 <p className="text-gray-600 italic">
-                  "Finally, parenting advice that actually fits my situation. The 3 AM questions are no longer scary!"
+                  {t('splash.socialProof.review1')}
                 </p>
                 <div className="border-t pt-4">
-                  <p className="font-semibold text-gray-900">Sarah M.</p>
-                  <p className="text-sm text-gray-500">Mother of 2</p>
+                  <p className="font-semibold text-gray-900">{t('splash.socialProof.review1Author')}</p>
+                  <p className="text-sm text-gray-500">{t('splash.socialProof.review1Role')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -302,11 +303,11 @@ const Splash: React.FC = () => {
                   {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />)}
                 </div>
                 <p className="text-gray-600 italic">
-                  "The personalized profiles for each of my kids makes such a difference. Every child is unique!"
+                  {t('splash.socialProof.review2')}
                 </p>
                 <div className="border-t pt-4">
-                  <p className="font-semibold text-gray-900">Mike R.</p>
-                  <p className="text-sm text-gray-500">Father of 3</p>
+                  <p className="font-semibold text-gray-900">{t('splash.socialProof.review2Author')}</p>
+                  <p className="text-sm text-gray-500">{t('splash.socialProof.review2Role')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -317,11 +318,11 @@ const Splash: React.FC = () => {
                   {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />)}
                 </div>
                 <p className="text-gray-600 italic">
-                  "Privacy was my biggest concern, but Whisperoo keeps everything secure while giving amazing advice."
+                  {t('splash.socialProof.review3')}
                 </p>
                 <div className="border-t pt-4">
-                  <p className="font-semibold text-gray-900">Jennifer L.</p>
-                  <p className="text-sm text-gray-500">Single Mother</p>
+                  <p className="font-semibold text-gray-900">{t('splash.socialProof.review3Author')}</p>
+                  <p className="text-sm text-gray-500">{t('splash.socialProof.review3Role')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -333,16 +334,16 @@ const Splash: React.FC = () => {
       <section className="px-6 py-20 bg-indigo-700">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold text-white mb-4">
-            Ready to never parent alone again?
+            {t('splash.cta.headline')}
           </h2>
           <p className="text-xl text-indigo-100 mb-8">
-            Join thousands of parents who've found their confidence with Whisperoo
+            {t('splash.cta.subtitle')}
           </p>
           <Button onClick={handleGetStarted} className="bg-peach-500 hover:bg-peach-600 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200">
-            Start Your Free Journey Today
+            {t('splash.cta.button')}
           </Button>
           <p className="text-sm text-indigo-200 mt-4">
-            No credit card required • Set up in under 5 minutes
+            {t('splash.cta.disclaimer')}
           </p>
         </div>
       </section>

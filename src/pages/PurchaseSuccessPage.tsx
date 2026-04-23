@@ -10,6 +10,7 @@ import { productService } from '@/services/products';
 import { formatCurrency } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import confetti from 'canvas-confetti';
+import { useTranslation } from 'react-i18next';
 export const PurchaseSuccessPage: React.FC = () => {
   const {
     productId
@@ -18,9 +19,8 @@ export const PurchaseSuccessPage: React.FC = () => {
   }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
+  const { t } = useTranslation();
 
   // Get purchase ID from URL state if available
   const purchaseId = location.state?.purchaseId;
@@ -82,7 +82,7 @@ export const PurchaseSuccessPage: React.FC = () => {
   if (isLoading || !product) {
     return <div className="container mx-auto p-6">
         <div className="max-w-2xl mx-auto text-center">
-          <div className="animate-pulse">Loading...</div>
+          <div className="animate-pulse">{t('purchaseSuccess.loading')}</div>
         </div>
       </div>;
   }
@@ -94,12 +94,12 @@ export const PurchaseSuccessPage: React.FC = () => {
             <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {product.product_type === 'consultation' ? 'Consultation Booked! 🎉' : 'Purchase Successful! 🎉'}
+            {product.product_type === 'consultation' ? t('purchaseSuccess.consultationTitle') : t('purchaseSuccess.purchaseTitle')}
           </h1>
           <p className="text-lg text-gray-600">
-            {product.product_type === 'consultation' 
-              ? 'Your consultation has been booked successfully. The expert will reach out to you within 24 hours to schedule your appointment.'
-              : 'Thank you for your purchase. You now have access to your new resource.'
+            {product.product_type === 'consultation'
+              ? t('purchaseSuccess.consultationDesc')
+              : t('purchaseSuccess.purchaseDesc')
             }
           </p>
         </div>
@@ -109,7 +109,7 @@ export const PurchaseSuccessPage: React.FC = () => {
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
             <CardTitle className="flex items-center gap-3">
               <Gift className="h-6 w-6 text-blue-600" />
-              What You Just Purchased
+              {t('purchaseSuccess.whatYouPurchased')}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -135,7 +135,7 @@ export const PurchaseSuccessPage: React.FC = () => {
                   </Badge>
                   
                   {product.expert && <span className="text-sm text-gray-500">
-                      by {product.expert.first_name}
+                      {t('purchaseSuccess.by', { name: product.expert.first_name })}
                     </span>}
                 </div>
 
@@ -171,7 +171,7 @@ export const PurchaseSuccessPage: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <Star className="h-5 w-5 text-yellow-500" />
-              What's Next?
+              {t('purchaseSuccess.whatsNext')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -258,16 +258,16 @@ export const PurchaseSuccessPage: React.FC = () => {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
           <Button 
-            onClick={() => navigate(product.product_type === 'consultation' ? '/my-purchases?tab=bookings' : '/my-purchases')} 
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2 h-12" 
+            onClick={() => navigate(product.product_type === 'consultation' ? '/my-purchases?tab=bookings' : '/my-purchases')}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2 h-12"
             size="lg"
           >
             <Download className="h-5 w-5" />
-            {product.product_type === 'consultation' ? 'View My Bookings' : 'View My Purchases'}
+            {product.product_type === 'consultation' ? t('purchaseSuccess.viewBookings') : t('purchaseSuccess.viewPurchases')}
           </Button>
-          
+
           <Button variant="outline" onClick={() => navigate(product.product_type === 'consultation' ? '/experts' : '/products')} className="flex-1 gap-2 h-12" size="lg">
-            {product.product_type === 'consultation' ? 'Browse More Experts' : 'Continue Shopping'}
+            {product.product_type === 'consultation' ? t('purchaseSuccess.browseMoreExperts') : t('purchaseSuccess.continueShopping')}
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>
@@ -275,15 +275,15 @@ export const PurchaseSuccessPage: React.FC = () => {
         {/* Footer Message */}
         <div className="text-center py-6">
           <p className="text-gray-600">
-            {product.product_type === 'consultation' 
-              ? 'Thank you for booking with our expert! We look forward to helping you. 💙'
-              : 'Thank you for supporting our expert community! 💙'
+            {product.product_type === 'consultation'
+              ? t('purchaseSuccess.thankYouConsultation')
+              : t('purchaseSuccess.thankYouPurchase')
             }
           </p>
           <p className="text-sm text-gray-500 mt-2">
-            Questions? Contact us through our{' '}
+            {t('purchaseSuccess.questionsPrompt')}{' '}
             <button onClick={() => navigate('/chat')} className="text-blue-600 hover:underline">
-              24/7 support chat
+              {t('purchaseSuccess.supportChat')}
             </button>
           </p>
         </div>

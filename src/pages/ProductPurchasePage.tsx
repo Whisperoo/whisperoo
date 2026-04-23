@@ -10,11 +10,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/utils";
 import { StripeCheckout } from "@/components/payments/StripeCheckout";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export const ProductPurchasePage: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const {
     data: product,
@@ -33,7 +35,7 @@ export const ProductPurchasePage: React.FC = () => {
   }, [user, navigate]);
 
   const handlePaymentSuccess = (purchaseId: string) => {
-    toast.success("Payment successful! Thank you for your purchase.");
+    toast.success(t('checkout.paymentSuccessToast'));
     // navigate(`/purchase-success/${purchaseId}`);
     navigate(`/my-purchases`);
   };
@@ -46,7 +48,7 @@ export const ProductPurchasePage: React.FC = () => {
     return (
       <div className="container mx-auto p-6">
         <div className="max-w-2xl mx-auto">
-          <div className="text-center">Loading...</div>
+          <div className="text-center">{t('checkout.loading')}</div>
         </div>
       </div>
     );
@@ -58,9 +60,9 @@ export const ProductPurchasePage: React.FC = () => {
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground">Product not found</p>
+              <p className="text-muted-foreground">{t('checkout.notFound')}</p>
               <Button onClick={() => navigate(-1)} className="mt-4">
-                Go Back
+                {t('checkout.back')}
               </Button>
             </CardContent>
           </Card>
@@ -74,7 +76,7 @@ export const ProductPurchasePage: React.FC = () => {
       <div className="max-w-2xl mx-auto space-y-6">
         <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t('checkout.back')}
         </Button>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -83,7 +85,7 @@ export const ProductPurchasePage: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  Payment Information
+                  {t('checkout.paymentInfo')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -102,7 +104,7 @@ export const ProductPurchasePage: React.FC = () => {
           <div>
             <Card>
               <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+                <CardTitle>{t('checkout.orderSummary')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -112,17 +114,17 @@ export const ProductPurchasePage: React.FC = () => {
 
                 {product.expert && (
                   <div className="text-sm text-muted-foreground">
-                    By {product.expert.first_name}
+                    {t('checkout.by', { name: product.expert.first_name })}
                   </div>
                 )}
 
                 <div className="border-t pt-4">
                   <div className="flex justify-between mb-2">
-                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="text-muted-foreground">{t('checkout.subtotal')}</span>
                     <span>{formatCurrency(product.price)}</span>
                   </div>
                   <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
+                    <span>{t('checkout.total')}</span>
                     <span>{formatCurrency(product.price)}</span>
                   </div>
                 </div>

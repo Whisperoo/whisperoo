@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import OnboardingLayout from '../layouts/OnboardingLayout';
 import { Button } from './button';
 import { ArrowRight } from 'lucide-react';
@@ -30,6 +31,7 @@ const MultiSelectQuestion: React.FC<MultiSelectQuestionProps> = ({
   backRoute
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { profile, updateProfile } = useAuth();
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -54,8 +56,8 @@ const MultiSelectQuestion: React.FC<MultiSelectQuestionProps> = ({
   const handleNext = async () => {
     if (selectedOptions.length === 0) {
       toast({
-        title: "Selection required",
-        description: "Please select at least one option to continue.",
+        title: t('onboarding.multiSelect.selectionRequired'),
+        description: t('onboarding.multiSelect.selectionRequiredDesc'),
         variant: "destructive",
       });
       return;
@@ -70,8 +72,8 @@ const MultiSelectQuestion: React.FC<MultiSelectQuestionProps> = ({
       if (result.error) {
         console.error(`Error saving ${id}:`, result.error);
         toast({
-          title: "Save error",
-          description: `Failed to save your selections. Please try again.`,
+          title: t('onboarding.multiSelect.saveError'),
+          description: t('onboarding.multiSelect.saveErrorDesc'),
           variant: "destructive",
         });
         setIsSaving(false);
@@ -164,11 +166,11 @@ const MultiSelectQuestion: React.FC<MultiSelectQuestionProps> = ({
               {isSaving ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Saving...</span>
+                  <span>{t('onboarding.multiSelect.saving')}</span>
                 </>
               ) : (
                 <>
-                  <span>Next</span>
+                  <span>{t('onboarding.multiSelect.next')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
