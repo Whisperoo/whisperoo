@@ -71,12 +71,28 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
         updateData.first_name = babyName.trim();
       }
 
-      const { error } = await supabase
+      console.log('[PostDeliveryPrompt] Updating kid:', selectedKid);
+      console.log('[PostDeliveryPrompt] Update payload:', JSON.stringify(updateData));
+
+      const { data, error, status, statusText } = await supabase
         .from('kids')
         .update(updateData)
-        .eq('id', selectedKid);
+        .eq('id', selectedKid)
+        .select();
 
-      if (error) throw error;
+      console.log('[PostDeliveryPrompt] Response status:', status, statusText);
+      console.log('[PostDeliveryPrompt] Response data:', data);
+      console.log('[PostDeliveryPrompt] Response error:', error);
+
+      if (error) {
+        console.error('[PostDeliveryPrompt] Supabase error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        throw error;
+      }
 
       // Update parent profile expecting status if no more expecting kids
       const remainingExpecting = expectingKids.filter(k => k.id !== selectedKid);
@@ -92,9 +108,10 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
       onBirthRecorded();
     } catch (err: any) {
       console.error('Error recording birth:', err);
+      const errMsg = err?.message || err?.details || err?.hint || (typeof err === 'object' ? JSON.stringify(err) : String(err));
       toast({
         title: t('postDelivery.form.errorTitle'),
-        description: err?.message || err?.details || JSON.stringify(err) || t('postDelivery.form.errorDescription'),
+        description: errMsg || t('postDelivery.form.errorDescription'),
         variant: 'destructive',
       });
     } finally {
