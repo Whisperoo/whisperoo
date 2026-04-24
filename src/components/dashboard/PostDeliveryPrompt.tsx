@@ -27,13 +27,18 @@ interface PostDeliveryPromptProps {
 const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, onBirthRecorded }) => {
   const { t } = useTranslation();
   const { user, updateProfile } = useAuth();
-  const [selectedKid, setSelectedKid] = useState<string | null>(
-    expectingKids.length === 1 ? expectingKids[0].id : null
-  );
+  const [selectedKid, setSelectedKid] = useState<string | null>(null);
   const [birthDate, setBirthDate] = useState('');
   const [babyName, setBabyName] = useState('');
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
+
+  // Set default selected kid when data loads
+  React.useEffect(() => {
+    if (expectingKids.length > 0 && !selectedKid) {
+      setSelectedKid(expectingKids[0].id);
+    }
+  }, [expectingKids, selectedKid]);
 
   const handleRecordBirth = async () => {
     if (!user || !selectedKid || !birthDate) return;
@@ -98,9 +103,9 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
 
   if (!showForm) {
     return (
-      <div className="bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 rounded-xl shadow-card p-5 border border-purple-200/50 transition-all duration-300">
+      <div className="bg-brand-light/30 rounded-xl shadow-card p-5 border border-brand-primary/20 transition-all duration-300">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+          <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
             <Baby className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
@@ -112,7 +117,7 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
             </p>
             <Button
               onClick={() => setShowForm(true)}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold text-sm rounded-lg px-4 py-2 shadow-sm transition-all duration-200"
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-sm rounded-lg px-4 py-2 shadow-sm transition-all duration-200"
             >
               <Sparkles className="w-4 h-4 mr-1.5" />
               {t('postDelivery.preview.recordButton')}
@@ -124,9 +129,9 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
   }
 
   return (
-    <div className="bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 rounded-xl shadow-card p-5 border border-purple-200/50 transition-all duration-300">
+    <div className="bg-brand-light/30 rounded-xl shadow-card p-5 border border-brand-primary/20 transition-all duration-300">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-purple-500 rounded-lg flex items-center justify-center shadow-sm">
+        <div className="w-10 h-10 bg-brand-primary rounded-lg flex items-center justify-center shadow-sm">
           <Baby className="w-5 h-5 text-white" />
         </div>
         <h3 className="text-base font-bold text-gray-900">
@@ -145,8 +150,8 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
                 onClick={() => setSelectedKid(k.id)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                   selectedKid === k.id
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:border-purple-300'
+                    ? 'bg-brand-primary text-white shadow-sm'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:border-brand-primary/50'
                 }`}
               >
                 {k.expected_name || k.first_name || 'Baby'}
@@ -165,7 +170,7 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
           value={babyName}
           onChange={(e) => setBabyName(e.target.value)}
           placeholder={kidDisplayName}
-          className="w-full rounded-lg border-gray-200 focus:ring-purple-500 focus:border-purple-500"
+          className="w-full rounded-lg border-gray-200 focus:ring-brand-primary focus:border-brand-primary"
         />
       </div>
 
@@ -180,7 +185,7 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
           value={birthDate}
           onChange={(e) => setBirthDate(e.target.value)}
           max={new Date().toISOString().split('T')[0]}
-          className="w-full rounded-lg border-gray-200 focus:ring-purple-500 focus:border-purple-500"
+          className="w-full rounded-lg border-gray-200 focus:ring-brand-primary focus:border-brand-primary"
         />
       </div>
 
@@ -195,7 +200,7 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
         <Button
           onClick={handleRecordBirth}
           disabled={!selectedKid || !birthDate || saving}
-          className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-lg text-sm disabled:opacity-50 transition-all duration-200"
+          className="flex-1 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold rounded-lg text-sm disabled:opacity-50 transition-all duration-200"
         >
           {saving ? (
             <div className="flex items-center gap-2">

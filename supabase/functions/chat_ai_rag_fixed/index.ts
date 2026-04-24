@@ -72,6 +72,55 @@ serve(async (req) => {
     if (isEscalation) intent = 'escalation';
     else if (isMedicalQuestion) intent = 'medical_question';
 
+    // ── Admin Dashboard: Category tagging ────────────────────────
+    // Maps message content to one of 6 display categories for the
+    // AI Interaction Audit Trail and Common Concern Themes chart.
+    // Written into messages.metadata.category — no schema change needed.
+    const detectMessageCategory = (text: string): string => {
+      const t = text.toLowerCase();
+      if (
+        t.includes('breastfeed') || t.includes('nursing') ||
+        t.includes('latch') || t.includes('milk supply') ||
+        t.includes('pump') || t.includes('weaning') ||
+        t.includes('formula') || t.includes('bottle feed')
+      ) return 'Breastfeeding Support';
+
+      if (
+        t.includes('lactation') || t.includes('lactation consultant')
+      ) return 'Lactation Consultation';
+
+      if (
+        t.includes('depress') || t.includes('anxiet') ||
+        t.includes('hopeless') || t.includes('worthless') ||
+        t.includes('mental health') || t.includes('overwhelmed') ||
+        t.includes('postpartum depression') || t.includes('ppd') ||
+        t.includes('self-harm') || t.includes('harm') ||
+        t.includes('suicide') || t.includes('want to die')
+      ) return 'Mental Health';
+
+      if (
+        t.includes('postpartum') || t.includes('recovery') ||
+        t.includes('pelvic floor') || t.includes('perineal') ||
+        t.includes('c-section') || t.includes('bleeding') ||
+        t.includes('lochia') || t.includes('after birth') ||
+        t.includes('6 week') || t.includes('six week')
+      ) return 'Postpartum Recovery';
+
+      if (
+        t.includes('sleep') || t.includes('bedtime') ||
+        t.includes('nap') || t.includes('night waking') ||
+        t.includes('sids') || t.includes('safe sleep') ||
+        t.includes('swaddle') || t.includes('colic') ||
+        t.includes('milestone') || t.includes('crawl') ||
+        t.includes('walk') || t.includes('teethe') ||
+        t.includes('solid') || t.includes('first food')
+      ) return 'Infant Care';
+
+      return 'General Parenting';
+    };
+
+    const messageCategory = detectMessageCategory(messageLower);
+
     let currentSessionId = sessionId;
     if (!currentSessionId) {
       const { data: newSession, error: sessionError } = await supabase
@@ -89,11 +138,12 @@ serve(async (req) => {
       currentSessionId = newSession.id;
     }
 
-    // 1.4 Store user message with audit logging and detailed flag reason
-    const metadataToStore: any = { 
-      child_id: childId, 
+    // 1.4 Store user message with audit logging, detailed flag reason, and category tag
+    const metadataToStore: any = {
+      child_id: childId,
       flagged: isEscalation,
-      intent: intent
+      intent: intent,
+      category: messageCategory  // Powers admin AI Audit Trail + Concern Themes chart
     };
     if (isEscalation) {
       metadataToStore.flag_reason = `Escalation keywords detected: ${matchedEscalationKeywords.join(', ')}`;

@@ -23,17 +23,19 @@ const Dashboard: React.FC = () => {
   
   const [expectingKids, setExpectingKids] = useState<any[]>([]);
 
+  const fetchKids = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('kids')
+      .select('*')
+      .eq('parent_id', user.id)
+      .eq('is_expecting', true);
+    if (data) setExpectingKids(data);
+  };
+
   useEffect(() => {
-    const fetchKids = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from('kids')
-        .select('*')
-        .eq('parent_id', user.id)
-        .eq('is_expecting', true);
-      if (data) setExpectingKids(data);
-    };
     fetchKids();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile?.expecting_status]);
 
   return (
@@ -154,10 +156,7 @@ const Dashboard: React.FC = () => {
         <div className="w-full max-w-full overflow-hidden box-border mb-6">
           <PostDeliveryPrompt 
             expectingKids={expectingKids} 
-            onBirthRecorded={() => {
-              // Trigger reload of kids context
-              setExpectingKids([]);
-            }} 
+            onBirthRecorded={fetchKids} 
           />
         </div>
       )}
