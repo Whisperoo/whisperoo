@@ -211,7 +211,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         <a
-          href="mailto:support@whisperoo.com?subject=Support%20Request"
+          href="mailto:support@whisperoo.app?subject=Support%20Request"
           className="flex items-center justify-center w-full bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 shadow-sm mb-3"
         >
           {t('dashboard.contactCard.button')}
@@ -219,10 +219,10 @@ const Dashboard: React.FC = () => {
         <p className="text-center text-sm text-gray-500">
           {t('dashboard.contactCard.orEmail')}{" "}
           <a
-            href="mailto:support@whisperoo.com"
+            href="mailto:support@whisperoo.app"
             className="font-semibold text-brand-primary underline underline-offset-2 hover:opacity-80 transition-opacity"
           >
-            support@whisperoo.com
+            support@whisperoo.app
           </a>
         </p>
       </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { calculateAgeInYears } from '@/utils/age';
 import { Baby, Calendar, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,9 +60,12 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
     setSaving(true);
     try {
       // Update the kid record: flip from expecting → born
+      const formattedDate = new Date(birthDate).toISOString().split('T')[0];
       const updateData: Record<string, unknown> = {
         is_expecting: false,
-        birth_date: birthDate,
+        due_date: null,
+        birth_date: formattedDate,
+        age: calculateAgeInYears(formattedDate).toString()
       };
       if (babyName.trim()) {
         updateData.first_name = babyName.trim();
@@ -86,11 +90,11 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
       });
 
       onBirthRecorded();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error recording birth:', err);
       toast({
         title: t('postDelivery.form.errorTitle'),
-        description: t('postDelivery.form.errorDescription'),
+        description: err?.message || err?.details || JSON.stringify(err) || t('postDelivery.form.errorDescription'),
         variant: 'destructive',
       });
     } finally {
