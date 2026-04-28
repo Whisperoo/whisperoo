@@ -35,6 +35,7 @@ interface DashboardData {
   escalation_trend: { month: string; rate: number }[];
   feature_usage: { feature: string; count: number; pct: number }[];
   concern_themes: { category: string; count: number }[];
+  checklist_trend: { month: string; rate: number }[];
 }
 
 const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
@@ -120,6 +121,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           subtitle="24-48 hrs post-discharge"
           value={k?.survey_completion_pct ?? null}
           valueSuffix="%"
+          scaffolded={true}
         />
         <KpiCard
           title="Escalation Signals"
@@ -156,6 +158,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           subtitle="Completion rate"
           value={k?.phreesia_risk_pct ?? null}
           valueSuffix="%"
+          scaffolded={true}
         />
       </div>
 
@@ -183,7 +186,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
             <LineChart className="w-4 h-4 text-green-500" />
             <p className="text-sm font-semibold text-gray-700">Survey Completion Rate (%)</p>
           </div>
-          <SurveyCompletionChart />
+          <SurveyCompletionChart data={data?.checklist_trend ?? []} />
         </div>
       </div>
 
