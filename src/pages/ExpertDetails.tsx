@@ -54,7 +54,7 @@ const ExpertDetails: React.FC = () => {
       // Note: expertId is profiles.id where account_type = 'expert'
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, expert_bio, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified, tenant_id')
+        .select('id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified, tenant_id')
         .eq('id', expertId)
         .eq('account_type', 'expert')
         .eq('expert_verified', true)
@@ -230,11 +230,20 @@ const ExpertDetails: React.FC = () => {
             <div className="flex flex-col md:flex-row items-start gap-6">
               {/* Profile Image */}
               <div className="flex-shrink-0">
-                <img
-                  src={expert.profile_image_url || '/placeholder.svg'}
-                  alt={expert.first_name}
-                  className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
-                />
+                {expert.profile_image_url ? (
+                  <img
+                    src={expert.profile_image_url}
+                    alt={expert.first_name}
+                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; (e.currentTarget.nextElementSibling as HTMLElement)?.style.setProperty('display', 'flex'); }}
+                  />
+                ) : null}
+                <div
+                  className="w-32 h-32 rounded-full border-4 border-white shadow-lg bg-indigo-100 items-center justify-center text-indigo-700 font-bold text-4xl"
+                  style={{ display: expert.profile_image_url ? 'none' : 'flex' }}
+                >
+                  {expert.first_name?.[0]?.toUpperCase() ?? '?'}
+                </div>
                 <div className="flex items-center justify-center mt-3">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-1" />
                   <span className="text-sm text-green-600 font-medium">{t('experts.verified')}</span>

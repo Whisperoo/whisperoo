@@ -46,14 +46,13 @@ const ExpertProfiles: React.FC = () => {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "id, first_name, expert_bio, expert_specialties, expert_experience_years, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified, expert_profile_visibility, expert_accepts_new_clients, tenant_id",
-        ) // ✅ Both corrected: visibility & accepts_new_clients
+          "id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified, expert_profile_visibility, expert_accepts_new_clients, tenant_id",
+        )
         .eq("account_type", "expert")
         .eq("expert_verified", true)
-        // ✅ TRIPLE FILTER with corrected column names
         .neq("expert_availability_status", "unavailable")
-        .eq("expert_profile_visibility", true) // ✅ visibility (not visiability)
-        .eq("expert_accepts_new_clients", true) // ✅ accepts_new_clients (not accept_new_clients)
+        .eq("expert_profile_visibility", true)
+        .eq("expert_accepts_new_clients", true)
         .order("expert_rating", { ascending: false });
 
       if (error) throw error;
@@ -237,11 +236,20 @@ const ExpertProfiles: React.FC = () => {
                     </div>
                   )}
                   <div className="flex items-start gap-4">
-                    <img
-                      src={expert.profile_image_url || "/placeholder.svg"}
-                      alt={expert.first_name}
-                      className="w-16 h-16 rounded-full object-cover flex-shrink-0"
-                    />
+                    {expert.profile_image_url ? (
+                      <img
+                        src={expert.profile_image_url}
+                        alt={expert.first_name}
+                        className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; (e.currentTarget.nextElementSibling as HTMLElement)?.style.setProperty('display', 'flex'); }}
+                      />
+                    ) : null}
+                    <div
+                      className="w-16 h-16 rounded-full flex-shrink-0 bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl"
+                      style={{ display: expert.profile_image_url ? 'none' : 'flex' }}
+                    >
+                      {expert.first_name?.[0]?.toUpperCase() ?? '?'}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-lg text-gray-900 truncate">
                         {expert.first_name}

@@ -1,0 +1,59 @@
+# ============================================================
+# Whisperoo — Fly.io application configuration
+#
+# Deploy with:
+#   fly deploy --build-arg VITE_SUPABASE_URL=... \
+#              --build-arg VITE_SUPABASE_ANON_KEY=...
+#              (etc.)
+#
+# Or set secrets first (recommended):
+#   fly secrets set VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=...
+#   fly deploy
+#
+# ⚠️  REMINDER after deploy:
+#   Add https://whisperoo-app.fly.dev to Supabase Auth →
+#   URL Configuration → Redirect URLs
+# ============================================================
+
+app = "whisperoo-app"
+primary_region = "iad"   # US East — closest to hospital clients
+
+[build]
+  dockerfile = "Dockerfile"
+
+[[services]]
+  internal_port = 8080
+  protocol      = "tcp"
+  auto_stop_machines  = true
+  auto_start_machines = true
+  min_machines_running = 1    # keep at least 1 alive for fast cold starts
+
+  [services.concurrency]
+    type       = "connections"
+    hard_limit = 200
+    soft_limit = 150
+
+  [[services.ports]]
+    port     = 80
+    handlers = ["http"]
+    force_https = true          # redirect all HTTP → HTTPS
+
+  [[services.ports]]
+    port     = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+    interval      = "10s"
+    timeout       = "5s"
+    grace_period  = "30s"
+    method        = "get"
+    path          = "/"
+
+[env]
+  NODE_ENV = "production"
+
+# Machine size — 1 shared CPU, 256 MB RAM is enough for a static SPA server
+[[vm]]
+  cpu_kind = "shared"
+  cpus     = 1
+  memory_mb = 256
