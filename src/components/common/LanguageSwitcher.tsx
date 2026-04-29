@@ -16,14 +16,18 @@ const LANGUAGES = [
  * Switches the active i18next language and persists the preference
  * to the user's Supabase profile row.
  */
-const LanguageSwitcher: React.FC = () => {
+interface LanguageSwitcherProps {
+  compact?: boolean;
+}
+
+const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) => {
   const { i18n, t } = useTranslation();
   const { profile, user } = useAuth();
   const [saving, setSaving] = useState(false);
 
   // Sync language from profile on mount
   useEffect(() => {
-    const stored = (profile as Record<string, unknown>)?.preferred_language as string | undefined;
+    const stored = (profile as Record<string, unknown>)?.language_preference as string | undefined;
     if (stored && stored !== i18n.language) {
       i18n.changeLanguage(stored);
     }
@@ -39,7 +43,7 @@ const LanguageSwitcher: React.FC = () => {
     try {
       await supabase
         .from('profiles')
-        .update({ preferred_language: langCode })
+        .update({ language_preference: langCode })
         .eq('id', user.id);
 
       toast({
@@ -53,6 +57,29 @@ const LanguageSwitcher: React.FC = () => {
     }
   };
 
+  // ── Compact mode: small flag+code dropdown for tight spaces (e.g. onboarding header)
+  if (compact) {
+    return (
+      <div className="relative flex items-center">
+        <Globe className="w-3.5 h-3.5 text-gray-400 absolute left-2 pointer-events-none" />
+        <select
+          value={i18n.language}
+          onChange={(e) => handleChange(e.target.value)}
+          disabled={saving}
+          className="pl-7 pr-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg appearance-none cursor-pointer hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-60"
+          aria-label="Select language"
+        >
+          {LANGUAGES.map((lang) => (
+            <option key={lang.code} value={lang.code}>
+              {lang.flag} {lang.code.toUpperCase()}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
+  // ── Full mode: used on Profile/Settings page
   return (
     <div>
       <h3 className="text-base font-semibold text-gray-900 mb-1">

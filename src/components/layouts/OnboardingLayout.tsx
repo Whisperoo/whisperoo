@@ -3,6 +3,7 @@ import React from 'react';
 import BackButton from '../ui/BackButton';
 import SkipLink from '../ui/SkipLink';
 import PagerDots from '../ui/PagerDots';
+import LanguageSwitcher from '../common/LanguageSwitcher';
 
 interface OnboardingLayoutProps {
   children: React.ReactNode;
@@ -31,7 +32,10 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
             className="h-6"
           />
         </div>
-        <SkipLink onClick={onSkip} />
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher compact />
+          <SkipLink onClick={onSkip} />
+        </div>
       </div>
 
       {/* Content */}

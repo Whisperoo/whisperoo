@@ -7,11 +7,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 import { useTenant } from "@/contexts/TenantContext";
 import { useTranslation } from "react-i18next";
+import { getLocalizedBio } from "@/services/translationService";
 
 interface ExpertProfile {
   id: string;
   first_name: string;
   expert_bio: string;
+  expert_bio_es?: string | null;
+  expert_bio_vi?: string | null;
   expert_specialties: string[];
   expert_experience_years: number;
   profile_image_url: string;
@@ -24,7 +27,7 @@ interface ExpertProfile {
 }
 
 const ExpertProfiles: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { isHospitalUser, tenant, config } = useTenant();
   const [experts, setExperts] = useState<ExpertProfile[]>([]);
@@ -258,7 +261,7 @@ const ExpertProfiles: React.FC = () => {
                         </div>
                       </div>
                       <p className="text-gray-600 text-sm mt-2 line-clamp-2">
-                        {expert.expert_bio}
+                        {getLocalizedBio(expert, i18n.language)}
                       </p>
                       <div className="flex items-center justify-between mt-3">
                         <span className="text-sm text-gray-500">

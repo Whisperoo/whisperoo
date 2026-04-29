@@ -367,14 +367,17 @@
     "topics": {
       "question": "Bạn quan tâm đến chủ đề nào nhất?",
       "subtitle": "(Chọn nhiều tùy thích)",
-      "sleep": "Giấc ngủ và Thói quen",
-      "feeding": "Ăn uống và Dinh dưỡng",
-      "milestones": "Các Mốc Phát triển",
-      "mentalHealth": "Sức khỏe Tâm thần và Tự chăm sóc",
-      "discipline": "Kỷ luật và Ranh giới",
-      "play": "Vui chơi và Học tập",
-      "relationships": "Mối quan hệ và Đồng nuôi dưỡng",
-      "community": "Cộng đồng và Hỗ trợ"
+      "babyFeeding": "Cho bé bú/ăn",
+      "pelvicFloor": "Sàn Chậu",
+      "sleepCoaching": "Huấn luyện Giấc ngủ",
+      "nervousSystem": "Điều hòa Hệ Thần kinh",
+      "nutrition": "Dinh dưỡng",
+      "pediatricDentistry": "Nha khoa Nhi",
+      "lifestyleCoaching": "Huấn luyện Lối sống",
+      "fitnessYoga": "Thể dục/Yoga",
+      "backToWork": "Trở lại Làm việc",
+      "postpartumTips": "Mẹo Sau sinh",
+      "prenatalTips": "Mẹo Trước sinh"
     },
     "multiSelect": {
       "selectionRequired": "Yêu cầu lựa chọn",

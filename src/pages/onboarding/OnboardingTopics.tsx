@@ -6,14 +6,17 @@ const OnboardingTopics: React.FC = () => {
   const { t } = useTranslation();
 
   const topicOptions = [
-    t('onboarding.topics.sleep'),
-    t('onboarding.topics.feeding'),
-    t('onboarding.topics.milestones'),
-    t('onboarding.topics.mentalHealth'),
-    t('onboarding.topics.discipline'),
-    t('onboarding.topics.play'),
-    t('onboarding.topics.relationships'),
-    t('onboarding.topics.community'),
+    t('onboarding.topics.babyFeeding'),
+    t('onboarding.topics.pelvicFloor'),
+    t('onboarding.topics.sleepCoaching'),
+    t('onboarding.topics.nervousSystem'),
+    t('onboarding.topics.nutrition'),
+    t('onboarding.topics.pediatricDentistry'),
+    t('onboarding.topics.lifestyleCoaching'),
+    t('onboarding.topics.fitnessYoga'),
+    t('onboarding.topics.backToWork'),
+    t('onboarding.topics.postpartumTips'),
+    t('onboarding.topics.prenatalTips'),
   ];
 
   return (

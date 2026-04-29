@@ -28,11 +28,15 @@ serve(async (req) => {
     // SOW 3.2: Fetch user's tenant_id for expert prioritization
     const { data: userProfile } = await supabase
       .from('profiles')
-      .select('tenant_id')
+      .select('tenant_id, topics_of_interest, expecting_status, parenting_styles, personal_context')
       .eq('id', user.id)
       .single();
 
     const userTenantId = userProfile?.tenant_id || null;
+    const userTopics: string[] = userProfile?.topics_of_interest || [];
+    const userExpectingStatus: string = userProfile?.expecting_status || '';
+    const userParentingStyles: string[] = userProfile?.parenting_styles || [];
+    const userPersonalContext: string = userProfile?.personal_context || '';
 
     // If user has tenant, fetch expert_boost_ids from tenant config
     let expertBoostIds: string[] = [];
@@ -171,14 +175,20 @@ serve(async (req) => {
       // Get enhanced chat context
       const context = await getEnhancedChatContext(supabase, user.id, childId, currentSessionId);
 
-      // RAG-FIRST Expert matching
+      // ── Expert matching: semantics-first, max 3, NO fallback to all experts ──
+      // We no longer dump all experts into the prompt. Only send those whose
+      // embeddings match the user's specific query. This prevents the AI from
+      // recommending every expert regardless of relevance.
       matchedExperts = await findMatchingExpertsRAGFirst(supabase, message, userTenantId, expertBoostIds);
-      
+
       // RAG-FIRST Compliance Training Match
       const complianceContext = await getComplianceTrainingContext(supabase, message);
 
-      // Generate AI response
-      aiResponse = await generateEnhancedAIResponse(message, context, matchedExperts, intent, complianceContext);
+      // Generate AI response — now includes user's onboarding interests
+      aiResponse = await generateEnhancedAIResponse(
+        message, context, matchedExperts, intent, complianceContext,
+        { topics: userTopics, expectingStatus: userExpectingStatus, parentingStyles: userParentingStyles, personalContext: userPersonalContext }
+      );
     }
 
     // Store AI response
@@ -300,46 +310,30 @@ function prioritizeByTenant(experts, userTenantId, expertBoostIds = []) {
     });
 }
 
-// Holistic Expert matching — now fetches all experts and passes to AI (SOW 3.1/3.2)
+// Expert matching: semantic-first, max 3 experts, NO all-experts fallback
 async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = null, expertBoostIds = []) {
   console.log(`=== Expert Matching Started for: "${message}" ===`);
 
-  // We fetch ALL available experts so the LLM has complete context to holistically recommend them.
-  let experts = await getAllAvailableExperts(supabase);
+  // Only use semantic search — no all-experts fallback
+  let experts = await findMatchingExpertsBySemantic(supabase, message);
 
-  // Still attempt semantic search to get similarity scores for boosting relevance in the context
-  const semanticExperts = await findMatchingExpertsBySemantic(supabase, message);
-  
-  if (semanticExperts.length > 0) {
-    // Merge semantic scores into the full list
-    experts = experts.map(expert => {
-      const semExpert = semanticExperts.find(se => se.id === expert.id);
-      if (semExpert) {
-        return { ...expert, similarity_score: semExpert.similarity_score };
-      }
-      return expert;
-    });
-    // Sort by similarity score, then rating
-    experts.sort((a, b) => {
-      if (a.similarity_score && b.similarity_score) return b.similarity_score - a.similarity_score;
-      if (a.similarity_score && !b.similarity_score) return -1;
-      if (!a.similarity_score && b.similarity_score) return 1;
-      return (b.rating || 0) - (a.rating || 0);
-    });
-  } else {
-    // If no semantic match, we still return all experts but sorted by rating
-    experts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-  }
+  // Sort by similarity then rating
+  experts.sort((a, b) => {
+    if (a.similarity_score && b.similarity_score) return b.similarity_score - a.similarity_score;
+    if (a.similarity_score && !b.similarity_score) return -1;
+    if (!a.similarity_score && b.similarity_score) return 1;
+    return (b.rating || 0) - (a.rating || 0);
+  });
 
-  // SOW 3.2: Apply tenant prioritization if user belongs to a hospital
+  // Apply tenant prioritization
   if (userTenantId && experts.length > 0) {
-    console.log(`Applying tenant prioritization for tenant: ${userTenantId}`);
     experts = prioritizeByTenant(experts, userTenantId, expertBoostIds);
-    const hospitalCount = experts.filter(e => e.is_hospital_partner).length;
-    console.log(`${hospitalCount} hospital-affiliated experts prioritized`);
   }
 
-  return experts;
+  // Cap at 3 to avoid overwhelming the prompt with irrelevant suggestions
+  const capped = experts.slice(0, 3);
+  console.log(`Returning ${capped.length} experts (capped at 3 from ${experts.length} matches)`);
+  return capped;
 }
 
 // Enhanced semantic search with proper similarity thresholds
@@ -681,8 +675,11 @@ async function getEnhancedChatContext(supabase, userId, childId, sessionId) {
   };
 }
 
-// Enhanced AI response generation with better context handling
-async function generateEnhancedAIResponse(message, context, matchedExperts, intent = 'general', complianceContext = '') {
+// Enhanced AI response generation with user interest context
+async function generateEnhancedAIResponse(
+  message, context, matchedExperts, intent = 'general', complianceContext = '',
+  userInterests: { topics: string[]; expectingStatus: string; parentingStyles: string[]; personalContext: string } = { topics: [], expectingStatus: '', parentingStyles: [], personalContext: '' }
+) {
   const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
   if (!openaiApiKey) {
     return "I'm sorry, I'm having trouble connecting to my AI service right now. Please try again later.";
@@ -704,7 +701,18 @@ Do NOT act as a general-purpose AI assistant. Do NOT answer off-topic questions 
 
   systemPrompt += `\n\nPARENT: ${context.parentProfile?.first_name || 'Parent'}
 - Role: ${context.parentProfile?.role || 'Not specified'}
-- Parenting Styles: ${context.parentProfile?.parenting_styles?.join(', ') || 'Not specified'}`;
+- Expecting status: ${userInterests.expectingStatus || context.parentProfile?.expecting_status || 'Not specified'}
+- Parenting styles: ${(userInterests.parentingStyles.length > 0 ? userInterests.parentingStyles : context.parentProfile?.parenting_styles)?.join(', ') || 'Not specified'}`;
+
+  // Inject onboarding topics of interest — core to resource/expert relevance
+  if (userInterests.topics && userInterests.topics.length > 0) {
+    systemPrompt += `\n- Topics of interest (from onboarding): ${userInterests.topics.join(', ')}`;
+    systemPrompt += `\n\nCRITICAL PERSONALIZATION RULE: This parent has told us they care about: ${userInterests.topics.join(', ')}. ONLY recommend experts or resources directly relevant to these interests AND their current question. Do NOT recommend experts outside these topics unless the user's question explicitly asks about a different area.`;
+  }
+
+  if (userInterests.personalContext) {
+    systemPrompt += `\n- Personal context: ${userInterests.personalContext}`;
+  }
 
   // Add children information
   if (context.allChildren && context.allChildren.length > 0) {
@@ -729,23 +737,21 @@ Do NOT act as a general-purpose AI assistant. Do NOT answer off-topic questions 
   if (matchedExperts.length > 0) {
     const hospitalExperts = matchedExperts.filter(e => e.is_hospital_partner);
 
-    systemPrompt += `\n\nAVAILABLE EXPERTS:`;
+    systemPrompt += `\n\nRELEVANT EXPERTS (max 3, semantically matched to this query):`;
     matchedExperts.forEach(expert => {
       const hospitalTag = expert.is_hospital_partner ? ' [🏥 Hospital Partner]' : '';
       systemPrompt += `\n- ${expert.name}${hospitalTag}, specializing in ${expert.specialty}`;
-      if (expert.experience_years) {
-        systemPrompt += ` (${expert.experience_years} years experience)`;
-      }
-      if (expert.similarity_score) {
-        systemPrompt += ` [Relevance: ${(expert.similarity_score * 100).toFixed(0)}%]`;
-      }
+      if (expert.experience_years) systemPrompt += ` (${expert.experience_years} years experience)`;
+      if (expert.similarity_score) systemPrompt += ` [Relevance: ${(expert.similarity_score * 100).toFixed(0)}%]`;
     });
 
     if (hospitalExperts.length > 0) {
-      systemPrompt += `\n\nHOSPITAL EXPERT PRIORITY: This user is affiliated with a hospital partner. When recommending experts, prioritize the ones marked with [🏥 Hospital Partner] as they are directly connected to the user's healthcare network. Always recommend hospital-affiliated experts first when their expertise is relevant.`;
-    } else {
-      systemPrompt += `\n\nEXPERT RECOMMENDATIONS: You have access to the full list of available experts. Use your reasoning to select and recommend the most relevant experts based on their specialty and bio. Only mention these experts if their expertise is directly relevant to the user's specific query. Use the relevance scores (if available) to judge how well each expert matches. Don't force expert recommendations if the question can be answered with general parenting advice.`;
+      systemPrompt += `\n\nHOSPITAL EXPERT PRIORITY: Prioritize the [🏥 Hospital Partner] experts as they are directly connected to the user's healthcare network.`;
     }
+
+    systemPrompt += `\n\nEXPERT RECOMMENDATION RULE: Only mention an expert if their specialty is directly and specifically relevant to the user's current message. If the query can be answered with general advice, do NOT suggest experts. Never suggest all experts — only the most relevant 1-2.`;
+  } else {
+    systemPrompt += `\n\nNo experts closely matched this query — do NOT fabricate or suggest any expert names. Answer the question with general parenting guidance.`;
   }
 
   // Add session history from previous conversations

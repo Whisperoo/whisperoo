@@ -2,16 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Shield, LogOut, LayoutDashboard, BrainCircuit, Activity, CalendarDays, BarChart3, MessageSquare } from 'lucide-react';
+import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut } from 'lucide-react';
 import HospitalSelector from './HospitalSelector';
 import MetricsDash from './MetricsDash';
 import AIInteractionsPanel from './AIInteractionsPanel';
+import TenantConfigEditor from './TenantConfigEditor';
+import ContentCurationPanel from './ContentCurationPanel';
+import ExpertCurationPanel from './ExpertCurationPanel';
 
 // ─── Super Admin Access Control ───────────────────────────────────
 const SUPER_ADMIN_EMAILS = ['engineering@whisperoo.app'];
 
-type Tab = 'metrics' | 'ai';
+type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'config';
 
 const SuperAdminPortal: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -106,29 +108,27 @@ const SuperAdminPortal: React.FC = () => {
             </div>
 
             {/* Right: Tabs */}
-            <div className="flex items-center bg-gray-50 p-1.5 rounded-xl">
-              <button
-                onClick={() => setActiveTab('metrics')}
-                className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  activeTab === 'metrics'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <BarChart3 className="w-4 h-4" />
-                Metrics Dashboard
-              </button>
-              <button
-                onClick={() => setActiveTab('ai')}
-                className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  activeTab === 'ai'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <MessageSquare className="w-4 h-4" />
-                AI Interactions
-              </button>
+            <div className="flex flex-wrap items-center gap-1 bg-gray-50 p-1.5 rounded-xl">
+              {([
+                { id: 'metrics',  icon: BarChart3,      label: 'Metrics'  },
+                { id: 'ai',       icon: MessageSquare,  label: 'AI Logs'  },
+                { id: 'content',  icon: PackageSearch,  label: 'Content'  },
+                { id: 'experts',  icon: Users,          label: 'Experts'  },
+                { id: 'config',   icon: Settings2,      label: 'Config'   },
+              ] as { id: Tab; icon: React.ElementType; label: string }[]).map(({ id, icon: Icon, label }) => (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    activeTab === id
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </button>
+              ))}
             </div>
 
           </div>
@@ -137,11 +137,11 @@ const SuperAdminPortal: React.FC = () => {
 
       {/* ── Main Content Area ── */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'metrics' ? (
-          <MetricsDash tenantId={selectedTenantId} />
-        ) : (
-          <AIInteractionsPanel tenantId={selectedTenantId} />
-        )}
+        {activeTab === 'metrics'  && <MetricsDash tenantId={selectedTenantId} />}
+        {activeTab === 'ai'       && <AIInteractionsPanel tenantId={selectedTenantId} />}
+        {activeTab === 'content'  && <ContentCurationPanel tenantId={selectedTenantId} />}
+        {activeTab === 'experts'  && <ExpertCurationPanel tenantId={selectedTenantId} />}
+        {activeTab === 'config'   && <TenantConfigEditor tenantId={selectedTenantId} />}
       </main>
     </div>
   );

@@ -367,14 +367,17 @@
     "topics": {
       "question": "¿Qué temas te interesan más?",
       "subtitle": "(Selecciona todos los que quieras)",
-      "sleep": "Sueño y Rutinas",
-      "feeding": "Alimentación y Nutrición",
-      "milestones": "Hitos del Desarrollo",
-      "mentalHealth": "Salud Mental y Autocuidado",
-      "discipline": "Disciplina y Límites",
-      "play": "Juego y Aprendizaje",
-      "relationships": "Relaciones y Copaternidad",
-      "community": "Comunidad y Apoyo"
+      "babyFeeding": "Alimentación del bebé",
+      "pelvicFloor": "Suelo Pélvico",
+      "sleepCoaching": "Coaching de Sueño",
+      "nervousSystem": "Regulación del Sistema Nervioso",
+      "nutrition": "Nutrición",
+      "pediatricDentistry": "Odontología Pediátrica",
+      "lifestyleCoaching": "Coaching de Estilo de Vida",
+      "fitnessYoga": "Fitness/yoga",
+      "backToWork": "Regreso al Trabajo",
+      "postpartumTips": "Consejos Posparto",
+      "prenatalTips": "Consejos Prenatales"
     },
     "multiSelect": {
       "selectionRequired": "Selección requerida",

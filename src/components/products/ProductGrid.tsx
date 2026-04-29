@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenant } from "@/contexts/TenantContext";
 import { supabase } from "@/lib/supabase";
 import {
   ProductFilters,
@@ -20,6 +21,7 @@ import { Grid, List, Search } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProductCard } from "./ProductCard";
+import { usePersonalizedSort } from "@/hooks/usePersonalizedSort";
 
 interface ProductGridProps {
   expertId?: string;
@@ -181,10 +183,15 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { config } = useTenant();
+  const { sortPersonalized } = usePersonalizedSort();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [activeTags, setActiveTags] = useState<string[]>([]);
   const [filters, setFilters] = useState<ProductFilters>({
+    sortBy: 'personalized',   // default to personalized ranking
+    sortOrder: 'asc',         // match the personalized-asc value
     ...initialFilters,
     expertId,
   });
@@ -223,13 +230,31 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     }
   }, [user]);
 
-  const displayProducts = data?.products || [];
+  // Apply personalized sort
+  const sortedProducts = filters.sortBy === 'personalized'
+    ? sortPersonalized(data?.products ?? [])
+    : (data?.products ?? []);
+
+  // Phase 5: Filter out products disabled for this hospital tenant
+  const disabledProductIds = config?.disabled_product_ids ?? [];
+  const displayProducts = disabledProductIds.length > 0
+    ? sortedProducts.filter((p) => !disabledProductIds.includes(p.id))
+    : sortedProducts;
+
   const totalResults = data?.total || 0;
   // console.log(displayProducts, "from grid");
 
   const handleFilterChange = (key: keyof ProductFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-    setPage(1); // Reset to page 1 when filters change
+    setPage(1);
+  };
+
+  const handleTagToggle = (slug: string) => {
+    const next = activeTags.includes(slug)
+      ? activeTags.filter((t) => t !== slug)
+      : [...activeTags, slug];
+    setActiveTags(next);
+    handleFilterChange('tags', next.length > 0 ? next : undefined);
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -414,8 +439,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
             {/* Sort By */}
             <Select
-              value={`${filters.sortBy || "created_at"}-${
-                filters.sortOrder || "desc"
+              value={`${filters.sortBy || "personalized"}-${
+                filters.sortOrder || (filters.sortBy === "personalized" ? "asc" : "desc")
               }`}
               onValueChange={(value) => {
                 const [sortBy, sortOrder] = value.split("-");
@@ -427,6 +452,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="personalized-asc">For You</SelectItem>
                 <SelectItem value="created_at-desc">Newest First</SelectItem>
                 <SelectItem value="created_at-asc">Oldest First</SelectItem>
                 <SelectItem value="price-asc">Price: Low to High</SelectItem>
@@ -454,6 +480,51 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               </Button>
             </div>
           </div>
+
+          {/* ── Content Label Filter Chips ── */}
+          {(() => {
+            const LABELS = [
+              { label: 'Baby Feeding',         slug: 'baby-feeding' },
+              { label: 'Pelvic Floor',          slug: 'pelvic-floor' },
+              { label: 'Sleep Coaching',        slug: 'sleep-coaching' },
+              { label: 'Nervous System',        slug: 'nervous-system' },
+              { label: 'Nutrition',             slug: 'nutrition' },
+              { label: 'Pediatric Dentistry',   slug: 'pediatric-dentistry' },
+              { label: 'Lifestyle',             slug: 'lifestyle-coaching' },
+              { label: 'Fitness & Yoga',        slug: 'fitness-yoga' },
+              { label: 'Back to Work',          slug: 'back-to-work' },
+              { label: 'Postpartum',            slug: 'postpartum-tips' },
+              { label: 'Prenatal',              slug: 'prenatal-tips' },
+            ];
+            return (
+              <div className="flex flex-wrap gap-2 pt-1 pb-1">
+                {LABELS.map(({ label, slug }) => (
+                  <button
+                    key={slug}
+                    onClick={() => handleTagToggle(slug)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                      activeTags.includes(slug)
+                        ? 'bg-[#1C3263] text-white border-[#1C3263] shadow-sm'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-[#1C3263] hover:text-[#1C3263]'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                {activeTags.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setActiveTags([]);
+                      handleFilterChange('tags', undefined);
+                    }}
+                    className="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-600 underline transition-colors"
+                  >
+                    Clear labels
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 

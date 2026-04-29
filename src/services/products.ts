@@ -46,9 +46,10 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   productType?: "video" | "document" | "consultation";
-  sortBy?: "created_at" | "price" | "rating" | "title";
+  sortBy?: "created_at" | "price" | "rating" | "title" | "personalized";
   sortOrder?: "asc" | "desc";
-  searchQuery?: string; // ✅ Added search query parameter
+  searchQuery?: string;
+  tags?: string[]; // topic label filter — uses GIN overlaps query
 }
 
 export const productService = {
@@ -359,10 +360,19 @@ export const productService = {
     if (filters.maxPrice !== undefined)
       query = query.lte("price", filters.maxPrice);
 
-    // Apply sorting
-    const sortBy = filters.sortBy || "created_at";
-    const sortOrder = filters.sortOrder || "desc";
-    query = query.order(sortBy, { ascending: sortOrder === "asc" });
+    // Apply sorting — skip when personalized (client-side hook handles ordering)
+    if (filters.sortBy !== 'personalized') {
+      const sortBy = filters.sortBy || "created_at";
+      const sortOrder = filters.sortOrder || "desc";
+      query = query.order(sortBy, { ascending: sortOrder === "asc" });
+    } else {
+      query = query.order("created_at", { ascending: false }); // newest fetch order as base
+    }
+
+    // Apply tag filter (GIN overlaps — matches products with ANY of selected tags)
+    if (filters.tags && filters.tags.length > 0) {
+      query = query.overlaps('tags', filters.tags);
+    }
 
     // Apply pagination
     const start = (page - 1) * limit;

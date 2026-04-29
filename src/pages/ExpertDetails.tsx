@@ -11,11 +11,14 @@ import { ProductWithDetails } from '@/services/products';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTenant } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
+import { getLocalizedBio } from '@/services/translationService';
 
 interface ExpertProfile {
   id: string;
   first_name: string;
   expert_bio: string;
+  expert_bio_es?: string | null;
+  expert_bio_vi?: string | null;
   expert_specialties: string[];
   expert_experience_years: number;
   expert_credentials: string[];
@@ -29,7 +32,7 @@ interface ExpertProfile {
 }
 
 const ExpertDetails: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -300,7 +303,7 @@ const ExpertDetails: React.FC = () => {
                 {/* Bio */}
                 <div className="mt-6">
                   <p className="text-gray-700 leading-relaxed">
-                    {expert.expert_bio}
+                    {getLocalizedBio(expert, i18n.language)}
                   </p>
                 </div>
               </div>

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { Database } from '@/types/database.types'
+import i18n from '@/i18n/config'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -61,6 +62,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('Profile fetched successfully:', data)
       setProfile(data)
+      
+      // Apply user's language preference
+      if (data.language_preference && data.language_preference !== i18n.language) {
+        i18n.changeLanguage(data.language_preference)
+      }
+      
       return data
     } catch (error) {
       console.error('Exception in fetchProfile:', error)

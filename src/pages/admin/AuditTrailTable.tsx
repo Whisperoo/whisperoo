@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 interface AuditRow {
   message_id: string;
   created_at: string;
+  user_id: string;
   cohort: string;
   category: string;
   summary: string;
@@ -33,7 +34,7 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
 
     let query = supabase
       .from('admin_ai_audit_trail')
-      .select('message_id, created_at, cohort, category, summary, escalation, tenant_id')
+      .select('message_id, created_at, user_id, cohort, category, summary, escalation, tenant_id')
       .order('created_at', { ascending: false })
       .limit(PAGE_SIZE);
 
@@ -76,10 +77,11 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
 
   // CSV export — includes all currently-filtered rows
   const exportCsv = () => {
-    const headers = ['ID', 'Timestamp', 'Cohort', 'Category', 'Summary', 'Escalation'];
+    const headers = ['ID', 'TIMESTAMP', 'USER ID', 'COHORT', 'CATEGORY', 'SUMMARY', 'ESCALATION'];
     const csvRows = filtered.map((r, i) => [
       `AT-${new Date(r.created_at).toISOString().slice(0, 10).replace(/-/g, '')}-${String(i + 1).padStart(3, '0')}`,
       new Date(r.created_at).toLocaleString(),
+      r.user_id ?? '',
       r.cohort,
       r.category,
       `"${r.summary.replace(/"/g, '""')}"`,
@@ -212,7 +214,7 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
           <table className="w-full text-xs">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                {['ID', 'TIMESTAMP', 'COHORT', 'CATEGORY', 'SUMMARY', 'ESCALATION'].map((h) => (
+                {['ID', 'TIMESTAMP', 'USER ID', 'COHORT', 'CATEGORY', 'SUMMARY', 'ESCALATION'].map((h) => (
                   <th
                     key={h}
                     className="px-4 py-2.5 text-left font-semibold text-gray-500 tracking-wider uppercase text-[10px]"
@@ -235,6 +237,15 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
+                  </td>
+                  {/* USER ID — for internal DB lookup only, shown truncated */}
+                  <td className="px-4 py-3">
+                    <span
+                      className="font-mono text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded cursor-help"
+                      title={row.user_id ?? 'N/A'}
+                    >
+                      {row.user_id ? `${row.user_id.slice(0, 8)}…` : '—'}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <span className="font-mono text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">

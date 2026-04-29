@@ -367,14 +367,17 @@
     "topics": {
       "question": "What topics are you most interested in?",
       "subtitle": "(Select as many as you want)",
-      "sleep": "Sleep & Routines",
-      "feeding": "Feeding & Nutrition",
-      "milestones": "Developmental Milestones",
-      "mentalHealth": "Mental Health & Self-Care",
-      "discipline": "Discipline & Boundaries",
-      "play": "Play & Learning",
-      "relationships": "Relationships & Co-Parenting",
-      "community": "Community & Support"
+      "babyFeeding": "Baby Feeding",
+      "pelvicFloor": "Pelvic Floor",
+      "sleepCoaching": "Sleep Coaching",
+      "nervousSystem": "Nervous System Regulation",
+      "nutrition": "Nutrition",
+      "pediatricDentistry": "Pediatric Dentistry",
+      "lifestyleCoaching": "Lifestyle Coaching",
+      "fitnessYoga": "Fitness/yoga",
+      "backToWork": "Back to Work",
+      "postpartumTips": "Postpartum Tips",
+      "prenatalTips": "Prenatal Tips"
     },
     "multiSelect": {
       "selectionRequired": "Selection required",

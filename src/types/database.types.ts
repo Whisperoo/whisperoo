@@ -365,6 +365,7 @@ export type Database = {
           price: number
           primary_file_url: string | null
           product_type: string
+          tags: string[] | null
           thumbnail_url: string | null
           title: string
           total_files_count: number | null
@@ -386,8 +387,8 @@ export type Database = {
           price: number
           primary_file_url?: string | null
           product_type: string
+          tags?: string[] | null
           thumbnail_url?: string | null
-          title: string
           total_files_count?: number | null
           updated_at?: string | null
           view_count?: number | null
@@ -407,8 +408,8 @@ export type Database = {
           price?: number
           primary_file_url?: string | null
           product_type?: string
+          tags?: string[] | null
           thumbnail_url?: string | null
-          title?: string
           total_files_count?: number | null
           updated_at?: string | null
           view_count?: number | null

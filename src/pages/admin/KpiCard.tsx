@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 
 interface SubMetric {
@@ -18,6 +18,7 @@ interface KpiCardProps {
   className?: string;
   valuePrefix?: string;
   valueSuffix?: string;
+  tooltip?: string;  // how this metric is calculated
 }
 
 const DeltaBadge: React.FC<{ delta: number; small?: boolean }> = ({ delta, small }) => {
@@ -51,7 +52,9 @@ const KpiCard: React.FC<KpiCardProps> = ({
   className = '',
   valuePrefix = '',
   valueSuffix = '',
+  tooltip,
 }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
   const displayValue = value === null || value === undefined
     ? '—'
     : `${valuePrefix}${value}${valueSuffix}`;
@@ -65,7 +68,29 @@ const KpiCard: React.FC<KpiCardProps> = ({
             <p className="text-sm font-medium text-gray-700 leading-tight">
               {title}
             </p>
-            <Info className="w-3.5 h-3.5 text-gray-400" />
+            {/* Info icon with tooltip */}
+            {tooltip && (
+              <div className="relative">
+                <button
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
+                  onFocus={() => setShowTooltip(true)}
+                  onBlur={() => setShowTooltip(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                  aria-label={`How ${title} is calculated`}
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+                {showTooltip && (
+                  <div className="absolute left-0 top-5 z-50 w-56 bg-gray-900 text-white text-[11px] leading-relaxed rounded-lg px-3 py-2.5 shadow-xl">
+                    <p className="font-semibold mb-1 text-gray-200">How it's calculated</p>
+                    <p>{tooltip}</p>
+                    <div className="absolute -top-1.5 left-2 w-3 h-3 bg-gray-900 rotate-45" />
+                  </div>
+                )}
+              </div>
+            )}
+            {!tooltip && <Info className="w-3.5 h-3.5 text-gray-300" />}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {scaffolded && (

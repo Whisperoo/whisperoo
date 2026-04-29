@@ -21,4 +21,11 @@ i18n
     },
   });
 
+// Explicitly sync the HTML lang attribute for browser auto-translation prompts (Option A)
+i18n.on('languageChanged', (lng) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = lng;
+  }
+});
+
 export default i18n;

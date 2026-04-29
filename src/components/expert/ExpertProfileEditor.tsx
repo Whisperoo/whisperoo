@@ -29,6 +29,8 @@ import { useState, useMemo } from "react";
 import AvatarUpload from "@/components/ui/AvatarUpload";
 import { useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
+import { translateToAllLanguages } from "@/services/translationService";
+import { supabase } from "@/lib/supabase";
 
 const expertProfileSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -118,8 +120,23 @@ export const ExpertProfileEditor: React.FC = () => {
       if (error) {
         console.error("Profile update error:", error);
       } else {
-        // Show success message
         console.log("Profile updated successfully");
+
+        // ── Translate-on-Write ───────────────────────────────────────
+        // Fire-and-forget: translate the bio into ES + VI and persist.
+        // Falls back silently if the API key isn't configured yet.
+        if (data.expert_bio && profile?.id) {
+          translateToAllLanguages(data.expert_bio)
+            .then(({ es, vi }) =>
+              supabase
+                .from('profiles')
+                .update({ expert_bio_es: es, expert_bio_vi: vi })
+                .eq('id', profile.id)
+            )
+            .catch((err) =>
+              console.warn('[ExpertProfileEditor] Bio translation failed (non-blocking):', err)
+            );
+        }
       }
     } catch (error) {
       console.error("Error updating profile:", error);

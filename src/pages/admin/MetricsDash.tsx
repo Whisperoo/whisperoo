@@ -107,6 +107,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           title="Total Patients Enrolled"
           value={k?.total_enrolled ?? null}
           delta={k?.total_enrolled_delta ?? undefined}
+          tooltip="Count of distinct profiles with onboarded = true linked to this hospital tenant. Delta compares current calendar month vs the previous month."
           subMetrics={
             k?.total_enrolled
               ? [
@@ -122,6 +123,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           value={k?.survey_completion_pct ?? null}
           valueSuffix="%"
           scaffolded={true}
+          tooltip="% of enrolled patients who have completed at least one care checklist item within 48 hours of their recorded discharge date. Estimated until Phreesia integration."
         />
         <KpiCard
           title="Escalation Signals"
@@ -129,6 +131,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           value={k?.escalation_pct ?? null}
           valueSuffix="%"
           delta={k?.escalation_delta ?? undefined}
+          tooltip="% of AI conversations in the period where the AI appended a clinical escalation signal (e.g. 'please consult your doctor'). Sourced from admin_ai_audit_trail.escalation = true."
         />
       </div>
 
@@ -139,12 +142,14 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           value={k?.free_resources_pct ?? null}
           valueSuffix="%"
           delta={undefined}
+          tooltip="% of active users who have saved (bookmarked) at least one free resource. Sourced from user_saved_resources joined to products where price = 0."
         />
         <KpiCard
           title="Resources Purchased"
           value={k?.resources_purchased_pct ?? null}
           valueSuffix="%"
           delta={undefined}
+          tooltip="% of active users who have completed at least one paid product purchase. Sourced from user_purchases table."
         />
         <KpiCard
           title="Expert Support Used"
@@ -152,6 +157,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           value={k?.expert_support_pct ?? null}
           valueSuffix="%"
           delta={undefined}
+          tooltip="% of active users who have sent at least one message to a verified expert. Sourced from chat_messages where recipient account_type = 'expert'."
         />
         <KpiCard
           title="Prenatal Risk Assessment"
@@ -159,6 +165,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           value={k?.phreesia_risk_pct ?? null}
           valueSuffix="%"
           scaffolded={true}
+          tooltip="% of prenatal patients who completed the Phreesia intake risk screening form. Estimated until Phreesia integration is live."
         />
       </div>
 
@@ -169,6 +176,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           value={k?.postpartum_visits_pct ?? null}
           valueSuffix="%"
           delta={undefined}
+          tooltip="% of post-delivery patients who have completed their 6-week postpartum follow-up checklist item. Sourced from care_checklist_completions."
         />
       </div>
 
@@ -210,11 +218,13 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
                 title="Daily Active Users"
                 value={k?.dau ?? null}
                 delta={k?.dau_delta ?? undefined}
+                tooltip="Count of distinct user sessions recorded in the past 24 hours. A session is counted when a user loads any authenticated page."
               />
               <KpiCard
                 title="Monthly Active Users"
                 value={k?.mau ?? null}
                 delta={k?.mau_delta ?? undefined}
+                tooltip="Count of distinct users with at least one session in the past 30 days. Delta compares current 30-day window vs the previous 30-day window."
               />
             </div>
 
