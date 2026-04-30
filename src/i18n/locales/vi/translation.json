@@ -1,4 +1,36 @@
 {
+  "contentGrid": {
+    "course": "Khóa học",
+    "lessons": "{{count}} Bài học",
+    "view": "Xem",
+    "download": "Tải xuống",
+    "expert": "Chuyên gia"
+  },
+  "contentViewer": {
+    "aboutContent": "Về Nội dung này",
+    "openDocument": "Mở Tài liệu",
+    "documentOpenDesc": "Tài liệu này sẽ mở trong thẻ mới để có trải nghiệm đọc tốt nhất.",
+    "openInNewTab": "Mở trong Thẻ mới",
+    "contentNotAvailable": "Nội dung không khả dụng",
+    "contentNotAvailableDesc": "Nội dung này đang được xử lý hoặc tệp không khả dụng.",
+    "possibleReasons": "Lý do có thể:",
+    "reasonNotUploaded": "Tệp chưa được tải lên",
+    "reasonProcessing": "Tệp vẫn đang được xử lý",
+    "reasonError": "Đã xảy ra lỗi trong quá trình tải lên",
+    "reasonUrl": "URL lưu trữ không được định cấu hình chính xác",
+    "close": "Đóng",
+    "loadingContent": "Đang tải nội dung...",
+    "previewNotAvailable": "Bản xem trước không khả dụng",
+    "previewNotAvailableDesc": "Loại tệp này không thể được xem trước trong trình duyệt.",
+    "allFiles": "Tất cả các tệp"
+  },
+  "productTypes": {
+    "document": "Tài liệu",
+    "video": "Video",
+    "image": "Hình ảnh",
+    "consultation": "Tư vấn",
+    "course": "Khóa học"
+  },
   "dashboard": {
     "welcome": {
       "greeting": "Chào {{firstName}}!",
@@ -184,7 +216,20 @@
     "partOfCareNetwork": "Chuyên gia này là thành viên trong mạng lưới chăm sóc của bệnh viện bạn",
     "contactHospitalDirectly": "Liên hệ trực tiếp bệnh viện của bạn:",
     "emailDepartment": "Gửi email cho {{name}}",
-    "credentials": "Bằng cấp"
+    "credentials": "Bằng cấp",
+    "specialties": {
+      "pediatricFamilyChiropractor": "Bác sĩ Chỉnh hình Nhi khoa & Gia đình",
+      "prenatalPostnatalYogaCoach": "Huấn luyện viên Yoga Trước & Sau sinh",
+      "pediatricOralDevelopmentDentist": "Nha sĩ Phát triển Răng miệng Nhi khoa",
+      "registeredDietitianCertifiedIntuitiveEatingCounselor": "Chuyên gia Dinh dưỡng & Tư vấn Ăn uống Trực giác",
+      "sleepCoaching": "Huấn luyện Giấc ngủ",
+      "sleepTrainer": "Huấn luyện viên Giấc ngủ",
+      "familyDynamics": "Động lực Gia đình",
+      "lifestyleCoaching": "Huấn luyện Lối sống",
+      "pelvicFloorCoaching": "Huấn luyện Sàn chậu",
+      "nervousSystemRegulation": "Điều hòa Hệ Thần kinh",
+      "hormones": "Nội tiết tố"
+    }
   },
   "profile": {
     "noProfileTitle": "Không tìm thấy Hồ sơ",
@@ -212,6 +257,121 @@
     "editProfile": "Chỉnh sửa Hồ sơ",
     "languagePreference": "Tùy chọn ngôn ngữ",
     "languagePreferenceDesc": "Whisperoo hỗ trợ tiếng Anh, tiếng Tây Ban Nha và tiếng Việt. Lựa chọn của bạn sẽ được lưu trên tất cả các thiết bị."
+  },
+  "profileEdit": {
+    "title": "Chỉnh sửa Hồ sơ",
+    "profileImage": "Ảnh đại diện",
+    "basicInfo": "Thông tin cơ bản",
+    "firstName": "Tên",
+    "firstNamePlaceholder": "Tên của bạn",
+    "email": "Email",
+    "emailNoChange": "Không thể thay đổi email",
+    "role": "Vai trò",
+    "specifyRole": "Xác định vai trò của bạn",
+    "expectingStatus": "Tình trạng mang thai",
+    "children": "Trẻ em",
+    "parentingStyles": "Phong cách nuôi dạy con",
+    "parentingStylesDesc": "Chọn tất cả những gì phù hợp với phương pháp của bạn",
+    "topicsOfInterest": "Chủ đề quan tâm",
+    "topicsOfInterestDesc": "Bạn muốn được giúp đỡ về vấn đề gì?",
+    "personalContext": "Ngữ cảnh cá nhân",
+    "personalContextDesc": "Hãy cho chúng tôi biết về hoàn cảnh gia đình bạn và những gì bạn đang tìm kiếm",
+    "personalContextPlaceholder": "Chia sẻ những gì bạn đang tìm kiếm, bất kỳ thách thức nào bạn đang phải đối mặt, hoặc bất kỳ điều gì khác giúp chúng tôi hỗ trợ tốt hơn...",
+    "characters": "ký tự",
+    "cancel": "Hủy",
+    "saving": "Đang lưu...",
+    "saveChanges": "Lưu thay đổi",
+    "successTitle": "Hồ sơ đã cập nhật",
+    "successDesc": "Hồ sơ của bạn đã được lưu thành công.",
+    "errorTitle": "Lưu thất bại",
+    "errorDesc": "Vui lòng thử lại.",
+    "roles": {
+      "mom": "Mẹ",
+      "dad": "Bố",
+      "caregiver": "Người chăm sóc",
+      "other": "Khác"
+    },
+    "expecting": {
+      "yes": "Có",
+      "no": "Không",
+      "trying": "Đang thử"
+    },
+    "styleOptions": {
+      "gentle": "Nhẹ nhàng & Nuôi dưỡng",
+      "structured": "Có cấu trúc & Theo thói quen",
+      "flexible": "Linh hoạt & Lấy trẻ làm trung tâm",
+      "figuring": "Vẫn đang tìm hiểu"
+    },
+    "topicOptions": {
+      "sleep": "Giấc ngủ & Thói quen",
+      "feeding": "Cho ăn & Dinh dưỡng",
+      "milestones": "Cột mốc phát triển",
+      "mentalHealth": "Sức khỏe tinh thần & Tự chăm sóc",
+      "discipline": "Kỷ luật & Ranh giới",
+      "play": "Vui chơi & Học tập",
+      "relationships": "Mối quan hệ & Đồng nuôi dạy",
+      "community": "Cộng đồng & Hỗ trợ"
+    }
+  },
+  "childrenManager": {
+    "loading": "Đang tải danh sách trẻ...",
+    "addChild": "Thêm Trẻ",
+    "expecting": "Đang mang thai",
+    "noChildren": "Chưa có trẻ em nào được thêm. Nhấp vào 'Thêm Trẻ' hoặc 'Đang mang thai' để bắt đầu.",
+    "expectedBaby": "Em bé sắp sinh",
+    "child": "Trẻ",
+    "babyNameLabel": "Tên em bé (hoặc tên bạn dự định gọi)",
+    "babyNamePlaceholder": "Tên em bé",
+    "dueDate": "Ngày dự sinh",
+    "due": "Dự sinh: ",
+    "name": "Tên",
+    "childNamePlaceholder": "Tên trẻ",
+    "birthDate": "Ngày sinh",
+    "age": "Tuổi: ",
+    "saving": "Đang lưu...",
+    "update": "Cập nhật",
+    "save": "Lưu",
+    "confirmRemove": "Bạn có chắc chắn muốn xóa {{name}} không?",
+    "childSavedTitle": "Đã lưu trẻ",
+    "childSavedDesc": "{{name}} đã được lưu thành công.",
+    "childRemovedTitle": "Đã xóa trẻ",
+    "childRemovedDesc": "{{name}} đã bị xóa.",
+    "failedLoadTitle": "Lỗi khi tải danh sách trẻ",
+    "failedLoadDesc": "Vui lòng tải lại trang và thử lại.",
+    "failedSaveTitle": "Lưu thất bại",
+    "failedRemoveTitle": "Xóa thất bại",
+    "errorTryAgain": "Vui lòng thử lại."
+  },
+  "careChecklist": {
+    "header": "Danh sách chăm sóc",
+    "schedule": "Đặt lịch",
+    "allDone": "Xong hết rồi! Tuyệt vời khi bạn luôn chăm sóc tốt cho {{name}}. 🎉",
+    "categories": {
+      "medical": "Y tế",
+      "milestone": "Cột mốc",
+      "safety": "An toàn",
+      "nutrition": "Dinh dưỡng",
+      "general": "Chung"
+    },
+    "ageDescription": {
+      "weeksOld": "{{count}} tuần tuổi",
+      "weeksOld_plural": "{{count}} tuần tuổi",
+      "monthsOld": "{{count}} tháng tuổi",
+      "monthsOld_plural": "{{count}} tháng tuổi",
+      "yearsMonthsOld": "{{years}} tuổi {{months}} tháng",
+      "yearsMonthsOld_plural": "{{years}} tuổi {{months}} tháng",
+      "recentlyArrived": "Vừa mới chào đời!",
+      "weeksPregnant": "{{gestational}} tuần mang thai · Còn {{remaining}} tuần"
+    }
+  },
+  "stages": {
+    "expecting_t1": "3 Tháng đầu",
+    "expecting_t2": "3 Tháng giữa",
+    "expecting_t3": "3 Tháng cuối",
+    "newborn_0_3m": "Sơ sinh (0-3 tháng)",
+    "infant_3_6m": "Trẻ nhỏ (3-6 tháng)",
+    "infant_6_12m": "Trẻ nhỏ (6-12 tháng)",
+    "toddler_12_24m": "Trẻ mới biết đi (1-2 tuổi)"
   },
   "settings": {
     "noProfileTitle": "Không tìm thấy Hồ sơ",
@@ -416,7 +576,46 @@
     "saveSuccessDesc": "Nội dung miễn phí đã được thêm vào thư viện của bạn.",
     "saveErrorTitle": "Không thể lưu nội dung",
     "saveErrorDesc": "Đã xảy ra lỗi khi lưu nội dung. Vui lòng thử lại.",
-    "saveErrorUnexpected": "Đã xảy ra lỗi không mong đợi. Vui lòng thử lại."
+    "saveErrorUnexpected": "Đã xảy ra lỗi không mong đợi. Vui lòng thử lại.",
+    "searchPlaceholder": "Tìm kiếm sản phẩm theo tiêu đề hoặc mô tả...",
+    "search": "Tìm kiếm",
+    "foundResults": "🔍 Đã tìm thấy {{count}} sản phẩm cho \"{{query}}\"",
+    "page": "(Trang {{page}})",
+    "clearSearch": "Xóa tìm kiếm",
+    "allCategories": "Tất cả Danh mục",
+    "allTypes": "Tất cả Loại",
+    "sortBy": "Sắp xếp theo",
+    "sort": {
+      "personalized": "Dành cho Bạn",
+      "newest": "Mới nhất trước",
+      "oldest": "Cũ nhất trước",
+      "priceLowToHigh": "Giá: Thấp đến Cao",
+      "priceHighToLow": "Giá: Cao đến Thấp",
+      "highestRated": "Đánh giá Cao nhất",
+      "title": "Tiêu đề: A đến Z"
+    },
+    "types": {
+      "document": "Tài liệu",
+      "video": "Video",
+      "audio": "Âm thanh",
+      "course": "Khóa học",
+      "consultation": "Tư vấn"
+    },
+    "contentType": {
+      "bundle": "Gói (Tệp liên quan)",
+      "course": "Khóa học (Học tập có cấu trúc)",
+      "collection": "Bộ sưu tập (Tập hợp tuyển chọn)"
+    },
+    "categories": {
+      "courses": "Khóa học",
+      "ebooks": "Sách điện tử",
+      "toolkits": "Bộ công cụ",
+      "webinars": "Hội thảo trên web",
+      "checklists": "Danh sách kiểm tra",
+      "guides": "Hướng dẫn",
+      "templates": "Mẫu",
+      "videos": "Video"
+    }
   },
   "purchases": {
     "pageTitle": "Nội dung của Tôi",

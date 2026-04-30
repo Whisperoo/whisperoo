@@ -24,6 +24,7 @@ import {
 } from "@/services/products";
 import { ContentViewer } from "./ContentViewer";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { useTranslation } from "react-i18next";
 
 interface Purchase {
   id: string;
@@ -51,6 +52,19 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
   const [productFiles, setProductFiles] = useState<
     Record<string, ProductFile[]>
   >({});
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language || 'en';
+
+  const translateSpecialty = (specialty: string) => {
+    if (!specialty) return '';
+    const key = specialty
+      .replace(/[^a-zA-Z0-9 ]/g, '')
+      .split(' ')
+      .filter(Boolean)
+      .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join('');
+    return t(`experts.specialties.${key}`, specialty);
+  };
 
   // Load product files for multi-file products
   useEffect(() => {
@@ -238,7 +252,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                 {/* Background Image */}
                 <img
                   src={purchase.product.thumbnail_url}
-                  alt={purchase.product.title}
+                  alt={currentLang === 'es' && purchase.product.title_es ? purchase.product.title_es : currentLang === 'vi' && purchase.product.title_vi ? purchase.product.title_vi : purchase.product.title}
                   className="w-full h-full object-cover rounded-tl-[16px] rounded-tr-[16px]"
                 />
 
@@ -251,8 +265,8 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                   <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 flex items-center justify-center">
                     <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                       {isCourse(purchase.product)
-                        ? "Course"
-                        : purchase.product.product_type}
+                        ? t('contentGrid.course')
+                        : t(`productTypes.${purchase.product.product_type}`, { defaultValue: purchase.product.product_type })}
                     </p>
                   </div>
 
@@ -260,7 +274,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                   {lessonCount(purchase.product) > 1 && (
                     <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2  flex items-center justify-center">
                       <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
-                        {lessonCount(purchase.product)} Lessons
+                        {t('contentGrid.lessons', { count: lessonCount(purchase.product) })}
                       </p>
                     </div>
                   )}
@@ -323,8 +337,8 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                 <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 flex items-center justify-center">
                   <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
                     {isCourse(purchase.product)
-                      ? "Course"
-                      : purchase.product.product_type}
+                      ? t('contentGrid.course')
+                      : t(`productTypes.${purchase.product.product_type}`, { defaultValue: purchase.product.product_type })}
                   </p>
                 </div>
 
@@ -332,7 +346,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                 {lessonCount(purchase.product) > 1 && (
                   <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 flex items-center justify-center">
                     <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
-                      {lessonCount(purchase.product)} Lessons
+                      {t('contentGrid.lessons', { count: lessonCount(purchase.product) })}
                     </p>
                   </div>
                 )}
@@ -344,11 +358,11 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
               <div className="flex flex-col gap-3 w-full">
                 {/* Title */}{" "}
                 <h2 className="font-semibold text-[18px] leading-normal text-[#393939] font-['Plus_Jakarta_Sans'] md:truncate">
-                  {purchase.product.title}{" "}
+                  {currentLang === 'es' && purchase.product.title_es ? purchase.product.title_es : currentLang === 'vi' && purchase.product.title_vi ? purchase.product.title_vi : purchase.product.title}{" "}
                 </h2>
                 {/* Description */}{" "}
                 <p className="font-normal text-[14px] leading-[19.6px] text-[#111111] font-['Plus_Jakarta_Sans'] max-w-[21rem] line-clamp-3 break-words">
-                  {purchase.product.description}{" "}
+                  {currentLang === 'es' && purchase.product.description_es ? purchase.product.description_es : currentLang === 'vi' && purchase.product.description_vi ? purchase.product.description_vi : purchase.product.description}{" "}
                 </p>{" "}
               </div>
               {/* Expert Info & Price Section */}{" "}
@@ -369,11 +383,11 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                   {/* Expert Info */}
                   <div className="flex flex-col flex-1 min-w-0">
                     <p className="font-semibold text-[14px] text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
-                      {purchase.product.expert.first_name || "Expert"}
+                      {purchase.product.expert.first_name || t('contentGrid.expert')}
                     </p>
                     <p className="font-normal text-[12px] text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
-                      {purchase.product.expert?.expert_specialties?.[0] ||
-                        "Expert"}
+                      {translateSpecialty(purchase.product.expert?.expert_specialties?.[0] || "") ||
+                        t('contentGrid.expert')}
                     </p>
                   </div>
                 </div>
@@ -391,7 +405,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                     className="w-full border-gray-300 font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans']"
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    View
+                    {t('contentGrid.view')}
                   </Button>
                 )}
 
@@ -412,7 +426,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                       ) : (
                         <>
                           <Download className="h-4 w-4 mr-2" />
-                          Download
+                          {t('contentGrid.download')}
                         </>
                       )}
                     </Button>

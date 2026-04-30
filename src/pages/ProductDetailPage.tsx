@@ -34,13 +34,14 @@ export const ProductDetailPage: React.FC = () => {
   }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isPurchased, setIsPurchased] = useState(false);
   const [productFiles, setProductFiles] = useState<ProductFile[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [purchaseInfo, setPurchaseInfo] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const currentLang = i18n.language || 'en';
   const {
     data: product,
     isLoading,
@@ -269,7 +270,7 @@ export const ProductDetailPage: React.FC = () => {
                     <div className="relative">
                       <img
                         src={product.thumbnail_url}
-                        alt={product.title}
+                        alt={currentLang === 'es' && product.title_es ? product.title_es : currentLang === 'vi' && product.title_vi ? product.title_vi : product.title}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
@@ -386,7 +387,7 @@ export const ProductDetailPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground leading-relaxed">
-                  {product.description}
+                  {currentLang === 'es' && product.description_es ? product.description_es : currentLang === 'vi' && product.description_vi ? product.description_vi : product.description}
                 </p>
               </CardContent>
             </Card>
@@ -397,7 +398,9 @@ export const ProductDetailPage: React.FC = () => {
             {/* Basic Info */}
             <Card>
               <CardContent className="p-6">
-                <h1 className="text-2xl font-bold mb-4">{product.title}</h1>
+                <h1 className="text-2xl font-bold mb-4">
+                  {currentLang === 'es' && product.title_es ? product.title_es : currentLang === 'vi' && product.title_vi ? product.title_vi : product.title}
+                </h1>
 
                 {/* Expert Info */}
                 {product.expert && (

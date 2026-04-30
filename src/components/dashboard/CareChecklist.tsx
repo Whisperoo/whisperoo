@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTenant } from '@/contexts/TenantContext';
@@ -19,7 +20,11 @@ interface ChecklistTemplate {
   stage: string;
   stage_label: string;
   title: string;
+  title_es?: string | null;
+  title_vi?: string | null;
   description: string | null;
+  description_es?: string | null;
+  description_vi?: string | null;
   category: string;
   sort_order: number;
   is_universal: boolean;
@@ -42,6 +47,8 @@ interface KidChecklist {
 }
 
 const CareChecklist: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language;
   const { user } = useAuth();
   const { isHospitalUser, tenant } = useTenant();
   const [kidChecklists, setKidChecklists] = useState<KidChecklist[]>([]);
@@ -80,7 +87,7 @@ const CareChecklist: React.FC = () => {
       // 3. Fetch templates for all relevant stages
       const stageKeys = [...new Set(kidsWithStages.map(k => k.stage.stageKey))];
       
-      let templateQuery = supabase
+      const templateQuery = supabase
         .from('care_checklist_templates')
         .select('*')
         .in('stage', stageKeys)
@@ -221,7 +228,7 @@ const CareChecklist: React.FC = () => {
         <div className="w-8 h-8 gradient-brand rounded-lg flex items-center justify-center shadow-sm">
           <Check className="w-4 h-4 text-white" />
         </div>
-        <h2 className="text-lg font-bold text-brand-dark">Care Checklist</h2>
+        <h2 className="text-lg font-bold text-brand-dark">{t('careChecklist.header', { defaultValue: 'Care Checklist' })}</h2>
       </div>
 
       {kidChecklists.map(({ kid, stage, templates, progress }) => {
@@ -230,8 +237,8 @@ const CareChecklist: React.FC = () => {
         const totalCount = templates.length;
         const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
         const kidName = kid.is_expecting
-          ? kid.expected_name || 'Baby'
-          : kid.first_name || 'Child';
+          ? kid.expected_name || t('childrenManager.expectedBaby', { defaultValue: 'Expected Baby' })
+          : kid.first_name || t('childrenManager.child', { defaultValue: 'Child' });
 
         return (
           <div
@@ -256,7 +263,9 @@ const CareChecklist: React.FC = () => {
                     {kidName}
                   </h3>
                   <p className="text-xs text-gray-500 truncate">
-                    {stage.stageLabel} · {stage.ageDescription}
+                    {t(`stages.${stage.stageKey}`, { defaultValue: stage.stageLabel })} · {stage.ageDescriptionKey
+                      ? t(stage.ageDescriptionKey, { ...stage.ageDescriptionParams, defaultValue: stage.ageDescription })
+                      : stage.ageDescription}
                   </p>
                 </div>
               </div>
@@ -327,13 +336,21 @@ const CareChecklist: React.FC = () => {
                               isCompleted ? 'text-gray-400 line-through' : 'text-gray-800'
                             }`}
                           >
-                            {template.title}
+                            {currentLang === 'es' && template.title_es
+                              ? template.title_es
+                              : currentLang === 'vi' && template.title_vi
+                              ? template.title_vi
+                              : template.title}
                           </span>
                         </div>
 
-                        {template.description && !isCompleted && (
+                        {(template.description || template.description_es || template.description_vi) && !isCompleted && (
                           <p className="text-xs text-gray-500 leading-relaxed mt-0.5 pr-2">
-                            {template.description}
+                            {currentLang === 'es' && template.description_es
+                              ? template.description_es
+                              : currentLang === 'vi' && template.description_vi
+                              ? template.description_vi
+                              : template.description}
                           </p>
                         )}
 
@@ -345,7 +362,7 @@ const CareChecklist: React.FC = () => {
                             className="inline-flex items-center gap-1.5 mt-1.5 text-xs font-medium text-brand-primary hover:text-brand-dark transition-colors"
                           >
                             <Phone className="w-3 h-3" />
-                            Schedule: {template.hospital_phone}
+                            {t('careChecklist.schedule', { defaultValue: 'Schedule' })}: {template.hospital_phone}
                           </a>
                         )}
                       </div>
@@ -358,7 +375,7 @@ const CareChecklist: React.FC = () => {
                           backgroundColor: `${categoryMeta.color}12`
                         }}
                       >
-                        {categoryMeta.label}
+                        {t(`careChecklist.categories.${template.category}`, { defaultValue: categoryMeta.label })}
                       </span>
                     </div>
                   );
@@ -371,7 +388,7 @@ const CareChecklist: React.FC = () => {
                       <Check className="w-3.5 h-3.5 text-white" />
                     </div>
                     <p className="text-sm font-semibold text-green-700">
-                      All done! Great job staying on top of {kidName}'s care. 🎉
+                      {t('careChecklist.allDone', { name: kidName, defaultValue: `All done! Great job staying on top of ${kidName}'s care. 🎉` })}
                     </p>
                   </div>
                 )}

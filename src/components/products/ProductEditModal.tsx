@@ -56,6 +56,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Database } from "@/types/database.types";
 import { getCurrentLimits } from "@/config/upload";
+import { useTranslation } from "react-i18next";
 
 type ProductFile = Database["public"]["Tables"]["product_files"]["Row"];
 
@@ -92,6 +93,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
   product,
 }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [fileProgress, setFileProgress] = useState<
@@ -868,13 +870,11 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="document">Document</SelectItem>
-                          <SelectItem value="video">Video</SelectItem>
-                          <SelectItem value="audio">Audio</SelectItem>
-                          <SelectItem value="course">Course</SelectItem>
-                          <SelectItem value="consultation">
-                            Consultation
-                          </SelectItem>
+                          <SelectItem value="document">{t('products.types.document', 'Document')}</SelectItem>
+                          <SelectItem value="video">{t('products.types.video', 'Video')}</SelectItem>
+                          <SelectItem value="audio">{t('products.types.audio', 'Audio')}</SelectItem>
+                          <SelectItem value="course">{t('products.types.course', 'Course')}</SelectItem>
+                          <SelectItem value="consultation">{t('products.types.consultation', 'Consultation')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -902,15 +902,9 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="bundle">
-                            Bundle (Related files)
-                          </SelectItem>
-                          <SelectItem value="course">
-                            Course (Structured learning)
-                          </SelectItem>
-                          <SelectItem value="collection">
-                            Collection (Curated set)
-                          </SelectItem>
+                          <SelectItem value="bundle">{t('products.contentType.bundle', 'Bundle (Related files)')}</SelectItem>
+                          <SelectItem value="course">{t('products.contentType.course', 'Course (Structured learning)')}</SelectItem>
+                          <SelectItem value="collection">{t('products.contentType.collection', 'Collection (Curated set)')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -996,7 +990,21 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                   <FormItem>
                     <FormLabel>Categories</FormLabel>
                     <div className="grid grid-cols-2 gap-3">
-                      {categories?.map((category) => (
+                      {categories?.map((category) => {
+                        const translateCategory = (slug: string, name: string) => {
+                          const map: Record<string, string> = {
+                            'courses': t('products.categories.courses', 'Courses'),
+                            'ebooks': t('products.categories.ebooks', 'eBooks'),
+                            'toolkits': t('products.categories.toolkits', 'Toolkits'),
+                            'webinars': t('products.categories.webinars', 'Webinars'),
+                            'checklists': t('products.categories.checklists', 'Checklists'),
+                            'guides': t('products.categories.guides', 'Guides'),
+                            'templates': t('products.categories.templates', 'Templates'),
+                            'videos': t('products.categories.videos', 'Videos'),
+                          };
+                          return map[slug] || name;
+                        };
+                        return (
                         <div
                           key={category.id}
                           className="flex items-center space-x-2"
@@ -1013,10 +1021,10 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                             }}
                           />
                           <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            {category.name}
+                            {translateCategory(category.slug, category.name)}
                           </label>
                         </div>
-                      ))}
+                      )})}
                     </div>
                     <FormMessage />
                   </FormItem>

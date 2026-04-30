@@ -38,7 +38,7 @@ const UpdatePassword: React.FC = () => {
           description: "Please request a new password reset link.",
           variant: "destructive",
         });
-        navigate("/login");
+        navigate("/auth/login");
       }
     } catch (error) {
       console.error("Session check error:", error);
@@ -47,7 +47,7 @@ const UpdatePassword: React.FC = () => {
         description: "Failed to validate reset link.",
         variant: "destructive",
       });
-      navigate("/login");
+      navigate("/auth/login");
     } finally {
       setSessionChecked(true);
     }
@@ -127,7 +127,7 @@ const UpdatePassword: React.FC = () => {
   return (
     <AuthLayout>
       <div className="space-y-8">
-        <BackButton onClick={() => navigate("/login")} />
+        <BackButton onClick={() => navigate("/auth/login")} />
 
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-indigo-700">
@@ -197,7 +197,7 @@ const UpdatePassword: React.FC = () => {
           <p className="text-gray-500 text-sm">
             Remember your password?{" "}
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/auth/login")}
               className="text-indigo-700 font-medium hover:underline"
             >
               Back to Sign In

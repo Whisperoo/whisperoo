@@ -15,7 +15,8 @@ import { useTranslation } from "react-i18next";
 export const MyPurchasesPage: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language || 'en';
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Get tab from URL params, default to 'content'
@@ -302,7 +303,11 @@ export const MyPurchasesPage: React.FC = () => {
           product:products (
             id,
             title,
+            title_es,
+            title_vi,
             description,
+            description_es,
+            description_vi,
             price,
             product_type,
             file_url,
@@ -488,7 +493,7 @@ export const MyPurchasesPage: React.FC = () => {
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
                           <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                            {(consultation as any).product?.title ||
+                            {currentLang === 'es' && (consultation as any).product?.title_es ? (consultation as any).product.title_es : currentLang === 'vi' && (consultation as any).product?.title_vi ? (consultation as any).product.title_vi : (consultation as any).product?.title ||
                               t('purchases.defaultConsultation')}
                           </h3>
                           <p className="text-sm text-gray-600">

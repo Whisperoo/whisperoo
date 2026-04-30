@@ -28,7 +28,7 @@ serve(async (req) => {
     // SOW 3.2: Fetch user's tenant_id for expert prioritization
     const { data: userProfile } = await supabase
       .from('profiles')
-      .select('tenant_id, topics_of_interest, expecting_status, parenting_styles, personal_context')
+      .select('tenant_id, topics_of_interest, expecting_status, parenting_styles, personal_context, language_preference')
       .eq('id', user.id)
       .single();
 
@@ -37,6 +37,7 @@ serve(async (req) => {
     const userExpectingStatus: string = userProfile?.expecting_status || '';
     const userParentingStyles: string[] = userProfile?.parenting_styles || [];
     const userPersonalContext: string = userProfile?.personal_context || '';
+    const userLanguage: string = userProfile?.language_preference || 'en';
 
     // If user has tenant, fetch expert_boost_ids from tenant config
     let expertBoostIds: string[] = [];
@@ -187,7 +188,8 @@ serve(async (req) => {
       // Generate AI response — now includes user's onboarding interests
       aiResponse = await generateEnhancedAIResponse(
         message, context, matchedExperts, intent, complianceContext,
-        { topics: userTopics, expectingStatus: userExpectingStatus, parentingStyles: userParentingStyles, personalContext: userPersonalContext }
+        { topics: userTopics, expectingStatus: userExpectingStatus, parentingStyles: userParentingStyles, personalContext: userPersonalContext },
+        userLanguage
       );
     }
 
@@ -312,7 +314,7 @@ function prioritizeByTenant(experts, userTenantId, expertBoostIds = []) {
 
 // Expert matching: semantic-first, max 3 experts, NO all-experts fallback
 async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = null, expertBoostIds = []) {
-  console.log(`=== Expert Matching Started for: "${message}" ===`);
+  console.log(`=== Expert Matching Started ===`);
 
   // Only use semantic search — no all-experts fallback
   let experts = await findMatchingExpertsBySemantic(supabase, message);
@@ -332,7 +334,7 @@ async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = nul
 
   // Cap at 3 to avoid overwhelming the prompt with irrelevant suggestions
   const capped = experts.slice(0, 3);
-  console.log(`Returning ${capped.length} experts (capped at 3 from ${experts.length} matches)`);
+  console.log(`Expert matching: found ${capped.length} semantic matches`);
   return capped;
 }
 
@@ -379,11 +381,9 @@ async function findMatchingExpertsBySemantic(supabase, message) {
       return [];
     }
 
-    console.log(`Semantic search returned ${similarExperts?.length || 0} experts for query: "${message}"`);
+    console.log(`Similarity search returned ${similarExperts?.length || 0} candidates`);
 
-    if (similarExperts && similarExperts.length > 0) {
-      console.log('Similarity scores:', similarExperts.map(e => `${e.first_name}: ${e.similarity.toFixed(3)}`));
-    }
+    // Similarity scores removed for privacy
 
     if (!similarExperts || similarExperts.length === 0) {
       console.log('No semantic matches found - will try keyword fallback');
@@ -678,7 +678,8 @@ async function getEnhancedChatContext(supabase, userId, childId, sessionId) {
 // Enhanced AI response generation with user interest context
 async function generateEnhancedAIResponse(
   message, context, matchedExperts, intent = 'general', complianceContext = '',
-  userInterests: { topics: string[]; expectingStatus: string; parentingStyles: string[]; personalContext: string } = { topics: [], expectingStatus: '', parentingStyles: [], personalContext: '' }
+  userInterests: { topics: string[]; expectingStatus: string; parentingStyles: string[]; personalContext: string } = { topics: [], expectingStatus: '', parentingStyles: [], personalContext: '' },
+  userLanguage: string = 'en'
 ) {
   const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
   if (!openaiApiKey) {
@@ -689,6 +690,18 @@ async function generateEnhancedAIResponse(
 CRITICAL MEDICAL GUARDRAIL: Under no circumstances should you diagnose medical conditions, suggest medications, or replace a doctor's advice. You are strictly for educational and supportive purposes. If a parent asks for clinical advice or details severe symptoms, gently but firmly advise them to contact their healthcare provider right away.
 SCOPE GUARDRAIL: You MUST only answer questions related to pregnancy, prenatal care, postpartum recovery, baby care, child development, and parenting. If a user asks about anything outside this scope (e.g., cooking recipes unrelated to baby nutrition, tech support, travel advice, politics, general knowledge), respond with: "That's a bit outside the type of support I'm built for. I'm here to help with pregnancy, postpartum, baby, and parenting questions — and guide you to the right next step there. How can I help with that?"
 Do NOT act as a general-purpose AI assistant. Do NOT answer off-topic questions even if you know the answer. Stay in your lane.`;
+
+  // SOW 5.3: Respond in user's stored language preference
+  const LANGUAGE_NAMES: Record<string, string> = {
+    en: 'English',
+    es: 'Spanish (Español)',
+    vi: 'Vietnamese (Tiếng Việt)',
+  };
+  const languageName = LANGUAGE_NAMES[userLanguage] || 'English';
+
+  if (userLanguage !== 'en') {
+    systemPrompt += `\n\nLANGUAGE DIRECTIVE (CRITICAL): This user has selected ${languageName} as their preferred language. You MUST respond entirely in ${languageName}. Do NOT mix languages. Do NOT include English unless the user writes to you in English. Every word of your response — including expert names, disclaimers, and formatting — must be in ${languageName}.`;
+  }
 
   // 1.2 Inject explicit medical disclaimer rule if medical question detected
   if (intent === 'medical_question') {

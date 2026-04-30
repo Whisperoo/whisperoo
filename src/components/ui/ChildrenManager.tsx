@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Baby } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
@@ -28,6 +29,7 @@ interface ChildrenManagerProps {
 }
 
 const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
+  const { t } = useTranslation();
   const { profile, updateProfile } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,8 +57,8 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
     } catch (error: any) {
       console.error("Error fetching children:", error);
       toast({
-        title: "Failed to load children",
-        description: "Please refresh the page and try again.",
+        title: t('childrenManager.failedLoadTitle'),
+        description: t('childrenManager.failedLoadDesc'),
         variant: "destructive",
       });
     } finally {
@@ -118,14 +120,14 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
       onDataChange?.();
 
       toast({
-        title: "Child saved",
-        description: `${child.first_name || child.expected_name} has been saved successfully.`,
+        title: t('childrenManager.childSavedTitle'),
+        description: t('childrenManager.childSavedDesc', { name: child.first_name || child.expected_name }),
       });
     } catch (error: any) {
       console.error("Error saving child:", error);
       toast({
-        title: "Failed to save",
-        description: error.message || "Please try again.",
+        title: t('childrenManager.failedSaveTitle'),
+        description: error.message || t('childrenManager.errorTryAgain'),
         variant: "destructive",
       });
     } finally {
@@ -134,7 +136,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
   };
 
   const deleteChild = async (childId: string, childName: string) => {
-    if (!confirm(`Are you sure you want to remove ${childName}?`)) return;
+    if (!confirm(t('childrenManager.confirmRemove', { name: childName }))) return;
 
     try {
       setSaving(true);
@@ -148,14 +150,14 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
       onDataChange?.();
 
       toast({
-        title: "Child removed",
-        description: `${childName} has been removed.`,
+        title: t('childrenManager.childRemovedTitle'),
+        description: t('childrenManager.childRemovedDesc', { name: childName }),
       });
     } catch (error: any) {
       console.error("Error deleting child:", error);
       toast({
-        title: "Failed to remove",
-        description: error.message || "Please try again.",
+        title: t('childrenManager.failedRemoveTitle'),
+        description: error.message || t('childrenManager.errorTryAgain'),
         variant: "destructive",
       });
     } finally {
@@ -208,7 +210,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
   };
 
   if (loading) {
-    return <div className="text-center py-4">Loading children...</div>;
+    return <div className="text-center py-4">{t('childrenManager.loading')}</div>;
   }
 
   return (
@@ -223,7 +225,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
             disabled={saving}
           >
             <Plus className="w-4 h-4 mr-1" />
-            Add Child
+            {t('childrenManager.addChild')}
           </Button>
           <Button
             onClick={addExpectingBaby}
@@ -232,7 +234,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
             disabled={saving}
           >
             <Baby className="w-4 h-4 mr-1" />
-            Expecting
+            {t('childrenManager.expecting')}
           </Button>
         </div>
       </div>
@@ -240,8 +242,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
       {children.length === 0 ? (
         <Card>
           <CardContent className="pt-6 text-center text-gray-500">
-            No children added yet. Click "Add Child" or "Expecting" to get
-            started.
+            {t('childrenManager.noChildren')}
           </CardContent>
         </Card>
       ) : (
@@ -251,7 +252,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">
-                    {child.is_expecting ? "Expected Baby" : "Child"} {index + 1}
+                    {child.is_expecting ? t('childrenManager.expectedBaby') : t('childrenManager.child')} {index + 1}
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     {child.is_expecting && (
@@ -259,7 +260,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
                         variant="secondary"
                         className="bg-pink-100 text-pink-700"
                       >
-                        Expecting
+                        {t('childrenManager.expecting')}
                       </Badge>
                     )}
                     <Button
@@ -280,19 +281,19 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
                   <>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        Baby's name (or what you're calling them)
+                        {t('childrenManager.babyNameLabel')}
                       </label>
                       <Input
                         value={child.expected_name || ""}
                         onChange={(e) =>
                           updateChild(index, { expected_name: e.target.value })
                         }
-                        placeholder="Baby name"
+                        placeholder={t('childrenManager.babyNamePlaceholder')}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        Due date
+                        {t('childrenManager.dueDate')}
                       </label>
                       <Input
                         type="date"
@@ -303,7 +304,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
                       />
                       {child.due_date && (
                         <p className="text-xs text-gray-600 mt-1">
-                          Due: {formatDueDate(child.due_date)}
+                          {t('childrenManager.due')}{formatDueDate(child.due_date)}
                         </p>
                       )}
                     </div>
@@ -313,19 +314,19 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
                   <>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        Name
+                        {t('childrenManager.name')}
                       </label>
                       <Input
                         value={child.first_name}
                         onChange={(e) =>
                           updateChild(index, { first_name: e.target.value })
                         }
-                        placeholder="Child's name"
+                        placeholder={t('childrenManager.childNamePlaceholder')}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        Birth date
+                        {t('childrenManager.birthDate')}
                       </label>
                       <Input
                         type="date"
@@ -337,7 +338,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
                       {child.birth_date &&
                         validateBirthDate(child.birth_date).isValid && (
                           <p className="text-xs text-gray-600 mt-1">
-                            Age: {calculateAge(child.birth_date)}
+                            {t('childrenManager.age')}{calculateAge(child.birth_date)}
                           </p>
                         )}
                       {child.birth_date &&
@@ -361,7 +362,7 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
                     }
                     size="sm"
                   >
-                    {saving ? "Saving..." : child.id ? "Update" : "Save"}
+                    {saving ? t('childrenManager.saving') : child.id ? t('childrenManager.update') : t('childrenManager.save')}
                   </Button>
                 </div>
               </CardContent>

@@ -30,7 +30,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onTimeUpdate,
   onEnded,
 }) => {
-  //@ts-ignore
+  //@ts-expect-error ReactPlayer typings might not perfectly align with React 18
   const playerRef = useRef<ReactPlayer>(null);
 
   const handleProgress = (state: OnProgressState) => {

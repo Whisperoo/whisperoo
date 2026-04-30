@@ -20,7 +20,11 @@ interface ChecklistTemplate {
   stage: string;
   stage_label: string;
   title: string;
+  title_es?: string | null;
+  title_vi?: string | null;
   description: string | null;
+  description_es?: string | null;
+  description_vi?: string | null;
   category: string;
   sort_order: number;
 }
@@ -48,7 +52,8 @@ const APPOINTMENT_STAGES = [
 ];
 
 export const AppointmentReminders: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language;
   const { user } = useAuth();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -279,7 +284,11 @@ export const AppointmentReminders: React.FC = () => {
                       isCompleted ? 'text-gray-500 line-through' : 'text-gray-900'
                     }`}
                   >
-                    {template.title}
+                    {currentLang === 'es' && template.title_es
+                      ? template.title_es
+                      : currentLang === 'vi' && template.title_vi
+                      ? template.title_vi
+                      : template.title}
                   </span>
                   {!isCompleted && isUrgent && (
                     <span className="flex-shrink-0 flex items-center text-[10px] uppercase tracking-wider font-bold text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full">
@@ -289,9 +298,13 @@ export const AppointmentReminders: React.FC = () => {
                   )}
                 </div>
 
-                {!isCompleted && template.description && (
+                {!isCompleted && (template.description || template.description_es || template.description_vi) && (
                   <p className="text-xs text-gray-600 leading-relaxed mt-1 pr-2 mb-2">
-                    {template.description}
+                    {currentLang === 'es' && template.description_es
+                      ? template.description_es
+                      : currentLang === 'vi' && template.description_vi
+                      ? template.description_vi
+                      : template.description}
                   </p>
                 )}
 
@@ -300,7 +313,7 @@ export const AppointmentReminders: React.FC = () => {
                     {t('appointments.labels.for', { name: kid.expected_name || kid.first_name || t('appointments.labels.baby') })}
                   </span>
                   <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">
-                    {template.stage_label}
+                    {t(`stages.${template.stage}`, { defaultValue: template.stage_label })}
                   </span>
                 </div>
               </div>

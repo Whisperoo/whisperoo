@@ -8,6 +8,7 @@ import { ProductWithDetails } from '@/services/products';
 import { formatCurrency } from '@/lib/utils';
 import { PurchaseModal } from './PurchaseModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface ExpertProductCardProps {
   product: ProductWithDetails;
@@ -19,7 +20,17 @@ export const ExpertProductCard: React.FC<ExpertProductCardProps> = ({
   onView,
 }) => {
   const { user } = useAuth();
+  const { i18n, t } = useTranslation();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+
+  const currentLang = i18n.language || 'en';
+  const displayTitle = currentLang === 'es' && product.title_es ? product.title_es : 
+                       currentLang === 'vi' && product.title_vi ? product.title_vi : 
+                       product.title || 'Untitled Product';
+
+  const displayDescription = currentLang === 'es' && product.description_es ? product.description_es : 
+                             currentLang === 'vi' && product.description_vi ? product.description_vi : 
+                             product.description;
 
   const handlePurchaseClick = () => {
     if (!user) {
@@ -173,7 +184,7 @@ export const ExpertProductCard: React.FC<ExpertProductCardProps> = ({
       <CardContent className="p-6 flex-1 flex flex-col">
         <div className="flex-1">
           <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 group-active:text-blue-700 transition-colors">
-            {product.title || 'Untitled Product'}
+            {displayTitle}
           </h3>
           
           {/* Expert Info */}
@@ -189,9 +200,9 @@ export const ExpertProductCard: React.FC<ExpertProductCardProps> = ({
             </div>
           )}
 
-          {product.description && product.description.trim() && product.description !== 'testtestesese' && (
+          {displayDescription && displayDescription.trim() && displayDescription !== 'testtestesese' && (
             <p className="text-sm text-gray-600 line-clamp-3 mb-4 leading-relaxed">
-              {product.description}
+              {displayDescription}
             </p>
           )}
 

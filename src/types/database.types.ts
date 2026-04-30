@@ -14,6 +14,299 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_files: {
+        Row: {
+          activity_id: string
+          created_at: string
+          display_order: number | null
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          display_order?: number | null
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          display_order?: number | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_files_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "course_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_checklist_progress: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          kid_id: string
+          template_id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          kid_id: string
+          template_id: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          kid_id?: string
+          template_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_checklist_progress_kid_id_fkey"
+            columns: ["kid_id"]
+            isOneToOne: false
+            referencedRelation: "kids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_checklist_progress_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "care_checklist_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_checklist_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_checklist_templates: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          hospital_phone: string | null
+          id: string
+          is_universal: boolean | null
+          sort_order: number | null
+          stage: string
+          stage_label: string
+          tenant_id: string | null
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          hospital_phone?: string | null
+          id?: string
+          is_universal?: boolean | null
+          sort_order?: number | null
+          stage: string
+          stage_label: string
+          tenant_id?: string | null
+          title: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          hospital_phone?: string | null
+          id?: string
+          is_universal?: boolean | null
+          sort_order?: number | null
+          stage?: string
+          stage_label?: string
+          tenant_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_checklist_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_training: {
+        Row: {
+          ai_response: string
+          classification: string
+          created_at: string | null
+          embedding: string | null
+          id: string
+          status: string | null
+          tester_id: string | null
+          user_query: string
+        }
+        Insert: {
+          ai_response: string
+          classification: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          status?: string | null
+          tester_id?: string | null
+          user_query: string
+        }
+        Update: {
+          ai_response?: string
+          classification?: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          status?: string | null
+          tester_id?: string | null
+          user_query?: string
+        }
+        Relationships: []
+      }
+      course_activities: {
+        Row: {
+          activity_order: number
+          activity_type: string
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          session_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activity_order: number
+          activity_type?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          session_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          activity_order?: number
+          activity_type?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          session_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_activities_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "course_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_sessions: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          id: string
+          session_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          session_order: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          session_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          total_duration_minutes: number | null
+          total_sessions: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          total_duration_minutes?: number | null
+          total_sessions?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          total_duration_minutes?: number | null
+          total_sessions?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expert_embeddings: {
         Row: {
           created_at: string | null
@@ -139,7 +432,7 @@ export type Database = {
           created_at: string | null
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           product_id: string | null
           referrer: string | null
           session_id: string | null
@@ -150,7 +443,7 @@ export type Database = {
           created_at?: string | null
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           product_id?: string | null
           referrer?: string | null
           session_id?: string | null
@@ -161,7 +454,7 @@ export type Database = {
           created_at?: string | null
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           product_id?: string | null
           referrer?: string | null
           session_id?: string | null
@@ -354,6 +647,8 @@ export type Database = {
           content_type: string | null
           created_at: string | null
           description: string | null
+          description_es: string | null
+          description_vi: string | null
           duration_minutes: number | null
           expert_id: string | null
           file_size_mb: number | null
@@ -368,6 +663,8 @@ export type Database = {
           tags: string[] | null
           thumbnail_url: string | null
           title: string
+          title_es: string | null
+          title_vi: string | null
           total_files_count: number | null
           updated_at: string | null
           view_count: number | null
@@ -376,6 +673,8 @@ export type Database = {
           content_type?: string | null
           created_at?: string | null
           description?: string | null
+          description_es?: string | null
+          description_vi?: string | null
           duration_minutes?: number | null
           expert_id?: string | null
           file_size_mb?: number | null
@@ -389,6 +688,9 @@ export type Database = {
           product_type: string
           tags?: string[] | null
           thumbnail_url?: string | null
+          title: string
+          title_es?: string | null
+          title_vi?: string | null
           total_files_count?: number | null
           updated_at?: string | null
           view_count?: number | null
@@ -397,6 +699,8 @@ export type Database = {
           content_type?: string | null
           created_at?: string | null
           description?: string | null
+          description_es?: string | null
+          description_vi?: string | null
           duration_minutes?: number | null
           expert_id?: string | null
           file_size_mb?: number | null
@@ -410,6 +714,9 @@ export type Database = {
           product_type?: string
           tags?: string[] | null
           thumbnail_url?: string | null
+          title?: string
+          title_es?: string | null
+          title_vi?: string | null
           total_files_count?: number | null
           updated_at?: string | null
           view_count?: number | null
@@ -427,7 +734,6 @@ export type Database = {
       profiles: {
         Row: {
           account_type: string | null
-          acquisition_department: string | null
           acquisition_source: string | null
           created_at: string | null
           custom_role: string | null
@@ -438,6 +744,8 @@ export type Database = {
           expert_accepts_new_clients: boolean | null
           expert_availability_status: string | null
           expert_bio: string | null
+          expert_bio_es: string | null
+          expert_bio_vi: string | null
           expert_certifications_verified: boolean | null
           expert_consultation_rate: number | null
           expert_consultation_types: string[] | null
@@ -464,6 +772,7 @@ export type Database = {
           onboarded: boolean | null
           parenting_styles: string[]
           personal_context: string | null
+          preferred_language: string | null
           profile_image_url: string | null
           role: Database["public"]["Enums"]["user_role"] | null
           tenant_id: string | null
@@ -472,7 +781,6 @@ export type Database = {
         }
         Insert: {
           account_type?: string | null
-          acquisition_department?: string | null
           acquisition_source?: string | null
           created_at?: string | null
           custom_role?: string | null
@@ -483,6 +791,8 @@ export type Database = {
           expert_accepts_new_clients?: boolean | null
           expert_availability_status?: string | null
           expert_bio?: string | null
+          expert_bio_es?: string | null
+          expert_bio_vi?: string | null
           expert_certifications_verified?: boolean | null
           expert_consultation_rate?: number | null
           expert_consultation_types?: string[] | null
@@ -509,6 +819,7 @@ export type Database = {
           onboarded?: boolean | null
           parenting_styles?: string[]
           personal_context?: string | null
+          preferred_language?: string | null
           profile_image_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           tenant_id?: string | null
@@ -517,7 +828,6 @@ export type Database = {
         }
         Update: {
           account_type?: string | null
-          acquisition_department?: string | null
           acquisition_source?: string | null
           created_at?: string | null
           custom_role?: string | null
@@ -528,6 +838,8 @@ export type Database = {
           expert_accepts_new_clients?: boolean | null
           expert_availability_status?: string | null
           expert_bio?: string | null
+          expert_bio_es?: string | null
+          expert_bio_vi?: string | null
           expert_certifications_verified?: boolean | null
           expert_consultation_rate?: number | null
           expert_consultation_types?: string[] | null
@@ -554,6 +866,7 @@ export type Database = {
           onboarded?: boolean | null
           parenting_styles?: string[]
           personal_context?: string | null
+          preferred_language?: string | null
           profile_image_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           tenant_id?: string | null
@@ -567,7 +880,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       purchases: {
@@ -723,13 +1036,111 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_ai_audit_trail: {
+        Row: {
+          category: string | null
+          cohort: string | null
+          created_at: string | null
+          escalation: boolean | null
+          message_id: string | null
+          metadata: Json | null
+          summary: string | null
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_monthly_enrollment: {
+        Row: {
+          enrolled_count: number | null
+          month_date: string | null
+          month_label: string | null
+          tenant_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_monthly_escalation: {
+        Row: {
+          escalation_pct: number | null
+          flagged_count: number | null
+          month_date: string | null
+          month_label: string | null
+          tenant_id: string | null
+          total_messages: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flagged_messages_view: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string | null
+          is_flagged_for_review: boolean | null
+          metadata: Json | null
+          role: string | null
+          session_id: string | null
+          tenant_id: string | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      binary_quantize: {
-        Args: { "": string } | { "": unknown }
-        Returns: unknown
-      }
       complete_onboarding_step: {
         Args: { step_data?: Json; step_name: string }
         Returns: undefined
@@ -753,16 +1164,12 @@ export type Database = {
           first_name: string
           profile_image_url: string
           similarity: number
+          tenant_id: string
         }[]
       }
-      get_onboarding_progress: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      get_pregnancy_week: {
-        Args: { due_date_input: string }
-        Returns: number
-      }
+      fn_get_admin_dashboard: { Args: { p_tenant_id?: string }; Returns: Json }
+      get_onboarding_progress: { Args: never; Returns: Json }
+      get_pregnancy_week: { Args: { due_date_input: string }; Returns: number }
       get_product_files: {
         Args: { product_uuid: string }
         Returns: {
@@ -778,97 +1185,52 @@ export type Database = {
           sort_order: number
         }[]
       }
-      get_weeks_until_due: {
-        Args: { due_date_input: string }
-        Returns: number
+      get_user_tenant_id: { Args: never; Returns: string }
+      get_weeks_until_due: { Args: { due_date_input: string }; Returns: number }
+      match_compliance_training: {
+        Args: {
+          match_count: number
+          match_threshold: number
+          query_embedding: string
+        }
+        Returns: {
+          ai_response: string
+          classification: string
+          id: string
+          similarity: number
+          user_query: string
+        }[]
       }
-      halfvec_avg: {
-        Args: { "": number[] }
-        Returns: unknown
-      }
-      halfvec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      halfvec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      halfvec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
-      hnsw_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_sparsevec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnswhandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflathandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      l2_norm: {
-        Args: { "": unknown } | { "": unknown }
-        Returns: number
-      }
-      l2_normalize: {
-        Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: string
-      }
-      sparsevec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
-      vector_avg: {
-        Args: { "": number[] }
-        Returns: string
-      }
-      vector_dims: {
-        Args: { "": string } | { "": unknown }
-        Returns: number
-      }
-      vector_norm: {
-        Args: { "": string }
-        Returns: number
-      }
-      vector_out: {
-        Args: { "": string }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: { "": string }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
+      search_products_with_experts: {
+        Args: { search_term: string }
+        Returns: {
+          content_type: string | null
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          expert_id: string | null
+          file_size_mb: number | null
+          file_url: string | null
+          has_multiple_files: boolean | null
+          id: string
+          is_active: boolean | null
+          page_count: number | null
+          price: number
+          primary_file_url: string | null
+          product_type: string
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string
+          total_files_count: number | null
+          updated_at: string | null
+          view_count: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
     }
     Enums: {

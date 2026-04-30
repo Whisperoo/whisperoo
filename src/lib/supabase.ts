@@ -88,8 +88,6 @@ export type Database = {
       }
       // onboarding_steps table has been removed in favor of using profiles.onboarded boolean
     }
-    Functions: {
-      // Onboarding functions have been removed in favor of using profiles.onboarded boolean
-    }
+    Functions: Record<string, never>
   }
 }

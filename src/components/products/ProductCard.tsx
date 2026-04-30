@@ -31,6 +31,7 @@ import { ProductPreviewModal } from "./ProductPreviewModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { useTranslation } from "react-i18next";
 
 interface ProductCardProps {
   product: ProductWithDetails;
@@ -44,6 +45,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { i18n } = useTranslation();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -55,6 +57,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const isFreeProduct = product.price === 0;
   const hasContent = !!(product.primary_file_url || product.file_url);
+
+  const currentLang = i18n.language || 'en';
+  const displayTitle = currentLang === 'es' && product.title_es ? product.title_es : 
+                       currentLang === 'vi' && product.title_vi ? product.title_vi : 
+                       product.title || 'Untitled Product';
+
+  const displayDescription = currentLang === 'es' && product.description_es ? product.description_es : 
+                             currentLang === 'vi' && product.description_vi ? product.description_vi : 
+                             product.description;
 
   // Course detection logic - improved to detect multi-file products as courses
   // productFiles.length > 1 ||
@@ -304,7 +315,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* Background Image */}
           <img
             src={product.thumbnail_url}
-            alt={product.title}
+            alt={displayTitle}
             className="w-full h-full object-cover rounded-tl-[16px] rounded-tr-[16px]"
           />
 
@@ -405,12 +416,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             to={`/products/${product.id}`}
             className="font-semibold text-[18px] leading-normal text-[#393939] font-['Plus_Jakarta_Sans'] md:truncate"
           >
-            {product.title}
+            {displayTitle}
           </Link>
 
           {/* Description */}
           <p className="font-normal text-[14px] leading-[19.6px] text-[#111111] font-['Plus_Jakarta_Sans'] max-w-[21rem] line-clamp-3 break-words">
-            {product.description}
+            {displayDescription}
           </p>
         </div>
 

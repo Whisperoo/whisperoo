@@ -1,4 +1,36 @@
 {
+  "contentGrid": {
+    "course": "Course",
+    "lessons": "{{count}} Lessons",
+    "view": "View",
+    "download": "Download",
+    "expert": "Expert"
+  },
+  "contentViewer": {
+    "aboutContent": "About This Content",
+    "openDocument": "Open Document",
+    "documentOpenDesc": "This document opens in a new tab for the best reading experience.",
+    "openInNewTab": "Open in New Tab",
+    "contentNotAvailable": "Content Not Available",
+    "contentNotAvailableDesc": "This content is currently being processed or the file is not available.",
+    "possibleReasons": "Possible reasons:",
+    "reasonNotUploaded": "The file hasn't been uploaded yet",
+    "reasonProcessing": "The file is still being processed",
+    "reasonError": "There was an error during upload",
+    "reasonUrl": "The storage URL is not configured correctly",
+    "close": "Close",
+    "loadingContent": "Loading content...",
+    "previewNotAvailable": "Preview Not Available",
+    "previewNotAvailableDesc": "This file type cannot be previewed in the browser.",
+    "allFiles": "All Files"
+  },
+  "productTypes": {
+    "document": "Document",
+    "video": "Video",
+    "image": "Image",
+    "consultation": "Consultation",
+    "course": "Course"
+  },
   "dashboard": {
     "welcome": {
       "greeting": "Hi {{firstName}}!",
@@ -184,7 +216,20 @@
     "partOfCareNetwork": "This expert is part of your hospital's care network",
     "contactHospitalDirectly": "Contact your hospital directly:",
     "emailDepartment": "Email {{name}}",
-    "credentials": "Credentials"
+    "credentials": "Credentials",
+    "specialties": {
+      "pediatricFamilyChiropractor": "Pediatric & Family Chiropractor",
+      "prenatalPostnatalYogaCoach": "Prenatal & Postnatal Yoga Coach",
+      "pediatricOralDevelopmentDentist": "Pediatric Oral Development Dentist",
+      "registeredDietitianCertifiedIntuitiveEatingCounselor": "Registered Dietitian & Certified Intuitive Eating Counselor",
+      "sleepCoaching": "Sleep Coaching",
+      "sleepTrainer": "Sleep Trainer",
+      "familyDynamics": "Family Dynamics",
+      "lifestyleCoaching": "Lifestyle Coaching",
+      "pelvicFloorCoaching": "Pelvic Floor Coaching",
+      "nervousSystemRegulation": "Nervous System Regulation",
+      "hormones": "Hormones"
+    }
   },
   "profile": {
     "noProfileTitle": "No Profile Found",
@@ -212,6 +257,61 @@
     "editProfile": "Edit Profile",
     "languagePreference": "Language Preference",
     "languagePreferenceDesc": "Whisperoo supports English, Spanish, and Vietnamese. Your selection will be remembered across devices."
+  },
+  "profileEdit": {
+    "title": "Edit Profile",
+    "profileImage": "Profile Image",
+    "basicInfo": "Basic Information",
+    "firstName": "First Name",
+    "firstNamePlaceholder": "Your first name",
+    "email": "Email",
+    "emailNoChange": "Email cannot be changed",
+    "role": "Role",
+    "specifyRole": "Specify your role",
+    "expectingStatus": "Expecting Status",
+    "children": "Children",
+    "parentingStyles": "Parenting Styles",
+    "parentingStylesDesc": "Select all that apply to your approach",
+    "topicsOfInterest": "Topics of Interest",
+    "topicsOfInterestDesc": "What would you like help with?",
+    "personalContext": "Personal Context",
+    "personalContextDesc": "Tell us about your family situation and what you're looking for help with",
+    "personalContextPlaceholder": "Share what you're looking for help with, any challenges you're facing, or anything else that would help us provide better support...",
+    "characters": "characters",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "successTitle": "Profile updated",
+    "successDesc": "Your profile has been saved successfully.",
+    "errorTitle": "Failed to save",
+    "errorDesc": "Please try again.",
+    "roles": {
+      "mom": "Mom",
+      "dad": "Dad",
+      "caregiver": "Caregiver",
+      "other": "Other"
+    },
+    "expecting": {
+      "yes": "Yes",
+      "no": "No",
+      "trying": "Trying"
+    },
+    "styleOptions": {
+      "gentle": "Gentle & Nurturing",
+      "structured": "Structured & Routine-based",
+      "flexible": "Flexible & Child-led",
+      "figuring": "Still Figuring It Out"
+    },
+    "topicOptions": {
+      "sleep": "Sleep & Routines",
+      "feeding": "Feeding & Nutrition",
+      "milestones": "Developmental Milestones",
+      "mentalHealth": "Mental Health & Self-Care",
+      "discipline": "Discipline & Boundaries",
+      "play": "Play & Learning",
+      "relationships": "Relationships & Co-Parenting",
+      "community": "Community & Support"
+    }
   },
   "settings": {
     "noProfileTitle": "No Profile Found",
@@ -416,7 +516,106 @@
     "saveSuccessDesc": "Free content has been added to your library.",
     "saveErrorTitle": "Failed to save content",
     "saveErrorDesc": "There was an error saving the content. Please try again.",
-    "saveErrorUnexpected": "An unexpected error occurred. Please try again."
+    "saveErrorUnexpected": "An unexpected error occurred. Please try again.",
+    "searchPlaceholder": "Search products by title or description...",
+    "search": "Search",
+    "foundResults": "🔍 Found {{count}} product(s) for \"{{query}}\"",
+    "page": "(Page {{page}})",
+    "clearSearch": "Clear search",
+    "allCategories": "All Categories",
+    "allTypes": "All Types",
+    "sortBy": "Sort by",
+    "sort": {
+      "personalized": "For You",
+      "newest": "Newest First",
+      "oldest": "Oldest First",
+      "priceLowToHigh": "Price: Low to High",
+      "priceHighToLow": "Price: High to Low",
+      "highestRated": "Highest Rated",
+      "title": "Title: A to Z"
+    },
+    "types": {
+      "document": "Document",
+      "video": "Video",
+      "audio": "Audio",
+      "course": "Course",
+      "consultation": "Consultation"
+    },
+    "contentType": {
+      "bundle": "Bundle (Related files)",
+      "course": "Course (Structured learning)",
+      "collection": "Collection (Curated set)"
+    },
+    "topicOptions": {
+      "sleep": "Sleep & Routines",
+      "feeding": "Feeding & Nutrition",
+      "milestones": "Developmental Milestones",
+      "mentalHealth": "Mental Health & Self-Care",
+      "discipline": "Discipline & Boundaries",
+      "play": "Play & Learning",
+      "relationships": "Relationships & Co-Parenting",
+      "community": "Community & Support"
+    }
+  },
+  "childrenManager": {
+    "loading": "Loading children...",
+    "addChild": "Add Child",
+    "expecting": "Expecting",
+    "noChildren": "No children added yet. Click 'Add Child' or 'Expecting' to get started.",
+    "expectedBaby": "Expected Baby",
+    "child": "Child",
+    "babyNameLabel": "Baby's name (or what you're calling them)",
+    "babyNamePlaceholder": "Baby name",
+    "dueDate": "Due date",
+    "due": "Due: ",
+    "name": "Name",
+    "childNamePlaceholder": "Child's name",
+    "birthDate": "Birth date",
+    "age": "Age: ",
+    "saving": "Saving...",
+    "update": "Update",
+    "save": "Save",
+    "confirmRemove": "Are you sure you want to remove {{name}}?",
+    "childSavedTitle": "Child saved",
+    "childSavedDesc": "{{name}} has been saved successfully.",
+    "childRemovedTitle": "Child removed",
+    "childRemovedDesc": "{{name}} has been removed.",
+    "failedLoadTitle": "Failed to load children",
+    "failedLoadDesc": "Please refresh the page and try again.",
+    "failedSaveTitle": "Failed to save",
+    "failedRemoveTitle": "Failed to remove",
+    "errorTryAgain": "Please try again."
+  },
+  "careChecklist": {
+    "header": "Care Checklist",
+    "schedule": "Schedule",
+    "allDone": "All done! Great job staying on top of {{name}}'s care. 🎉",
+    "categories": {
+      "medical": "Medical",
+      "milestone": "Milestone",
+      "safety": "Safety",
+      "nutrition": "Nutrition",
+      "general": "General"
+    },
+    "ageDescription": {
+      "weeksOld": "{{count}} week old",
+      "weeksOld_plural": "{{count}} weeks old",
+      "monthsOld": "{{count}} month old",
+      "monthsOld_plural": "{{count}} months old",
+      "yearsMonthsOld": "{{years}} year, {{months}} month old",
+      "yearsMonthsOld_plural": "{{years}} years, {{months}} months old",
+      "recentlyArrived": "Recently arrived!",
+      "weeksPregnant": "{{gestational}} weeks pregnant · Due in {{remaining}} weeks"
+    }
+  },
+  "stages": {
+    "expecting_t1": "First Trimester",
+    "expecting_t2": "Second Trimester",
+    "expecting_t3": "Third Trimester",
+    "newborn_0_3m": "Newborn (0-3 months)",
+    "infant_3_6m": "Infant (3-6 months)",
+    "infant_6_12m": "Infant (6-12 months)",
+    "toddler_12_24m": "Toddler (1-2 years)"
   },
   "purchases": {
     "pageTitle": "My Content",

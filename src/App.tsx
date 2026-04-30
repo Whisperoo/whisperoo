@@ -12,8 +12,6 @@ import { ExpertDashboard } from "./components/expert/ExpertDashboard";
 import { AdminProductsPage } from "./pages/AdminProductsPage";
 import Chat from "./pages/Chat";
 import Dashboard from "./pages/Dashboard";
-import DebugAuth from "./pages/DebugAuth";
-import DebugSignup from "./pages/DebugSignup";
 import ExpertDetails from "./pages/ExpertDetails";
 import ExpertProfileSettings from "./pages/ExpertProfileSettings";
 import ExpertProfiles from "./pages/ExpertProfiles";
@@ -28,12 +26,9 @@ import { ProductsPage } from "./pages/ProductsPage";
 import ProfilePage from "./pages/ProfilePage";
 import { PurchaseSuccessPage } from "./pages/PurchaseSuccessPage";
 import Splash from "./pages/Splash";
-import TestForm from "./pages/TestForm";
-import TestSupabase from "./pages/TestSupabase";
 import CreateAccount from "./pages/auth/CreateAccount";
-import CreateAccountSimple from "./pages/auth/CreateAccountSimple";
 import Login from "./pages/auth/Login";
-import UpdatePassword from "./pages/auth/UpdatePassowrd";
+import UpdatePassword from "./pages/auth/UpdatePassword";
 import VerifyOTP from "./pages/auth/VerifyOTP";
 import OnboardingComplete from "./pages/onboarding/OnboardingComplete";
 import OnboardingKids from "./pages/onboarding/OnboardingKids";
@@ -46,10 +41,7 @@ import OnboardingTopics from "./pages/onboarding/OnboardingTopics";
 
 const queryClient = new QueryClient();
 
-console.log("App component loading...");
-
 const App = () => {
-  console.log("App component rendering...");
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -63,10 +55,6 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Splash />} />
                 <Route path="/auth/create" element={<CreateAccount />} />
-                <Route
-                  path="/auth/create-simple"
-                  element={<CreateAccountSimple />}
-                />
                 <Route path="/auth/verify" element={<VerifyOTP />} />
                 <Route path="/auth/login" element={<Login />} />
                 <Route
@@ -288,11 +276,7 @@ const App = () => {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="/debug" element={<DebugAuth />} />
                 <Route path="/update-password" element={<UpdatePassword />} />
-                <Route path="/test" element={<TestForm />} />
-                <Route path="/test-supabase" element={<TestSupabase />} />
-                <Route path="/debug-signup" element={<DebugSignup />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </NavigationProvider>

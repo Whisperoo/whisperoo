@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "react-i18next";
 import {
   Select,
   SelectContent,
@@ -46,6 +47,15 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   isLoading,
   searchQuery,
 }) => {
+  // Add this useEffect to reset scroll on page change
+  useEffect(() => {
+    // Scroll to top when page changes
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth", // or 'auto' for instant scroll
+    });
+  }, [currentPage]); // Trigger when page changes
+
   // Don't show pagination if there's only one page or no results
   if (totalResults <= pageSize || totalResults === 0) {
     return null;
@@ -83,18 +93,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   };
 
   const pageNumbers = getPageNumbers();
-  // Add this useEffect to reset scroll on page change
-  useEffect(() => {
-    // Scroll to top when page changes
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth", // or 'auto' for instant scroll
-    });
 
-    // Alternative: Scroll the container div if you have one
-    // const container = document.getElementById('product-grid-container');
-    // if (container) container.scrollTop = 0;
-  }, [currentPage]); // Trigger when page changes
   return (
     <div className="flex flex-col items-center justify-center gap-4 mt-8">
       {/* Page info */}
@@ -183,6 +182,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { config } = useTenant();
   const { sortPersonalized } = usePersonalizedSort();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -349,7 +349,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search products by title or description..."
+                placeholder={t('products.searchPlaceholder', 'Search products by title or description...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -365,7 +365,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               )}
             </div>
             <Button type="submit" size="lg">
-              Search
+              {t('products.search', 'Search')}
             </Button>
           </form>
 
@@ -374,9 +374,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
               <div className="flex items-center justify-between">
                 <span className="font-medium text-blue-700">
-                  🔍 Found {totalResults} product
-                  {totalResults !== 1 ? "s" : ""} for "{searchQuery}"
-                  {page > 1 && ` (Page ${page})`}
+                  {t('products.foundResults', '🔍 Found {{count}} product(s) for "{{query}}"', { count: totalResults, query: searchQuery })}
+                  {page > 1 && ` ${t('products.page', '(Page {{page}})', { page })}`}
                 </span>
                 {searchQuery && (
                   <Button
@@ -385,7 +384,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                     onClick={handleClearSearch}
                     className="text-blue-600 hover:text-blue-800"
                   >
-                    Clear search
+                    {t('products.clearSearch', 'Clear search')}
                   </Button>
                 )}
               </div>
@@ -405,15 +404,29 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               }
             >
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Categories" />
+                <SelectValue placeholder={t('products.allCategories', 'All Categories')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories?.map((category) => (
+                <SelectItem value="all">{t('products.allCategories', 'All Categories')}</SelectItem>
+                {categories?.map((category) => {
+                  const translateCategory = (slug: string, name: string) => {
+                    const map: Record<string, string> = {
+                      'courses': t('products.categories.courses', 'Courses'),
+                      'ebooks': t('products.categories.ebooks', 'eBooks'),
+                      'toolkits': t('products.categories.toolkits', 'Toolkits'),
+                      'webinars': t('products.categories.webinars', 'Webinars'),
+                      'checklists': t('products.categories.checklists', 'Checklists'),
+                      'guides': t('products.categories.guides', 'Guides'),
+                      'templates': t('products.categories.templates', 'Templates'),
+                      'videos': t('products.categories.videos', 'Videos'),
+                    };
+                    return map[slug] || name;
+                  };
+                  return (
                   <SelectItem key={category.id} value={category.slug}>
-                    {category.name}
+                    {translateCategory(category.slug, category.name)}
                   </SelectItem>
-                ))}
+                )})}
               </SelectContent>
             </Select>
 
@@ -428,12 +441,12 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               }
             >
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Types" />
+                <SelectValue placeholder={t('products.allTypes', 'All Types')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="video">Videos</SelectItem>
-                <SelectItem value="document">Documents</SelectItem>
+                <SelectItem value="all">{t('products.allTypes', 'All Types')}</SelectItem>
+                <SelectItem value="video">{t('products.types.video', 'Videos')}</SelectItem>
+                <SelectItem value="document">{t('products.types.document', 'Documents')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -449,16 +462,16 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               }}
             >
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sort by" />
+                <SelectValue placeholder={t('products.sortBy', 'Sort by')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="personalized-asc">For You</SelectItem>
-                <SelectItem value="created_at-desc">Newest First</SelectItem>
-                <SelectItem value="created_at-asc">Oldest First</SelectItem>
-                <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                <SelectItem value="rating-desc">Highest Rated</SelectItem>
-                <SelectItem value="title-asc">Title: A to Z</SelectItem>
+                <SelectItem value="personalized-asc">{t('products.sort.personalized', 'For You')}</SelectItem>
+                <SelectItem value="created_at-desc">{t('products.sort.newest', 'Newest First')}</SelectItem>
+                <SelectItem value="created_at-asc">{t('products.sort.oldest', 'Oldest First')}</SelectItem>
+                <SelectItem value="price-asc">{t('products.sort.priceLowToHigh', 'Price: Low to High')}</SelectItem>
+                <SelectItem value="price-desc">{t('products.sort.priceHighToLow', 'Price: High to Low')}</SelectItem>
+                <SelectItem value="rating-desc">{t('products.sort.highestRated', 'Highest Rated')}</SelectItem>
+                <SelectItem value="title-asc">{t('products.sort.title', 'Title: A to Z')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -484,17 +497,17 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           {/* ── Content Label Filter Chips ── */}
           {(() => {
             const LABELS = [
-              { label: 'Baby Feeding',         slug: 'baby-feeding' },
-              { label: 'Pelvic Floor',          slug: 'pelvic-floor' },
-              { label: 'Sleep Coaching',        slug: 'sleep-coaching' },
-              { label: 'Nervous System',        slug: 'nervous-system' },
-              { label: 'Nutrition',             slug: 'nutrition' },
-              { label: 'Pediatric Dentistry',   slug: 'pediatric-dentistry' },
-              { label: 'Lifestyle',             slug: 'lifestyle-coaching' },
-              { label: 'Fitness & Yoga',        slug: 'fitness-yoga' },
-              { label: 'Back to Work',          slug: 'back-to-work' },
-              { label: 'Postpartum',            slug: 'postpartum-tips' },
-              { label: 'Prenatal',              slug: 'prenatal-tips' },
+              { label: t('onboarding.topics.babyFeeding', 'Baby Feeding'),         slug: 'baby-feeding' },
+              { label: t('onboarding.topics.pelvicFloor', 'Pelvic Floor'),          slug: 'pelvic-floor' },
+              { label: t('onboarding.topics.sleepCoaching', 'Sleep Coaching'),        slug: 'sleep-coaching' },
+              { label: t('onboarding.topics.nervousSystem', 'Nervous System'),        slug: 'nervous-system' },
+              { label: t('onboarding.topics.nutrition', 'Nutrition'),             slug: 'nutrition' },
+              { label: t('onboarding.topics.pediatricDentistry', 'Pediatric Dentistry'),   slug: 'pediatric-dentistry' },
+              { label: t('onboarding.topics.lifestyleCoaching', 'Lifestyle'),             slug: 'lifestyle-coaching' },
+              { label: t('onboarding.topics.fitnessYoga', 'Fitness & Yoga'),        slug: 'fitness-yoga' },
+              { label: t('onboarding.topics.backToWork', 'Back to Work'),          slug: 'back-to-work' },
+              { label: t('onboarding.topics.postpartumTips', 'Postpartum'),            slug: 'postpartum-tips' },
+              { label: t('onboarding.topics.prenatalTips', 'Prenatal'),              slug: 'prenatal-tips' },
             ];
             return (
               <div className="flex flex-wrap gap-2 pt-1 pb-1">

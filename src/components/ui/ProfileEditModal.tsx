@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from './button'
 import { Input } from './input'
@@ -25,6 +26,7 @@ interface ProfileEditModalProps {
 }
 
 const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, onChildrenChange }) => {
+  const { t } = useTranslation()
   const { profile, updateProfile } = useAuth()
   const [formData, setFormData] = useState({
     first_name: '',
@@ -53,21 +55,21 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
   }, [profile])
 
   const parentingStyleOptions = [
-    'Gentle & Nurturing',
-    'Structured & Routine-based',
-    'Flexible & Child-led',
-    'Still Figuring It Out'
+    { key: 'gentle', value: 'Gentle & Nurturing' },
+    { key: 'structured', value: 'Structured & Routine-based' },
+    { key: 'flexible', value: 'Flexible & Child-led' },
+    { key: 'figuring', value: 'Still Figuring It Out' }
   ]
 
   const topicOptions = [
-    'Sleep & Routines',
-    'Feeding & Nutrition',
-    'Developmental Milestones',
-    'Mental Health & Self-Care',
-    'Discipline & Boundaries',
-    'Play & Learning',
-    'Relationships & Co-Parenting',
-    'Community & Support'
+    { key: 'sleep', value: 'Sleep & Routines' },
+    { key: 'feeding', value: 'Feeding & Nutrition' },
+    { key: 'milestones', value: 'Developmental Milestones' },
+    { key: 'mentalHealth', value: 'Mental Health & Self-Care' },
+    { key: 'discipline', value: 'Discipline & Boundaries' },
+    { key: 'play', value: 'Play & Learning' },
+    { key: 'relationships', value: 'Relationships & Co-Parenting' },
+    { key: 'community', value: 'Community & Support' }
   ]
 
   const handleInputChange = (field: string, value: any) => {
@@ -103,8 +105,8 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
       }
 
       toast({
-        title: "Profile updated",
-        description: "Your profile has been saved successfully.",
+        title: t('profileEdit.successTitle'),
+        description: t('profileEdit.successDesc'),
       })
 
       onClose()
@@ -112,8 +114,8 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
     } catch (error: any) {
       console.error('Error saving profile:', error)
       toast({
-        title: "Failed to save",
-        description: error.message || "Please try again.",
+        title: t('profileEdit.errorTitle'),
+        description: error.message || t('profileEdit.errorDesc'),
         variant: "destructive",
       })
     } finally {
@@ -129,14 +131,14 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Edit Profile</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">{t('profileEdit.title')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Profile Image Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Profile Image</CardTitle>
+              <CardTitle className="text-lg">{t('profileEdit.profileImage')}</CardTitle>
             </CardHeader>
             <CardContent>
               <AvatarUpload />
@@ -146,32 +148,32 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
           {/* Basic Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Basic Information</CardTitle>
+              <CardTitle className="text-lg">{t('profileEdit.basicInfo')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="first_name">First Name</Label>
+                <Label htmlFor="first_name">{t('profileEdit.firstName')}</Label>
                 <Input
                   id="first_name"
                   value={formData.first_name}
                   onChange={(e) => handleInputChange('first_name', e.target.value)}
-                  placeholder="Your first name"
+                  placeholder={t('profileEdit.firstNamePlaceholder')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('profileEdit.email')}</Label>
                 <Input
                   id="email"
                   value={profile.email}
                   disabled
                   className="bg-gray-50"
                 />
-                <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                <p className="text-xs text-gray-500 mt-1">{t('profileEdit.emailNoChange')}</p>
               </div>
 
               <div>
-                <Label>Role</Label>
+                <Label>{t('profileEdit.role')}</Label>
                 <div className="flex gap-2 mt-2">
                   {(['mom', 'dad', 'caregiver', 'other'] as const).map((role) => (
                     <Button
@@ -181,7 +183,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
                       onClick={() => handleInputChange('role', role)}
                       className="capitalize"
                     >
-                      {role}
+                      {t(`profileEdit.roles.${role}`)}
                     </Button>
                   ))}
                 </div>
@@ -189,14 +191,14 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
                   <Input
                     value={formData.custom_role}
                     onChange={(e) => handleInputChange('custom_role', e.target.value)}
-                    placeholder="Specify your role"
+                    placeholder={t('profileEdit.specifyRole')}
                     className="mt-2"
                   />
                 )}
               </div>
 
               <div>
-                <Label>Expecting Status</Label>
+                <Label>{t('profileEdit.expectingStatus')}</Label>
                 <div className="flex gap-2 mt-2">
                   {(['yes', 'no', 'trying'] as const).map((status) => (
                     <Button
@@ -206,7 +208,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
                       onClick={() => handleInputChange('expecting_status', status)}
                       className="capitalize"
                     >
-                      {status === 'trying' ? 'Trying' : status}
+                      {t(`profileEdit.expecting.${status}`)}
                     </Button>
                   ))}
                 </div>
@@ -217,7 +219,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
           {/* Children Management */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Children</CardTitle>
+              <CardTitle className="text-lg">{t('profileEdit.children')}</CardTitle>
             </CardHeader>
             <CardContent>
               <ChildrenManager onDataChange={onChildrenChange} />
@@ -227,21 +229,21 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
           {/* Parenting Styles */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Parenting Styles</CardTitle>
-              <p className="text-sm text-gray-600">Select all that apply to your approach</p>
+              <CardTitle className="text-lg">{t('profileEdit.parentingStyles')}</CardTitle>
+              <p className="text-sm text-gray-600">{t('profileEdit.parentingStylesDesc')}</p>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {parentingStyleOptions.map((style) => (
                   <Badge
-                    key={style}
-                    variant={formData.parenting_styles.includes(style) ? 'default' : 'outline'}
+                    key={style.key}
+                    variant={formData.parenting_styles.includes(style.value) ? 'default' : 'outline'}
                     className="cursor-pointer px-3 py-1"
                     onClick={() => handleInputChange('parenting_styles', 
-                      toggleArrayItem(formData.parenting_styles, style)
+                      toggleArrayItem(formData.parenting_styles, style.value)
                     )}
                   >
-                    {style}
+                    {t(`profileEdit.styleOptions.${style.key}`)}
                   </Badge>
                 ))}
               </div>
@@ -251,21 +253,21 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
           {/* Topics of Interest */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Topics of Interest</CardTitle>
-              <p className="text-sm text-gray-600">What would you like help with?</p>
+              <CardTitle className="text-lg">{t('profileEdit.topicsOfInterest')}</CardTitle>
+              <p className="text-sm text-gray-600">{t('profileEdit.topicsOfInterestDesc')}</p>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {topicOptions.map((topic) => (
                   <Badge
-                    key={topic}
-                    variant={formData.topics_of_interest.includes(topic) ? 'default' : 'outline'}
+                    key={topic.key}
+                    variant={formData.topics_of_interest.includes(topic.value) ? 'default' : 'outline'}
                     className="cursor-pointer px-3 py-1"
                     onClick={() => handleInputChange('topics_of_interest', 
-                      toggleArrayItem(formData.topics_of_interest, topic)
+                      toggleArrayItem(formData.topics_of_interest, topic.value)
                     )}
                   >
-                    {topic}
+                    {t(`profileEdit.topicOptions.${topic.key}`)}
                   </Badge>
                 ))}
               </div>
@@ -275,21 +277,21 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
           {/* Personal Context */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Personal Context</CardTitle>
+              <CardTitle className="text-lg">{t('profileEdit.personalContext')}</CardTitle>
               <p className="text-sm text-gray-600">
-                Tell us about your family situation and what you're looking for help with
+                {t('profileEdit.personalContextDesc')}
               </p>
             </CardHeader>
             <CardContent>
               <Textarea
                 value={formData.personal_context}
                 onChange={(e) => handleInputChange('personal_context', e.target.value)}
-                placeholder="Share what you're looking for help with, any challenges you're facing, or anything else that would help us provide better support..."
+                placeholder={t('profileEdit.personalContextPlaceholder')}
                 rows={4}
                 maxLength={1000}
               />
               <p className="text-xs text-gray-500 mt-1">
-                {formData.personal_context.length}/1000 characters
+                {formData.personal_context.length}/1000 {t('profileEdit.characters')}
               </p>
             </CardContent>
           </Card>
@@ -298,10 +300,10 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
         {/* Action Buttons */}
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button variant="outline" onClick={onClose} disabled={saving}>
-            Cancel
+            {t('profileEdit.cancel')}
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? t('profileEdit.saving') : t('profileEdit.saveChanges')}
           </Button>
         </div>
       </DialogContent>

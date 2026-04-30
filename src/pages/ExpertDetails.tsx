@@ -136,7 +136,6 @@ const ExpertDetails: React.FC = () => {
         return;
       }
 
-      // Update existing consultation product to ensure it's active (but preserve the price)
       if (product && product.is_active !== true) {
         const { data: updatedProduct, error: updateError } = await supabase
           .from('products')
@@ -182,6 +181,20 @@ const ExpertDetails: React.FC = () => {
   const handlePurchaseSuccess = (purchaseId: string) => {
     console.log('Consultation booking successful:', purchaseId);
     // The purchase modal will handle navigation to success page
+  };
+
+  const translateSpecialty = (specialty: string) => {
+    if (!specialty) return '';
+    
+    // Convert e.g. "Pediatric & Family Chiropractor" to "pediatricFamilyChiropractor"
+    const key = specialty
+      .replace(/[^a-zA-Z0-9 ]/g, '') // remove special characters like &
+      .split(' ')
+      .filter(Boolean)
+      .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join('');
+
+    return t(`experts.specialties.${key}`, specialty);
   };
 
   if (loading) {
@@ -258,7 +271,7 @@ const ExpertDetails: React.FC = () => {
                       {expert.first_name}
                     </h1>
                     <p className="text-xl text-indigo-600 font-semibold mb-3">
-                      {expert.expert_specialties?.[0] || t('experts.generalExpert')}
+                      {translateSpecialty(expert.expert_specialties?.[0] || '') || t('experts.generalExpert')}
                     </p>
                     
                     <div className="flex flex-wrap items-center gap-4 mb-4">

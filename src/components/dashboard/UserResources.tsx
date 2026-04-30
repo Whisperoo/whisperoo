@@ -12,10 +12,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { productService } from "@/services/products";
 import { formatCurrency } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTranslation } from "react-i18next";
 
 export const UserResources: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const currentLang = i18n.language || 'en';
 
   const {
     data: purchases,
@@ -176,7 +179,7 @@ export const UserResources: React.FC = () => {
                   {" "}
                   {/* ← ADD overflow-hidden */}
                   <h3 className="font-bold text-gray-900 group-hover:text-brand-primary transition-colors duration-200 text-base leading-tight mb-1 max-w-full block overflow-hidden">
-                    {purchase.product?.title || "Resource"}
+                    {currentLang === 'es' && purchase.product?.title_es ? purchase.product.title_es : currentLang === 'vi' && purchase.product?.title_vi ? purchase.product.title_vi : purchase.product?.title || "Resource"}
                   </h3>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -200,7 +203,7 @@ export const UserResources: React.FC = () => {
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed break-words overflow-hidden">
                   {" "}
                   {/* ← ADD break-words and overflow-hidden */}
-                  {purchase.product.description}
+                  {currentLang === 'es' && purchase.product?.description_es ? purchase.product.description_es : currentLang === 'vi' && purchase.product?.description_vi ? purchase.product.description_vi : purchase.product.description}
                 </p>
               )}
 

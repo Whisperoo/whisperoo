@@ -1,4 +1,36 @@
 {
+  "contentGrid": {
+    "course": "Curso",
+    "lessons": "{{count}} Lecciones",
+    "view": "Ver",
+    "download": "Descargar",
+    "expert": "Experto"
+  },
+  "contentViewer": {
+    "aboutContent": "Sobre Este Contenido",
+    "openDocument": "Abrir Documento",
+    "documentOpenDesc": "Este documento se abre en una nueva pestaña para la mejor experiencia de lectura.",
+    "openInNewTab": "Abrir en Nueva Pestaña",
+    "contentNotAvailable": "Contenido No Disponible",
+    "contentNotAvailableDesc": "Este contenido se está procesando o el archivo no está disponible.",
+    "possibleReasons": "Razones posibles:",
+    "reasonNotUploaded": "El archivo aún no se ha subido",
+    "reasonProcessing": "El archivo aún se está procesando",
+    "reasonError": "Hubo un error durante la subida",
+    "reasonUrl": "La URL de almacenamiento no está configurada correctamente",
+    "close": "Cerrar",
+    "loadingContent": "Cargando contenido...",
+    "previewNotAvailable": "Vista Previa No Disponible",
+    "previewNotAvailableDesc": "Este tipo de archivo no se puede previsualizar en el navegador.",
+    "allFiles": "Todos los Archivos"
+  },
+  "productTypes": {
+    "document": "Documento",
+    "video": "Video",
+    "image": "Imagen",
+    "consultation": "Consulta",
+    "course": "Curso"
+  },
   "dashboard": {
     "welcome": {
       "greeting": "¡Hola {{firstName}}!",
@@ -184,7 +216,20 @@
     "partOfCareNetwork": "Este experto es parte de la red de atención de tu hospital",
     "contactHospitalDirectly": "Contacta a tu hospital directamente:",
     "emailDepartment": "Correo a {{name}}",
-    "credentials": "Credenciales"
+    "credentials": "Credenciales",
+    "specialties": {
+      "pediatricFamilyChiropractor": "Quiropráctico Pediátrico y Familiar",
+      "prenatalPostnatalYogaCoach": "Entrenador de Yoga Prenatal y Posnatal",
+      "pediatricOralDevelopmentDentist": "Dentista de Desarrollo Oral Pediátrico",
+      "registeredDietitianCertifiedIntuitiveEatingCounselor": "Dietista Registrado y Consejero de Alimentación Intuitiva",
+      "sleepCoaching": "Entrenamiento de Sueño",
+      "sleepTrainer": "Entrenador de Sueño",
+      "familyDynamics": "Dinámicas Familiares",
+      "lifestyleCoaching": "Entrenamiento de Estilo de Vida",
+      "pelvicFloorCoaching": "Entrenamiento del Suelo Pélvico",
+      "nervousSystemRegulation": "Regulación del Sistema Nervioso",
+      "hormones": "Hormonas"
+    }
   },
   "profile": {
     "noProfileTitle": "Perfil no encontrado",
@@ -212,6 +257,121 @@
     "editProfile": "Editar perfil",
     "languagePreference": "Preferencia de idioma",
     "languagePreferenceDesc": "Whisperoo está disponible en inglés, español y vietnamita. Tu selección se recordará en todos tus dispositivos."
+  },
+  "profileEdit": {
+    "title": "Editar Perfil",
+    "profileImage": "Imagen de Perfil",
+    "basicInfo": "Información Básica",
+    "firstName": "Nombre",
+    "firstNamePlaceholder": "Tu nombre",
+    "email": "Correo Electrónico",
+    "emailNoChange": "El correo no se puede cambiar",
+    "role": "Rol",
+    "specifyRole": "Especifica tu rol",
+    "expectingStatus": "Estado de Embarazo",
+    "children": "Hijos",
+    "parentingStyles": "Estilos de Crianza",
+    "parentingStylesDesc": "Selecciona todos los que se apliquen a tu enfoque",
+    "topicsOfInterest": "Temas de Interés",
+    "topicsOfInterestDesc": "¿En qué te gustaría recibir ayuda?",
+    "personalContext": "Contexto Personal",
+    "personalContextDesc": "Cuéntanos sobre tu situación familiar y qué tipo de ayuda buscas",
+    "personalContextPlaceholder": "Comparte en qué necesitas ayuda, los desafíos que enfrentas o cualquier otra cosa que nos ayude a apoyarte mejor...",
+    "characters": "caracteres",
+    "cancel": "Cancelar",
+    "saving": "Guardando...",
+    "saveChanges": "Guardar Cambios",
+    "successTitle": "Perfil actualizado",
+    "successDesc": "Tu perfil ha sido guardado exitosamente.",
+    "errorTitle": "Error al guardar",
+    "errorDesc": "Por favor, inténtalo de nuevo.",
+    "roles": {
+      "mom": "Mamá",
+      "dad": "Papá",
+      "caregiver": "Cuidador/a",
+      "other": "Otro"
+    },
+    "expecting": {
+      "yes": "Sí",
+      "no": "No",
+      "trying": "Intentándolo"
+    },
+    "styleOptions": {
+      "gentle": "Suave y cariñoso",
+      "structured": "Estructurado y basado en rutinas",
+      "flexible": "Flexible y guiado por el niño",
+      "figuring": "Aún descubriéndolo"
+    },
+    "topicOptions": {
+      "sleep": "Sueño y rutinas",
+      "feeding": "Alimentación y nutrición",
+      "milestones": "Hitos del desarrollo",
+      "mentalHealth": "Salud mental y autocuidado",
+      "discipline": "Disciplina y límites",
+      "play": "Juego y aprendizaje",
+      "relationships": "Relaciones y coparentalidad",
+      "community": "Comunidad y apoyo"
+    }
+  },
+  "childrenManager": {
+    "loading": "Cargando hijos...",
+    "addChild": "Añadir Hijo",
+    "expecting": "Esperando",
+    "noChildren": "Aún no se han añadido hijos. Haz clic en 'Añadir Hijo' o 'Esperando' para empezar.",
+    "expectedBaby": "Bebé Esperado",
+    "child": "Hijo",
+    "babyNameLabel": "Nombre del bebé (o cómo le llamas)",
+    "babyNamePlaceholder": "Nombre del bebé",
+    "dueDate": "Fecha probable de parto",
+    "due": "Previsto: ",
+    "name": "Nombre",
+    "childNamePlaceholder": "Nombre del hijo",
+    "birthDate": "Fecha de nacimiento",
+    "age": "Edad: ",
+    "saving": "Guardando...",
+    "update": "Actualizar",
+    "save": "Guardar",
+    "confirmRemove": "¿Estás seguro de que quieres eliminar a {{name}}?",
+    "childSavedTitle": "Hijo guardado",
+    "childSavedDesc": "{{name}} ha sido guardado exitosamente.",
+    "childRemovedTitle": "Hijo eliminado",
+    "childRemovedDesc": "{{name}} ha sido eliminado.",
+    "failedLoadTitle": "Error al cargar hijos",
+    "failedLoadDesc": "Por favor, actualiza la página e inténtalo de nuevo.",
+    "failedSaveTitle": "Error al guardar",
+    "failedRemoveTitle": "Error al eliminar",
+    "errorTryAgain": "Por favor, inténtalo de nuevo."
+  },
+  "careChecklist": {
+    "header": "Lista de cuidados",
+    "schedule": "Programar",
+    "allDone": "¡Todo listo! Buen trabajo manteniendo al día el cuidado de {{name}}. 🎉",
+    "categories": {
+      "medical": "Médico",
+      "milestone": "Hito",
+      "safety": "Seguridad",
+      "nutrition": "Nutrición",
+      "general": "General"
+    },
+    "ageDescription": {
+      "weeksOld": "{{count}} semana",
+      "weeksOld_plural": "{{count}} semanas",
+      "monthsOld": "{{count}} mes",
+      "monthsOld_plural": "{{count}} meses",
+      "yearsMonthsOld": "{{years}} año, {{months}} mes",
+      "yearsMonthsOld_plural": "{{years}} años, {{months}} meses",
+      "recentlyArrived": "¡Recién llegado/a!",
+      "weeksPregnant": "{{gestational}} semanas de embarazo · Faltan {{remaining}} semanas"
+    }
+  },
+  "stages": {
+    "expecting_t1": "Primer Trimestre",
+    "expecting_t2": "Segundo Trimestre",
+    "expecting_t3": "Tercer Trimestre",
+    "newborn_0_3m": "Recién Nacido (0-3 meses)",
+    "infant_3_6m": "Lactante (3-6 meses)",
+    "infant_6_12m": "Bebé (6-12 meses)",
+    "toddler_12_24m": "Niño/a (1-2 años)"
   },
   "settings": {
     "noProfileTitle": "Perfil no encontrado",
@@ -416,7 +576,46 @@
     "saveSuccessDesc": "El contenido gratuito ha sido añadido a tu biblioteca.",
     "saveErrorTitle": "Error al guardar contenido",
     "saveErrorDesc": "Hubo un error al guardar el contenido. Por favor intenta de nuevo.",
-    "saveErrorUnexpected": "Ocurrió un error inesperado. Por favor intenta de nuevo."
+    "saveErrorUnexpected": "Ocurrió un error inesperado. Por favor intenta de nuevo.",
+    "searchPlaceholder": "Buscar productos por título o descripción...",
+    "search": "Buscar",
+    "foundResults": "🔍 Encontrados {{count}} producto(s) para \"{{query}}\"",
+    "page": "(Página {{page}})",
+    "clearSearch": "Limpiar búsqueda",
+    "allCategories": "Todas las Categorías",
+    "allTypes": "Todos los Tipos",
+    "sortBy": "Ordenar por",
+    "sort": {
+      "personalized": "Para Ti",
+      "newest": "Más Nuevos Primero",
+      "oldest": "Más Antiguos Primero",
+      "priceLowToHigh": "Precio: Menor a Mayor",
+      "priceHighToLow": "Precio: Mayor a Menor",
+      "highestRated": "Mejor Valorados",
+      "title": "Título: A a Z"
+    },
+    "types": {
+      "document": "Documento",
+      "video": "Video",
+      "audio": "Audio",
+      "course": "Curso",
+      "consultation": "Consulta"
+    },
+    "contentType": {
+      "bundle": "Paquete (Archivos relacionados)",
+      "course": "Curso (Aprendizaje estructurado)",
+      "collection": "Colección (Conjunto seleccionado)"
+    },
+    "categories": {
+      "courses": "Cursos",
+      "ebooks": "eBooks",
+      "toolkits": "Kits de herramientas",
+      "webinars": "Webinarios",
+      "checklists": "Listas de control",
+      "guides": "Guías",
+      "templates": "Plantillas",
+      "videos": "Videos"
+    }
   },
   "purchases": {
     "pageTitle": "Mi Contenido",

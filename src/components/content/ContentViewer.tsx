@@ -27,6 +27,7 @@ import {
 } from "@/services/products";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 
 interface ContentViewerProps {
   open: boolean;
@@ -43,6 +44,11 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   const [productFiles, setProductFiles] = useState<ProductFile[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const isMobile = useIsMobile();
+  const { i18n } = useTranslation();
+  const currentLang = i18n.language || 'en';
+  
+  const displayTitle = currentLang === 'es' && product.title_es ? product.title_es : currentLang === 'vi' && product.title_vi ? product.title_vi : product.title;
+  const displayDescription = currentLang === 'es' && product.description_es ? product.description_es : currentLang === 'vi' && product.description_vi ? product.description_vi : product.description;
 
   // Reset states when modal closes
   useEffect(() => {
@@ -153,7 +159,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
       return (
         <div className="flex flex-col items-center justify-center h-96 text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading content...</p>
+          <p className="text-gray-600">{t('contentViewer.loadingContent')}</p>
         </div>
       );
     }
@@ -169,7 +175,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
       return (
         <div className="space-y-6">
           <CourseViewer
-            title={product.title}
+            title={displayTitle}
             files={productFiles}
             thumbnail={product.thumbnail_url || undefined}
             className="w-full"
@@ -177,10 +183,10 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
 
           {/* Show all files display below the course viewer for download options */}
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold mb-4">All Files</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('contentViewer.allFiles')}</h3>
             <ProductFilesDisplay
               files={productFiles}
-              productTitle={product.title}
+              productTitle={displayTitle}
               isPurchased={true}
               onDownload={handleDownloadFile}
               onPreview={handlePreviewFile}
@@ -198,25 +204,24 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
         <div className="flex flex-col items-center justify-center h-96 text-center px-6">
           <FileText className="h-16 w-16 text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-700 mb-2">
-            Content Not Available
+            {t('contentViewer.contentNotAvailable')}
           </h3>
           <p className="text-gray-500 mb-4">
-            This content is currently being processed or the file is not
-            available.
+            {t('contentViewer.contentNotAvailableDesc')}
           </p>
           <div className="text-left bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-md">
             <p className="text-sm text-gray-700 mb-2 font-medium">
-              Possible reasons:
+              {t('contentViewer.possibleReasons')}
             </p>
             <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-              <li>The file hasn't been uploaded yet</li>
-              <li>The file is still being processed</li>
-              <li>There was an error during upload</li>
-              <li>The storage URL is not configured correctly</li>
+              <li>{t('contentViewer.reasonNotUploaded')}</li>
+              <li>{t('contentViewer.reasonProcessing')}</li>
+              <li>{t('contentViewer.reasonError')}</li>
+              <li>{t('contentViewer.reasonUrl')}</li>
             </ul>
           </div>
           <Button variant="outline" onClick={onClose} className="mt-6">
-            Close
+            {t('contentViewer.close')}
           </Button>
         </div>
       );
@@ -228,7 +233,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
         <div className="w-full">
           <VideoPlayer
             src={contentUrl}
-            title={product.title}
+            title={displayTitle}
             poster={product.thumbnail_url || undefined}
             className="w-full aspect-video"
             controls={true}
@@ -244,14 +249,14 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           <div className="w-full rounded-lg border bg-gray-50 p-6 text-center">
             <FileText className="h-10 w-10 mx-auto text-gray-400 mb-3" />
             <h3 className="text-base font-semibold text-gray-900 mb-1">
-              Open Document
+              {t('contentViewer.openDocument')}
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              For the best mobile experience, this document opens in a new tab.
+              {t('contentViewer.documentOpenDesc')}
             </p>
             <Button onClick={() => window.open(contentUrl, "_blank")}>
               <ExternalLink className="h-4 w-4 mr-2" />
-              Open in New Tab
+              {t('contentViewer.openInNewTab')}
             </Button>
           </div>
         );
@@ -288,10 +293,10 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
         <div className="w-full rounded-lg border bg-gray-50 p-8 text-center">
           <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Open Document
+            {t('contentViewer.openDocument')}
           </h3>
           <p className="text-sm text-gray-600 mb-6">
-            This document opens in a new tab for the best reading experience.
+            {t('contentViewer.documentOpenDesc')}
           </p>
 
           <Button
@@ -300,7 +305,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
             }
           >
             <ExternalLink className="h-4 w-4 mr-2" />
-            Open in New Tab
+            {t('contentViewer.openInNewTab')}
           </Button>
         </div>
       );
@@ -315,7 +320,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
         <div className="w-full rounded-lg bg-gray-50">
           <img
             src={contentUrl}
-            alt={product.title}
+            alt={displayTitle}
             className="w-full h-auto object-contain"
           />
         </div>
@@ -327,10 +332,10 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
       <div className="flex flex-col items-center justify-center h-96 text-center bg-gray-50 rounded-lg">
         <FileText className="h-16 w-16 text-gray-400 mb-4" />
         <h3 className="text-lg font-semibold text-gray-700 mb-2">
-          Preview Not Available
+          {t('contentViewer.previewNotAvailable')}
         </h3>
         <p className="text-gray-500 mb-6">
-          This file type cannot be previewed in the browser.
+          {t('contentViewer.previewNotAvailableDesc')}
         </p>
         <div className="flex gap-3">
           <Button
@@ -338,7 +343,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
             variant="outline"
           >
             <ExternalLink className="h-4 w-4 mr-2" />
-            Open in New Tab
+            {t('contentViewer.openInNewTab')}
           </Button>
         </div>
       </div>
@@ -393,10 +398,10 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0 pr-4">
               <DialogTitle className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
-                {product.title}
+                {displayTitle}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                View {product.product_type} content for {product.title}
+                View {product.product_type} content for {displayTitle}
               </DialogDescription>
               <div className="flex items-center gap-2 flex-wrap text-xs">
                 {product.file_size_mb && (
@@ -436,10 +441,10 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
         {product.description && (
           <div className="px-4 pb-4 border-t bg-gray-50/50">
             <h4 className="font-medium text-gray-900 mb-2 mt-3 text-sm">
-              About This Content
+              {t('contentViewer.aboutContent')}
             </h4>
             <p className="text-gray-600 text-sm leading-relaxed">
-              {product.description}
+              {displayDescription}
             </p>
           </div>
         )}

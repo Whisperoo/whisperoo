@@ -106,6 +106,20 @@ const ExpertProfiles: React.FC = () => {
     ...new Set(experts.flatMap((expert) => expert.expert_specialties || [])),
   ];
 
+  const translateSpecialty = (specialty: string) => {
+    if (!specialty) return '';
+    
+    // Convert e.g. "Pediatric & Family Chiropractor" to "pediatricFamilyChiropractor"
+    const key = specialty
+      .replace(/[^a-zA-Z0-9 ]/g, '') // remove special characters like &
+      .split(' ')
+      .filter(Boolean)
+      .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join('');
+
+    return t(`experts.specialties.${key}`, specialty);
+  };
+
   const handleExpertClick = (expertId: string) => {
     navigate(`/experts/${expertId}`);
   };
@@ -166,7 +180,7 @@ const ExpertProfiles: React.FC = () => {
               .filter((specialty) => specialty && specialty.trim())
               .map((specialty) => (
                 <option key={specialty} value={specialty}>
-                  {specialty}
+                  {translateSpecialty(specialty)}
                 </option>
               ))}
           </select>
@@ -255,7 +269,7 @@ const ExpertProfiles: React.FC = () => {
                         {expert.first_name}
                       </h3>
                       <p className="text-indigo-600 font-medium text-sm">
-                        {expert.expert_specialties?.[0] || t('experts.generalExpert')}
+                        {translateSpecialty(expert.expert_specialties?.[0] || '') || t('experts.generalExpert')}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex items-center">

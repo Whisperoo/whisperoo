@@ -12,6 +12,7 @@ import {
   deleteFiles,
 } from "@/services/cloudflare-storage";
 import { STORAGE_PATHS } from "@/config/cloudflare";
+import { translateToAllLanguages } from "./translationService";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type ProductInsert = Database["public"]["Tables"]["products"]["Insert"];
@@ -516,6 +517,26 @@ export const productService = {
   // ... rest of your productService methods remain unchanged ...
   // Create a new product
   async createProduct(product: ProductInsert): Promise<Product> {
+    if (product.title) {
+      try {
+        const titleTranslations = await translateToAllLanguages(product.title);
+        product.title_es = titleTranslations.es;
+        product.title_vi = titleTranslations.vi;
+      } catch (e) {
+        console.error('Failed to translate product title:', e);
+      }
+    }
+
+    if (product.description) {
+      try {
+        const descTranslations = await translateToAllLanguages(product.description);
+        product.description_es = descTranslations.es;
+        product.description_vi = descTranslations.vi;
+      } catch (e) {
+        console.error('Failed to translate product description:', e);
+      }
+    }
+
     const { data, error } = await supabase
       .from("products")
       .insert(product)
@@ -596,6 +617,26 @@ export const productService = {
     productId: string,
     updates: Partial<Product>,
   ): Promise<Product> {
+    if (updates.title) {
+      try {
+        const titleTranslations = await translateToAllLanguages(updates.title);
+        updates.title_es = titleTranslations.es;
+        updates.title_vi = titleTranslations.vi;
+      } catch (e) {
+        console.error('Failed to translate product title:', e);
+      }
+    }
+
+    if (updates.description) {
+      try {
+        const descTranslations = await translateToAllLanguages(updates.description);
+        updates.description_es = descTranslations.es;
+        updates.description_vi = descTranslations.vi;
+      } catch (e) {
+        console.error('Failed to translate product description:', e);
+      }
+    }
+
     const { data, error } = await supabase
       .from("products")
       .update(updates)

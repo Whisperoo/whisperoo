@@ -31,6 +31,7 @@ import { ProductUploadModal } from '@/components/products/ProductUploadModal';
 import { ProductEditModal } from '@/components/products/ProductEditModal';
 import { ProductCard } from '@/components/products/ProductCard';
 import { ExpertProductCard } from '@/components/products/ExpertProductCard';
+import { useTranslation } from 'react-i18next';
 
 interface ExpertProductsSectionProps {
   expertId: string;
@@ -44,6 +45,7 @@ export const ExpertProductsSection: React.FC<ExpertProductsSectionProps> = ({
   expertAvailabilityStatus
 }) => {
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const isOwnProfile = profile?.id === expertId;
@@ -105,7 +107,7 @@ export const ExpertProductsSection: React.FC<ExpertProductsSectionProps> = ({
       <Card>
         <CardHeader>
           <CardTitle>
-            {expertName ? `${expertName}'s Products` : 'Products'}
+            {expertName ? `${expertName}'s ${t('products.pageTitle').split(' ')[1]}` : t('products.pageTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -122,7 +124,7 @@ export const ExpertProductsSection: React.FC<ExpertProductsSectionProps> = ({
           ) : !filteredProducts || filteredProducts.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No products available</p>
+              <p>{t('products.notFound') || 'No products available'}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
