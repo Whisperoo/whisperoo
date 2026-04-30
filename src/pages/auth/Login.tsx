@@ -92,17 +92,8 @@ const Login: React.FC = () => {
     try {
       // Determine the correct redirect URL based on environment
       const getRedirectUrl = () => {
-        const isLocalhost =
-          window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1";
-
-        if (isLocalhost) {
-          // Development
-          return "http://localhost:8080/update-password";
-        } else {
-          // Production - use your Railway domain
-          return "https://whisperoo-production.up.railway.app/update-password";
-        }
+        // Always use the current origin — works on localhost, Fly.io, or any deployment
+        return `${window.location.origin}/update-password`;
       };
 
       const redirectUrl = getRedirectUrl();
