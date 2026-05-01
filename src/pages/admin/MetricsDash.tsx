@@ -31,12 +31,10 @@ interface DashboardData {
     mau_delta: number | null;
     avg_session_minutes: number | null;
     avg_session_delta: number | null;
-    lactation_support_pct: number | null;
-    lactation_support_delta: number | null;
-    education_engagement_pct: number | null;
-    education_engagement_delta: number | null;
-    checklist_completion_pct: number | null;
-    checklist_completion_delta: number | null;
+    lactation_appointments: number | null;
+    lactation_engagement: number | null;
+    hospital_resource_eng: number | null;
+    checklist_engagement: number | null;
   };
   enrollment_trend: { month: string; count: number }[];
   escalation_trend: { month: string; rate: number }[];
@@ -57,8 +55,16 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  // Initialize to last 30 days by default
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+  });
   const { t } = useTranslation();
 
   const fetchData = useCallback(async () => {
@@ -243,25 +249,25 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         <KpiCard
           title="Lactation Support"
           subtitle="Consults & Resources"
-          value={k?.lactation_support_pct ?? null}
-          valueSuffix="%"
-          delta={k?.lactation_support_delta ?? undefined}
+          value={k?.lactation_engagement ?? null}
+          valueSuffix=""
+          delta={undefined}
           tooltip="Engagement with Lactation resources and consultations"
         />
         <KpiCard
           title="Education Engagement"
           subtitle="Hospital Resources"
-          value={k?.education_engagement_pct ?? null}
-          valueSuffix="%"
-          delta={k?.education_engagement_delta ?? undefined}
+          value={k?.hospital_resource_eng ?? null}
+          valueSuffix=""
+          delta={undefined}
           tooltip="Views, saves, and downloads of designated hospital resources"
         />
         <KpiCard
           title="Checklist Completion"
           subtitle="Total Completed"
-          value={k?.checklist_completion_pct ?? null}
+          value={k?.checklist_engagement ?? null}
           valueSuffix=""
-          delta={k?.checklist_completion_delta ?? undefined}
+          delta={undefined}
           tooltip="Total number of checklist items completed by users"
         />
       </div>

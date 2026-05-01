@@ -21,6 +21,8 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [newHospitalName, setNewHospitalName] = useState('');
+  const [creating, setCreating] = useState(false);
   const { t } = useTranslation();
 
   // Form state mirrors TenantConfig
@@ -89,11 +91,54 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
   const updateDept = (i: number, field: keyof TenantDepartment, val: string) =>
     setDepartments((prev) => prev.map((d, idx) => (idx === i ? { ...d, [field]: val } : d)));
 
+  const handleCreateNewTenant = async () => {
+    if (!newHospitalName.trim()) return;
+    setCreating(true);
+    try {
+      const { data, error } = await supabase
+        .from('tenants')
+        .insert([{ name: newHospitalName.trim(), config: {}, is_active: true }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Reload the page so the dropdown updates and the new hospital can be selected
+      window.location.reload();
+    } catch (err) {
+      console.error('Error creating tenant:', err);
+      alert('Failed to create hospital');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   if (!tenantId) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-3">
-        <Building2 className="w-10 h-10 opacity-30" />
-        <p className="text-sm">{t('admin.config.selectHospital')}</p>
+      <div className="flex flex-col items-center justify-center py-24 text-gray-800 gap-6 max-w-md mx-auto">
+        <div className="flex flex-col items-center gap-2">
+          <Building2 className="w-12 h-12 text-blue-500 mb-2" />
+          <h2 className="text-xl font-semibold">Create New Hospital</h2>
+          <p className="text-sm text-gray-500 text-center">Enter a name below to create a new hospital tenant, or select an existing one from the top dropdown.</p>
+        </div>
+        
+        <div className="w-full flex gap-2 mt-4">
+          <input
+            type="text"
+            value={newHospitalName}
+            onChange={(e) => setNewHospitalName(e.target.value)}
+            placeholder="E.g. Memorial Health System"
+            className="flex-1 text-sm border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onClick={handleCreateNewTenant}
+            disabled={!newHospitalName.trim() || creating}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            Create
+          </button>
+        </div>
       </div>
     );
   }
@@ -235,8 +280,41 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
         </div>
       </section>
 
-      {/* ── Save ── */}
-      <div className="flex items-center gap-3">
+      {/* ── QR Code Generator ── */}
+      <section className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 space-y-5">
+        <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+          <Link className="w-4 h-4 text-blue-500" /> Hospital QR Code
+        </h3>
+        <p className="text-sm text-gray-500">
+          Print or display this QR code in the hospital. When users scan it, they will automatically be affiliated with {tenant?.name} during signup.
+        </p>
+        <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+          <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+            <img 
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://whisperoo.app/signup?tenant_id=${tenantId}`)}`} 
+              alt="Hospital QR Code"
+              className="w-32 h-32"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium text-gray-600">Signup Link:</p>
+            <code className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-800 break-all">
+              https://whisperoo.app/signup?tenant_id={tenantId}
+            </code>
+            <a 
+              href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(`https://whisperoo.app/signup?tenant_id=${tenantId}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-2 flex items-center gap-1"
+            >
+              Download High-Res QR Code &rarr;
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Actions ── */}
+      <div className="flex items-center justify-end pt-4 pb-12">
         <button
           onClick={handleSave}
           disabled={saving}

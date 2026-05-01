@@ -30,19 +30,18 @@ BEGIN
       p.title,
       p.product_type,
       p.is_hospital_resource,
-      COALESCE(SUM(CASE WHEN pa.event_type = 'view' THEN 1 ELSE 0 END), 0) as views,
-      COALESCE(SUM(CASE WHEN pa.event_type = 'download' THEN 1 ELSE 0 END), 0) as downloads,
-      COALESCE(SUM(CASE WHEN pa.event_type = 'preview' THEN 1 ELSE 0 END), 0) as previews,
-      (SELECT COUNT(*) FROM purchases pu JOIN profiles pf ON pf.id = pu.user_id WHERE pu.product_id = p.id AND (p_tenant_id IS NULL OR pf.tenant_id = p_tenant_id) AND (p_start_date IS NULL OR pu.created_at::date >= p_start_date) AND (p_end_date IS NULL OR pu.created_at::date <= p_end_date)) as purchases,
-      (SELECT COALESCE(SUM(p.price), 0) FROM purchases pu JOIN profiles pf ON pf.id = pu.user_id WHERE pu.product_id = p.id AND (p_tenant_id IS NULL OR pf.tenant_id = p_tenant_id) AND (p_start_date IS NULL OR pu.created_at::date >= p_start_date) AND (p_end_date IS NULL OR pu.created_at::date <= p_end_date)) as generated_revenue
+      COUNT(pu.id) as total_purchases,
+      COALESCE(SUM(pu.amount), 0) as generated_revenue
     FROM products p
-    LEFT JOIN product_analytics pa ON pa.product_id = p.id
-    LEFT JOIN profiles prof ON prof.id = pa.user_id
-    WHERE (p_tenant_id IS NULL OR prof.tenant_id = p_tenant_id OR prof.id IS NULL)
-      AND (p_start_date IS NULL OR pa.created_at::date >= p_start_date)
-      AND (p_end_date IS NULL OR pa.created_at::date <= p_end_date)
+    LEFT JOIN purchases pu ON pu.product_id = p.id
+      AND pu.status = 'completed'
+      AND (p_start_date IS NULL OR pu.purchased_at::date >= p_start_date)
+      AND (p_end_date IS NULL OR pu.purchased_at::date <= p_end_date)
+    LEFT JOIN profiles prof ON prof.id = pu.user_id
+    WHERE p.is_active = true
+      AND (p_tenant_id IS NULL OR prof.tenant_id = p_tenant_id OR prof.id IS NULL)
     GROUP BY p.id, p.title, p.product_type, p.is_hospital_resource
-    ORDER BY views DESC
+    ORDER BY total_purchases DESC
   ) t
   CROSS JOIN LATERAL (
     SELECT jsonb_build_object(
@@ -50,11 +49,10 @@ BEGIN
       'title', title,
       'product_type', product_type,
       'is_hospital_resource', is_hospital_resource,
-      'views', views,
-      'downloads', downloads,
-      'previews', previews,
-      'purchases', purchases,
-      'generated_revenue', generated_revenue
+      'total_views', 0,
+      'total_downloads', total_purchases,
+      'total_saves', 0,
+      'total_revenue', generated_revenue
     ) AS row_json
   ) j;
 

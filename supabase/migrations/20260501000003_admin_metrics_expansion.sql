@@ -137,7 +137,7 @@ BEGIN
   SELECT COUNT(DISTINCT pu.user_id) INTO v_free_users
   FROM purchases pu JOIN profiles p ON p.id = pu.user_id
   WHERE (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
-    AND pu.created_at >= v_effective_start AND pu.created_at <= v_effective_end;
+    AND pu.purchased_at >= v_effective_start AND pu.purchased_at <= v_effective_end;
 
   SELECT COUNT(DISTINCT pu.user_id) INTO v_paid_users
   FROM purchases pu
@@ -145,7 +145,7 @@ BEGIN
   JOIN profiles  p ON  p.id = pu.user_id
   WHERE pr.price > 0
     AND (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
-    AND pu.created_at >= v_effective_start AND pu.created_at <= v_effective_end;
+    AND pu.purchased_at >= v_effective_start AND pu.purchased_at <= v_effective_end;
 
   SELECT COUNT(DISTINCT pu.user_id) INTO v_consult_users
   FROM purchases pu
@@ -153,7 +153,7 @@ BEGIN
   JOIN profiles    p ON  p.id = pu.user_id
   WHERE pr.product_type = 'consultation'
     AND (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
-    AND pu.created_at >= v_effective_start AND pu.created_at <= v_effective_end;
+    AND pu.purchased_at >= v_effective_start AND pu.purchased_at <= v_effective_end;
 
   -- 4. Postpartum checklist completion rate
   SELECT
@@ -242,24 +242,25 @@ BEGIN
   WHERE pr.product_type = 'consultation'
     AND pr.tags::text ILIKE '%lactation%'
     AND (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
-    AND pu.created_at >= v_effective_start AND pu.created_at <= v_effective_end;
+    AND pu.purchased_at >= v_effective_start AND pu.purchased_at <= v_effective_end;
 
+  -- Lactation engagement: count purchases of lactation-tagged resources
   SELECT COUNT(*) INTO v_lactation_eng
-  FROM product_analytics pa
-  JOIN products pr ON pr.id = pa.product_id
-  JOIN profiles p ON p.id = pa.user_id
+  FROM purchases pu
+  JOIN products pr ON pr.id = pu.product_id
+  JOIN profiles p ON p.id = pu.user_id
   WHERE pr.tags::text ILIKE '%lactation%'
     AND (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
-    AND pa.created_at >= v_effective_start AND pa.created_at <= v_effective_end;
+    AND pu.purchased_at >= v_effective_start AND pu.purchased_at <= v_effective_end;
 
-  -- NEW 9. Education Engagement Metrics
+  -- NEW 9. Education Engagement Metrics (hospital resource purchases/saves)
   SELECT COUNT(*) INTO v_hosp_res_eng
-  FROM product_analytics pa
-  JOIN products pr ON pr.id = pa.product_id
-  JOIN profiles p ON p.id = pa.user_id
+  FROM purchases pu
+  JOIN products pr ON pr.id = pu.product_id
+  JOIN profiles p ON p.id = pu.user_id
   WHERE pr.is_hospital_resource = true
     AND (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
-    AND pa.created_at >= v_effective_start AND pa.created_at <= v_effective_end;
+    AND pu.purchased_at >= v_effective_start AND pu.purchased_at <= v_effective_end;
 
   -- NEW 10. Checklist Engagement
   SELECT COUNT(*) INTO v_checklist_eng
