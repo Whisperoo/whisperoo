@@ -26,6 +26,7 @@ import { supabase } from "@/lib/supabase";
 import { ContentViewer } from "@/components/content/ContentViewer";
 import { ProductContentPreview } from "@/components/products/ProductContentPreview";
 import { ProductPreviewModal } from "@/components/products/ProductPreviewModal";
+import { ProductReviewSection } from "@/components/products/ProductReviewSection";
 import { toast } from "@/components/ui/sonner";
 import { useTranslation } from "react-i18next";
 export const ProductDetailPage: React.FC = () => {
@@ -530,6 +531,14 @@ export const ProductDetailPage: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Reviews Section */}
+        {productId && (
+          <ProductReviewSection
+            productId={productId}
+            isPurchased={isPurchased}
+          />
+        )}
 
         {/* Content Viewer Modal (Full Access) */}
         {product && (
