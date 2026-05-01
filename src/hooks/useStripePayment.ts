@@ -5,6 +5,8 @@ import { useToast } from '@/hooks/use-toast';
 
 interface CreatePaymentIntentRequest {
     product_id: string;
+    discount_code?: string;
+    gift_info?: { recipient_email: string; recipient_name: string; gift_message: string };
 }
 
 interface CreatePaymentIntentResponse {
@@ -27,7 +29,9 @@ export const useStripePayment = () => {
     const [error, setError] = useState<string | null>(null);
 
     const createPaymentIntent = async (
-        productId: string
+        productId: string,
+        discountCode?: string,
+        giftInfo?: { recipientEmail: string; recipientName: string; giftMessage: string }
     ): Promise<CreatePaymentIntentResponse | null> => {
         if (!user) {
             setError('User not authenticated');
@@ -50,10 +54,19 @@ export const useStripePayment = () => {
                 throw new Error('No authentication token found');
             }
 
+            const body: CreatePaymentIntentRequest = { product_id: productId, discount_code: discountCode };
+            if (giftInfo) {
+                body.gift_info = {
+                    recipient_email: giftInfo.recipientEmail,
+                    recipient_name: giftInfo.recipientName,
+                    gift_message: giftInfo.giftMessage
+                };
+            }
+
             const { data, error: functionError } = await supabase.functions.invoke<CreatePaymentIntentResponse>(
                 'create-payment',
                 {
-                    body: { product_id: productId } as CreatePaymentIntentRequest,
+                    body,
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },

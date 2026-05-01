@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Eye, EyeOff, Loader2, PackageSearch } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { TenantConfig } from '@/contexts/TenantContext';
+import { useTranslation } from 'react-i18next';
 
 interface ContentCurationPanelProps {
   tenantId: string | null;
@@ -21,6 +22,7 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
   const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -95,7 +97,7 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
     return (
       <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-3">
         <PackageSearch className="w-10 h-10 opacity-30" />
-        <p className="text-sm">Select a hospital to manage its content visibility.</p>
+        <p className="text-sm">{t('admin.content.selectHospital')}</p>
       </div>
     );
   }
@@ -113,10 +115,10 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Content Visibility</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{t('admin.content.title')}</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Toggle products on or off for this hospital's users.{' '}
-          <span className="font-medium text-gray-700">{enabledCount} of {products.length} enabled.</span>
+          {t('admin.content.description')}{' '}
+          <span className="font-medium text-gray-700">{t('admin.content.enabledCount', { enabled: enabledCount, total: products.length })}</span>
         </p>
       </div>
 
@@ -124,7 +126,7 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
         {products.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-2">
             <PackageSearch className="w-8 h-8 opacity-30" />
-            <p className="text-sm">No active products found.</p>
+            <p className="text-sm">{t('admin.content.noProducts')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -165,7 +167,7 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
                         {product.product_type}
                       </span>
                       <span className="text-xs text-gray-400">
-                        {product.price === 0 ? 'Free' : `$${product.price}`}
+                        {product.price === 0 ? t('admin.content.free') : `$${product.price}`}
                       </span>
                     </div>
                   </div>
@@ -174,7 +176,7 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
                   <button
                     onClick={() => handleToggle(product.id)}
                     disabled={isToggling}
-                    title={isDisabled ? 'Enable for this hospital' : 'Disable for this hospital'}
+                    title={isDisabled ? t('admin.content.enableForHospital') : t('admin.content.disableForHospital')}
                     className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${
                       isDisabled
                         ? 'border-gray-200 text-gray-400 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50'
@@ -184,9 +186,9 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
                     {isToggling ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : isDisabled ? (
-                      <><EyeOff className="w-3.5 h-3.5" /> Hidden</>
+                      <><EyeOff className="w-3.5 h-3.5" /> {t('admin.content.hidden')}</>
                     ) : (
-                      <><Eye className="w-3.5 h-3.5" /> Visible</>
+                      <><Eye className="w-3.5 h-3.5" /> {t('admin.content.visible')}</>
                     )}
                   </button>
                 </div>

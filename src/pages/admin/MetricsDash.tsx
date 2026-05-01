@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { RefreshCw, Users, Clock, Activity, LineChart, AlertTriangle, Sparkles, MessageSquare, ArrowUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from 'react-i18next';
 import KpiCard from './KpiCard';
 import EnrollmentTrendChart from './EnrollmentTrendChart';
 import SurveyCompletionChart from './SurveyCompletionChart';
@@ -30,18 +31,35 @@ interface DashboardData {
     mau_delta: number | null;
     avg_session_minutes: number | null;
     avg_session_delta: number | null;
+    lactation_support_pct: number | null;
+    lactation_support_delta: number | null;
+    education_engagement_pct: number | null;
+    education_engagement_delta: number | null;
+    checklist_completion_pct: number | null;
+    checklist_completion_delta: number | null;
   };
   enrollment_trend: { month: string; count: number }[];
   escalation_trend: { month: string; rate: number }[];
   feature_usage: { feature: string; count: number; pct: number }[];
   concern_themes: { category: string; count: number }[];
   checklist_trend: { month: string; rate: number }[];
+  resource_utilization?: {
+    product_id: string;
+    title: string;
+    total_views: number;
+    total_downloads: number;
+    total_saves: number;
+    total_revenue: number;
+  }[];
 }
 
 const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const { t } = useTranslation();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -49,16 +67,34 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
     try {
       const { data: result, error: rpcError } = await supabase.rpc(
         'fn_get_admin_dashboard',
-        { p_tenant_id: tenantId ?? null }
+        { 
+          p_tenant_id: tenantId ?? null,
+          p_start_date: startDate ? `${startDate}T00:00:00Z` : null,
+          p_end_date: endDate ? `${endDate}T23:59:59Z` : null
+        }
       );
       if (rpcError) throw rpcError;
-      setData(result as DashboardData);
+      
+      const { data: resourceData, error: resourceError } = await supabase.rpc(
+        'fn_get_resource_utilization',
+        { 
+          p_tenant_id: tenantId ?? null,
+          p_start_date: startDate ? `${startDate}T00:00:00Z` : null,
+          p_end_date: endDate ? `${endDate}T23:59:59Z` : null
+        }
+      );
+      if (resourceError) throw resourceError;
+      
+      setData({
+        ...(result as DashboardData),
+        resource_utilization: resourceData || []
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
-  }, [tenantId]);
+  }, [tenantId, startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -66,7 +102,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
     return (
       <div className="flex items-center justify-center py-24 text-gray-400">
         <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-        Loading dashboard data...
+        {t('admin.metrics.loadingDashboard')}
       </div>
     );
   }
@@ -79,7 +115,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           onClick={fetchData}
           className="text-xs text-gray-500 underline hover:text-gray-700"
         >
-          Try again
+          {t('admin.metrics.tryAgain')}
         </button>
       </div>
     );
@@ -90,93 +126,143 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
   return (
     <div className="space-y-8">
 
-      {/* ── Refresh button ── */}
-      <div className="flex justify-end -mb-4">
+      {/* ── Header Controls ── */}
+      <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4 -mb-4">
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col">
+            <label className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-1">Start Date</label>
+            <input 
+              type="date" 
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="text-sm border border-gray-200 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-1">End Date</label>
+            <input 
+              type="date" 
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="text-sm border border-gray-200 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            />
+          </div>
+          {/* <button 
+            onClick={fetchData}
+            className="mt-5 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-100 transition-colors"
+          >
+            Apply
+          </button> */}
+        </div>
         <button
           onClick={fetchData}
           className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
-          Refresh
+          {t('admin.metrics.refresh')}
         </button>
       </div>
 
       {/* ── KPI Row 1: Enrollment / Survey / Escalation ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KpiCard
-          title="Total Patients Enrolled"
+          title={t('admin.metrics.totalEnrolled')}
           value={k?.total_enrolled ?? null}
           delta={k?.total_enrolled_delta ?? undefined}
-          tooltip="Count of distinct profiles with onboarded = true linked to this hospital tenant. Delta compares current calendar month vs the previous month."
+          tooltip={t('admin.metrics.tooltips.totalEnrolled')}
           subMetrics={
             k?.total_enrolled
               ? [
-                  { label: 'Prenatal opt-in', value: '1,623', delta: 9.0, hasInfo: true },
-                  { label: 'Discharge opt-in', value: '1,224', delta: 5.1, hasInfo: true },
+                  { label: t('admin.metrics.prenatalOptIn'), value: '1,623', delta: 9.0, hasInfo: true },
+                  { label: t('admin.metrics.dischargeOptIn'), value: '1,224', delta: 5.1, hasInfo: true },
                 ]
               : undefined
           }
         />
         <KpiCard
-          title="Survey Completion Rate"
-          subtitle="24-48 hrs post-discharge"
+          title={t('admin.metrics.surveyCompletion')}
+          subtitle={t('admin.metrics.surveySubtitle')}
           value={k?.survey_completion_pct ?? null}
           valueSuffix="%"
           scaffolded={true}
-          tooltip="% of enrolled patients who have completed at least one care checklist item within 48 hours of their recorded discharge date. Estimated until Phreesia integration."
+          tooltip={t('admin.metrics.tooltips.surveyCompletion')}
         />
         <KpiCard
-          title="Escalation Signals"
-          subtitle='"Meet with Your Doctor" flags'
+          title={t('admin.metrics.escalationSignals')}
+          subtitle={t('admin.metrics.escalationSubtitle')}
           value={k?.escalation_pct ?? null}
           valueSuffix="%"
           delta={k?.escalation_delta ?? undefined}
-          tooltip="% of AI conversations in the period where the AI appended a clinical escalation signal (e.g. 'please consult your doctor'). Sourced from admin_ai_audit_trail.escalation = true."
+          tooltip={t('admin.metrics.tooltips.escalation')}
         />
       </div>
 
       {/* ── KPI Row 2: Resources / Expert / Phreesia ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <KpiCard
-          title="Free Resources Saved"
+          title={t('admin.metrics.freeResourcesSaved')}
           value={k?.free_resources_pct ?? null}
           valueSuffix="%"
           delta={undefined}
-          tooltip="% of active users who have saved (bookmarked) at least one free resource. Sourced from user_saved_resources joined to products where price = 0."
+          tooltip={t('admin.metrics.tooltips.freeResources')}
         />
         <KpiCard
-          title="Resources Purchased"
+          title={t('admin.metrics.resourcesPurchased')}
           value={k?.resources_purchased_pct ?? null}
           valueSuffix="%"
           delta={undefined}
-          tooltip="% of active users who have completed at least one paid product purchase. Sourced from user_purchases table."
+          tooltip={t('admin.metrics.tooltips.resourcesPurchased')}
         />
         <KpiCard
-          title="Expert Support Used"
-          subtitle="1:1 consultations"
+          title={t('admin.metrics.expertSupport')}
+          subtitle={t('admin.metrics.expertSupportSubtitle')}
           value={k?.expert_support_pct ?? null}
           valueSuffix="%"
           delta={undefined}
-          tooltip="% of active users who have sent at least one message to a verified expert. Sourced from chat_messages where recipient account_type = 'expert'."
+          tooltip={t('admin.metrics.tooltips.expertSupport')}
         />
         <KpiCard
-          title="Prenatal Risk Assessment"
-          subtitle="Completion rate"
+          title={t('admin.metrics.prenatalRisk')}
+          subtitle={t('admin.metrics.prenatalRiskSubtitle')}
           value={k?.phreesia_risk_pct ?? null}
           valueSuffix="%"
           scaffolded={true}
-          tooltip="% of prenatal patients who completed the Phreesia intake risk screening form. Estimated until Phreesia integration is live."
+          tooltip={t('admin.metrics.tooltips.prenatalRisk')}
         />
       </div>
 
-      {/* ── KPI Row 3: Postpartum ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* ── KPI Row 3: Postpartum & Engagement ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <KpiCard
-          title="Postpartum Visits Completed"
+          title={t('admin.metrics.postpartumVisits')}
           value={k?.postpartum_visits_pct ?? null}
           valueSuffix="%"
           delta={undefined}
-          tooltip="% of post-delivery patients who have completed their 6-week postpartum follow-up checklist item. Sourced from care_checklist_completions."
+          tooltip={t('admin.metrics.tooltips.postpartumVisits')}
+        />
+        <KpiCard
+          title="Lactation Support"
+          subtitle="Consults & Resources"
+          value={k?.lactation_support_pct ?? null}
+          valueSuffix="%"
+          delta={k?.lactation_support_delta ?? undefined}
+          tooltip="Engagement with Lactation resources and consultations"
+        />
+        <KpiCard
+          title="Education Engagement"
+          subtitle="Hospital Resources"
+          value={k?.education_engagement_pct ?? null}
+          valueSuffix="%"
+          delta={k?.education_engagement_delta ?? undefined}
+          tooltip="Views, saves, and downloads of designated hospital resources"
+        />
+        <KpiCard
+          title="Checklist Completion"
+          subtitle="Total Completed"
+          value={k?.checklist_completion_pct ?? null}
+          valueSuffix=""
+          delta={k?.checklist_completion_delta ?? undefined}
+          tooltip="Total number of checklist items completed by users"
         />
       </div>
 
@@ -185,14 +271,14 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
           <div className="flex items-center gap-2 mb-4">
             <Users className="w-4 h-4 text-blue-500" />
-            <p className="text-sm font-semibold text-gray-700">Patient Enrollment Trend</p>
+            <p className="text-sm font-semibold text-gray-700">{t('admin.metrics.enrollmentTrend')}</p>
           </div>
           <EnrollmentTrendChart data={data?.enrollment_trend ?? []} />
         </div>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
           <div className="flex items-center gap-2 mb-4">
             <LineChart className="w-4 h-4 text-green-500" />
-            <p className="text-sm font-semibold text-gray-700">Survey Completion Rate (%)</p>
+            <p className="text-sm font-semibold text-gray-700">{t('admin.metrics.surveyCompletionRate')}</p>
           </div>
           <SurveyCompletionChart data={data?.checklist_trend ?? []} />
         </div>
@@ -202,51 +288,51 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
         <div className="flex items-center gap-2 mb-4">
           <AlertTriangle className="w-4 h-4 text-orange-500" />
-          <p className="text-sm font-semibold text-gray-700">Escalation Signals Trend (%)</p>
+          <p className="text-sm font-semibold text-gray-700">{t('admin.metrics.escalationTrend')}</p>
         </div>
         <EscalationTrendChart data={data?.escalation_trend ?? []} />
       </div>
 
       {/* ── Aggregate Usage Analytics ── */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 tracking-tight">Aggregate Usage Analytics</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 tracking-tight">{t('admin.metrics.aggregateUsage')}</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column: DAU / MAU / Session */}
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
               <KpiCard
-                title="Daily Active Users"
+                title={t('admin.metrics.dau')}
                 value={k?.dau ?? null}
                 delta={k?.dau_delta ?? undefined}
-                tooltip="Count of distinct user sessions recorded in the past 24 hours. A session is counted when a user loads any authenticated page."
+                tooltip={t('admin.metrics.tooltips.dau')}
               />
               <KpiCard
-                title="Monthly Active Users"
+                title={t('admin.metrics.mau')}
                 value={k?.mau ?? null}
                 delta={k?.mau_delta ?? undefined}
-                tooltip="Count of distinct users with at least one session in the past 30 days. Delta compares current 30-day window vs the previous 30-day window."
+                tooltip={t('admin.metrics.tooltips.mau')}
               />
             </div>
 
             <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-5 flex flex-col gap-3 flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <Clock className="w-5 h-5 text-blue-600" />
-                <p className="text-[15px] font-semibold text-gray-900">Avg Session Duration</p>
+                <p className="text-[15px] font-semibold text-gray-900">{t('admin.metrics.avgSession')}</p>
               </div>
               <div className="flex items-baseline gap-1.5">
                 <p className="text-[40px] font-normal tracking-tight leading-none text-gray-900">
                   {k?.avg_session_minutes ?? '—'}
                 </p>
-                <span className="text-gray-500 font-medium">minutes</span>
+                <span className="text-gray-500 font-medium">{t('admin.metrics.minutes')}</span>
               </div>
               {k?.avg_session_delta != null && k.avg_session_minutes != null && (
                 <div className="flex flex-col gap-3 mt-1">
                   <p className={`flex items-center gap-1 text-xs font-medium ${k.avg_session_delta >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                     <ArrowUp className="w-3.5 h-3.5" />
-                    {k.avg_session_delta >= 0 ? '+' : ''}{k.avg_session_delta}% vs previous period
+                    {k.avg_session_delta >= 0 ? '+' : ''}{k.avg_session_delta}% {t('admin.metrics.vsPrevious')}
                   </p>
                   <p className="text-xs text-gray-500 leading-relaxed">
-                    Average session duration in minutes. Higher engagement often correlates with better health literacy.
+                    {t('admin.metrics.sessionEngagement')}
                   </p>
                 </div>
               )}
@@ -257,9 +343,9 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 flex flex-col">
             <div className="flex items-center gap-2 mb-1">
               <Activity className="w-5 h-5 text-green-500" />
-              <p className="text-[15px] font-semibold text-gray-900">Feature Usage Breakdown</p>
+              <p className="text-[15px] font-semibold text-gray-900">{t('admin.metrics.featureUsage')}</p>
             </div>
-            <p className="text-xs text-gray-400 mb-6">Distribution of time spent across platform features</p>
+            <p className="text-xs text-gray-400 mb-6">{t('admin.metrics.featureUsageSubtitle')}</p>
             
             <div className="flex-1">
               <FeatureUsagePie data={data?.feature_usage ?? []} />
@@ -267,7 +353,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
 
             <div className="pt-4 mt-6 border-t border-gray-100">
               <p className="text-xs text-gray-400">
-                All usage metrics aggregated at cohort level with no individual patient tracking
+              {t('admin.metrics.featureUsageDisclaimer')}
               </p>
             </div>
           </div>
@@ -278,9 +364,9 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
       <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 flex flex-col">
         <div className="flex items-center gap-2 mb-1">
           <MessageSquare className="w-5 h-5 text-purple-600" />
-          <h3 className="text-[15px] font-semibold text-gray-900">Common Concern Themes</h3>
+          <h3 className="text-[15px] font-semibold text-gray-900">{t('admin.metrics.concernThemes')}</h3>
         </div>
-        <p className="text-xs text-gray-400 mb-6">Most frequently asked AI topics and categories</p>
+        <p className="text-xs text-gray-400 mb-6">{t('admin.metrics.concernThemesSubtitle')}</p>
         
         <div className="flex-1">
           <ConcernThemesChart data={data?.concern_themes ?? []} />
@@ -288,8 +374,50 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
 
         <div className="pt-4 mt-6 border-t border-gray-100">
           <p className="text-xs text-gray-400">
-            Aggregated from de-identified cohort-level AI interaction data. Helps identify resource gaps and training needs.
+            {t('admin.metrics.concernThemesDisclaimer')}
           </p>
+        </div>
+      </div>
+
+    {/* ── Resource Utilization Table ── */}
+      <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 flex flex-col">
+        <div className="flex items-center gap-2 mb-1">
+          <Activity className="w-5 h-5 text-indigo-600" />
+          <h3 className="text-[15px] font-semibold text-gray-900">Resource Utilization</h3>
+        </div>
+        <p className="text-xs text-gray-400 mb-6">Detailed engagement and revenue metrics per product.</p>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-gray-50 text-gray-600 font-medium border-y border-gray-200">
+              <tr>
+                <th className="px-4 py-3">Resource Title</th>
+                <th className="px-4 py-3 text-right">Views</th>
+                <th className="px-4 py-3 text-right">Downloads</th>
+                <th className="px-4 py-3 text-right">Saves</th>
+                <th className="px-4 py-3 text-right">Revenue Generated</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {(data?.resource_utilization?.length ?? 0) > 0 ? (
+                data!.resource_utilization!.map((row) => (
+                  <tr key={row.product_id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-900">{row.title}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{row.total_views.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{row.total_downloads.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{row.total_saves.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right font-medium text-green-600">${row.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                    No resource utilization data found for this period.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

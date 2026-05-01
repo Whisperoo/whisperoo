@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Star, Loader2, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { TenantConfig } from '@/contexts/TenantContext';
+import { useTranslation } from 'react-i18next';
 
 interface ExpertCurationPanelProps {
   tenantId: string | null;
@@ -22,6 +23,7 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
   const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -86,7 +88,7 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
     return (
       <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-3">
         <Users className="w-10 h-10 opacity-30" />
-        <p className="text-sm">Select a hospital to feature its experts.</p>
+        <p className="text-sm">{t('admin.experts.selectHospital')}</p>
       </div>
     );
   }
@@ -102,10 +104,10 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Expert Curation</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{t('admin.experts.title')}</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Star an expert to feature them at the top of this hospital's experts directory.{' '}
-          <span className="font-medium text-gray-700">{boostIds.length} featured.</span>
+          {t('admin.experts.description')}{' '}
+          <span className="font-medium text-gray-700">{t('admin.experts.featuredCount', { count: boostIds.length })}</span>
         </p>
       </div>
 
@@ -113,7 +115,7 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
         {experts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-2">
             <Users className="w-8 h-8 opacity-30" />
-            <p className="text-sm">No verified experts found.</p>
+            <p className="text-sm">{t('admin.experts.noExperts')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -140,8 +142,8 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{expert.first_name}</p>
                     <p className="text-xs text-gray-500 truncate">
-                      {expert.expert_specialties?.[0] ?? 'General Expert'}
-                      {expert.expert_experience_years ? ` · ${expert.expert_experience_years}y exp` : ''}
+                      {expert.expert_specialties?.[0] ?? t('admin.experts.generalExpert')}
+                      {expert.expert_experience_years ? ` · ${t('admin.experts.yearsExp', { years: expert.expert_experience_years })}` : ''}
                     </p>
                   </div>
 
@@ -157,7 +159,7 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
                   <button
                     onClick={() => handleToggleBoost(expert.id)}
                     disabled={isToggling}
-                    title={isBoosted ? 'Remove from featured' : 'Feature this expert'}
+                    title={isBoosted ? t('admin.experts.removeFromFeatured') : t('admin.experts.featureExpert')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all disabled:opacity-50 ${
                       isBoosted
                         ? 'bg-amber-50 border-amber-300 text-amber-700 hover:border-red-300 hover:text-red-500 hover:bg-red-50'
@@ -169,7 +171,7 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
                     ) : (
                       <Star className={`w-3.5 h-3.5 ${isBoosted ? 'fill-amber-400' : ''}`} />
                     )}
-                    {isBoosted ? 'Featured' : 'Feature'}
+                    {isBoosted ? t('admin.experts.featured') : t('admin.experts.feature')}
                   </button>
                 </div>
               );

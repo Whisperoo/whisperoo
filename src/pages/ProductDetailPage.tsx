@@ -105,6 +105,13 @@ export const ProductDetailPage: React.FC = () => {
     }
   }, [user, productId]);
 
+  // Track view event
+  useEffect(() => {
+    if (productId && product) {
+      productService.trackProductEvent(productId, "view", user?.id).catch(console.error);
+    }
+  }, [productId, product?.id, user?.id]);
+
   // Load product files if this is a multi-file product
   useEffect(() => {
     const loadProductFiles = async () => {
@@ -191,11 +198,13 @@ export const ProductDetailPage: React.FC = () => {
 
     // If purchased, show full content
     if (isPurchased) {
+      productService.trackProductEvent(productId!, "download", user.id).catch(console.error);
       setShowPreview(true);
       return;
     }
 
     // If not purchased, show preview modal (no error messages)
+    productService.trackProductEvent(productId!, "preview", user.id).catch(console.error);
     setShowPreviewModal(true);
   };
 

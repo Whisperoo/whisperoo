@@ -555,10 +555,11 @@ export const productService = {
       title: string;
       description: string;
       price: number;
-      product_type: "video" | "document";
+      product_type: "video" | "document" | "audio" | "course";
       expert_id: string;
       duration_minutes?: number;
       page_count?: number;
+      is_hospital_resource?: boolean;
     },
     file: File,
     thumbnail?: File,
@@ -577,6 +578,7 @@ export const productService = {
       file_size_mb: fileSizeMB,
       duration_minutes: productData.duration_minutes,
       page_count: productData.page_count,
+      is_hospital_resource: productData.is_hospital_resource || false,
     } as ProductInsert);
 
     try {
@@ -1027,6 +1029,46 @@ export const productService = {
     return productsWithRatings.sort((a, b) => {
       return productIds.indexOf(a.id) - productIds.indexOf(b.id);
     }) as ProductWithDetails[];
+  },
+
+  // ── Discount Methods ──────────────────────────────────────────────────────
+
+  async validateDiscountCode(code: string): Promise<{
+    isValid: boolean;
+    discountType?: "percentage" | "fixed";
+    discountAmount?: number;
+    error?: string;
+  }> {
+    const { data, error } = await supabase
+      .from("discount_codes")
+      .select("*")
+      .eq("code", code.toUpperCase())
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (error || !data) {
+      return { isValid: false, error: "Invalid discount code" };
+    }
+
+    // Check dates
+    const now = new Date();
+    if (data.valid_from && new Date(data.valid_from) > now) {
+      return { isValid: false, error: "Discount code is not active yet" };
+    }
+    if (data.valid_until && new Date(data.valid_until) < now) {
+      return { isValid: false, error: "Discount code has expired" };
+    }
+
+    // Check uses
+    if (data.max_uses && data.current_uses >= data.max_uses) {
+      return { isValid: false, error: "Discount code usage limit reached" };
+    }
+
+    return {
+      isValid: true,
+      discountType: data.discount_type as "percentage" | "fixed",
+      discountAmount: data.discount_amount,
+    };
   },
 
   // Get expert's products
@@ -1584,6 +1626,7 @@ export const productService = {
       product_type: "video" | "document" | "mixed";
       expert_id: string;
       content_type?: "single" | "bundle" | "course" | "collection";
+      is_hospital_resource?: boolean;
     },
     files: File[],
     titles?: string[],
@@ -1630,6 +1673,7 @@ export const productService = {
       is_active: false, // Keep inactive until all files are uploaded
       has_multiple_files: files.length > 1,
       total_files_count: files.length,
+      is_hospital_resource: productData.is_hospital_resource || false,
     } as ProductInsert);
 
     const uploadedFiles: ProductFile[] = [];

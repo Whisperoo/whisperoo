@@ -10,6 +10,7 @@ import { UserResources } from "@/components/dashboard/UserResources";
 import CareChecklist from "@/components/dashboard/CareChecklist";
 import PostDeliveryPrompt from "@/components/dashboard/PostDeliveryPrompt";
 import AppointmentReminders from "@/components/dashboard/AppointmentReminders";
+import RecommendedProducts from "@/components/dashboard/RecommendedProducts";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -178,6 +179,7 @@ const Dashboard: React.FC = () => {
 
       {/* Dynamic User Resources - Wrap with overflow control */}
       <div className="w-full max-w-full overflow-hidden box-border mt-6">
+        <RecommendedProducts />
         <UserResources />
       </div>
 

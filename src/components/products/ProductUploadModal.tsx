@@ -51,6 +51,7 @@ const productSchema = z.object({
   categoryIds: z.array(z.string()).min(1, 'Select at least one category'),
   durationMinutes: z.number().optional(),
   pageCount: z.number().optional(),
+  isHospitalResource: z.boolean().default(false),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -94,6 +95,7 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
       productType: 'document',
       contentType: 'single',
       categoryIds: [],
+      isHospitalResource: false,
     },
   });
 
@@ -209,6 +211,7 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
               product_type: data.productType === 'consultation' ? 'document' : data.productType as any,
               expert_id: profile.id,
               content_type: data.contentType,
+              is_hospital_resource: data.isHospitalResource,
             },
             filesToUpload,
             fileTitles,
@@ -224,6 +227,7 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
               expert_id: profile.id,
               duration_minutes: data.durationMinutes,
               page_count: data.pageCount,
+              is_hospital_resource: data.isHospitalResource,
             },
             filesToUpload[0],
             thumbnailFile || undefined
@@ -448,6 +452,32 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
                 </FormItem>
               )}
             />
+
+            {/* Hospital Resource Checkbox */}
+            {user?.email === 'engineering@whisperoo.app' && (
+              <FormField
+                control={form.control}
+                name="isHospitalResource"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Mark as Hospital Resource
+                      </FormLabel>
+                      <FormDescription>
+                        Check this if this is an official hospital resource for the dashboard metrics.
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Upload Mode Selection */}
             <div className="space-y-2">

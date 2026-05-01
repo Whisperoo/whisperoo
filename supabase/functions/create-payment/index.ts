@@ -9,6 +9,8 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
 
 interface CreatePaymentIntentRequest {
   product_id: string
+  discount_code?: string
+  gift_info?: { recipient_email: string; recipient_name: string; gift_message: string }
 }
 
 const corsHeaders = {
@@ -58,7 +60,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { product_id }: CreatePaymentIntentRequest = await req.json()
+    const { product_id, discount_code, gift_info }: CreatePaymentIntentRequest = await req.json()
 
     if (!product_id) {
       return new Response(
@@ -93,8 +95,83 @@ Deno.serve(async (req) => {
       )
     }
 
+    let finalPrice = product.price
+    let discountAmount = 0
+    let appliedDiscountCodeId = null
+
+    if (discount_code && finalPrice > 0) {
+      const { data: discount, error: discountError } = await supabaseClient
+        .from('discount_codes')
+        .select('*')
+        .eq('code', discount_code.toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle()
+
+      if (!discountError && discount) {
+        const now = new Date()
+        const isNotExpired = !discount.valid_until || new Date(discount.valid_until) >= now
+        const isStarted = !discount.valid_from || new Date(discount.valid_from) <= now
+        const isUnderUseLimit = !discount.max_uses || discount.current_uses < discount.max_uses
+
+        if (isNotExpired && isStarted && isUnderUseLimit) {
+          if (discount.discount_type === 'percentage') {
+            discountAmount = finalPrice * (discount.discount_amount / 100)
+          } else if (discount.discount_type === 'fixed') {
+            discountAmount = discount.discount_amount
+          }
+          finalPrice = Math.max(0, finalPrice - discountAmount)
+          appliedDiscountCodeId = discount.id
+        }
+      }
+    }
+
+    // Since stripe does not support zero amount payments, we need to handle free purchases
+    if (finalPrice <= 0) {
+      // Just record a purchase
+      const { data: purchase, error: purchaseError } = await supabaseClient
+        .from('purchases')
+        .insert({
+          user_id: user.id,
+          product_id: product.id,
+          expert_id: product.expert_id,
+          amount: 0,
+          currency: 'usd',
+          payment_method: 'free',
+          status: 'completed',
+          metadata: {
+            product_type: product.product_type,
+            product_title: product.title,
+            discount_code,
+            discount_amount: discountAmount,
+            is_gift: !!gift_info,
+            gift_recipient_email: gift_info?.recipient_email,
+            gift_recipient_name: gift_info?.recipient_name,
+            gift_message: gift_info?.gift_message,
+          }
+        })
+        .select()
+        .single()
+
+      if (purchaseError) {
+        return new Response(JSON.stringify({ error: 'Failed to create free purchase' }), { status: 500, headers: corsHeaders })
+      }
+      
+      if (appliedDiscountCodeId) {
+        // Increment use counter
+        await supabaseClient.rpc('increment_discount_usage', { discount_id: appliedDiscountCodeId });
+      }
+
+      return new Response(JSON.stringify({
+        clientSecret: null,
+        paymentIntentId: 'free',
+        purchaseId: purchase.id,
+        amount: 0,
+        currency: 'usd',
+      }), { headers: corsHeaders, status: 200 })
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(product.price * 100),
+      amount: Math.round(finalPrice * 100),
       currency: 'usd',
       metadata: {
         product_id: product.id,
@@ -111,7 +188,7 @@ Deno.serve(async (req) => {
         user_id: user.id,
         product_id: product.id,
         expert_id: product.expert_id,
-        amount: product.price,
+        amount: finalPrice,
         currency: 'usd',
         payment_method: 'stripe',
         payment_intent_id: paymentIntent.id,
@@ -119,6 +196,12 @@ Deno.serve(async (req) => {
         metadata: {
           product_type: product.product_type,
           product_title: product.title,
+          discount_code,
+          discount_amount: discountAmount,
+          is_gift: !!gift_info,
+          gift_recipient_email: gift_info?.recipient_email,
+          gift_recipient_name: gift_info?.recipient_name,
+          gift_message: gift_info?.gift_message,
         }
       })
       .select()
@@ -139,12 +222,17 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Increment discount usage counter for paid purchases too
+    if (appliedDiscountCodeId) {
+      await supabaseClient.rpc('increment_discount_usage', { discount_id: appliedDiscountCodeId });
+    }
+
     return new Response(
       JSON.stringify({
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
         purchaseId: purchase.id,
-        amount: product.price,
+        amount: finalPrice,
         currency: 'usd',
       }),
       {

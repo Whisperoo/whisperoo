@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Search, Download, RefreshCw, Shield, AlertTriangle, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from 'react-i18next';
 
 interface AuditRow {
   message_id: string;
@@ -27,6 +28,7 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
   const [escalationOnly, setEscalationOnly] = useState(false);
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -114,10 +116,10 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
           <Shield className="w-5 h-5 text-blue-600" />
           <div>
             <h3 className="text-lg font-bold text-gray-800 tracking-tight leading-tight">
-              AI Interaction Audit Trail
+              {t('admin.audit.title')}
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Complete, searchable log of all AI questions and responses
+              {t('admin.audit.subtitle')}
             </p>
           </div>
         </div>
@@ -126,7 +128,7 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
           className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
         >
           <Download className="w-4 h-4" />
-          Export CSV
+          {t('admin.audit.exportCsv')}
         </button>
       </div>
 
@@ -140,7 +142,7 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search cohort, category, or content..."
+            placeholder={t('admin.audit.searchPlaceholder')}
             className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
           />
         </div>
@@ -154,7 +156,7 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
             onChange={(e) => setDateFrom(e.target.value)}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
           />
-          <span className="text-xs text-gray-400">to</span>
+          <span className="text-xs text-gray-400">{t('admin.audit.to')}</span>
           <input
             type="date"
             value={dateTo}
@@ -173,7 +175,7 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
           }`}
         >
           <AlertTriangle className="w-3.5 h-3.5" />
-          {escalationOnly ? 'Escalations only' : 'All interactions'}
+          {escalationOnly ? t('admin.audit.escalationsOnly') : t('admin.audit.allInteractions')}
         </button>
 
         {/* Clear filters */}
@@ -187,7 +189,7 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
             }}
             className="text-xs text-gray-400 hover:text-gray-600 underline transition-colors"
           >
-            Clear filters
+            {t('admin.audit.clearFilters')}
           </button>
         )}
       </div>
@@ -196,16 +198,16 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
       {loading ? (
         <div className="flex items-center justify-center py-16 text-gray-400">
           <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-          Loading audit trail...
+          {t('admin.audit.loadingAudit')}
         </div>
       ) : error ? (
         <div className="py-12 text-center text-red-500 text-sm">{error}</div>
       ) : filtered.length === 0 ? (
         <div className="py-12 text-center text-gray-400 text-sm">
-          No interactions found
+          {t('admin.audit.noInteractions')}
           {(dateFrom || dateTo || escalationOnly || search) && (
             <span className="block mt-1 text-xs text-gray-400">
-              Try adjusting your filters
+              {t('admin.audit.adjustFilters')}
             </span>
           )}
         </div>
@@ -214,7 +216,7 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
           <table className="w-full text-xs">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                {['ID', 'TIMESTAMP', 'USER ID', 'COHORT', 'CATEGORY', 'SUMMARY', 'ESCALATION'].map((h) => (
+                {[t('admin.audit.columns.id'), t('admin.audit.columns.timestamp'), t('admin.audit.columns.userId'), t('admin.audit.columns.cohort'), t('admin.audit.columns.category'), t('admin.audit.columns.summary'), t('admin.audit.columns.escalation')].map((h) => (
                   <th
                     key={h}
                     className="px-4 py-2.5 text-left font-semibold text-gray-500 tracking-wider uppercase text-[10px]"
@@ -264,7 +266,7 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
                     {row.escalation ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600">
                         <AlertTriangle className="w-2.5 h-2.5" />
-                        Yes
+                        {t('admin.audit.yes')}
                       </span>
                     ) : (
                       <span className="text-gray-300">—</span>
@@ -279,15 +281,15 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
           <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
             <p className="text-xs text-gray-400">
               Showing {filtered.length} of up to {PAGE_SIZE} records
-              {(dateFrom || dateTo) && ` · Filtered by date`}
-              {escalationOnly && ` · Escalations only`}
+              {(dateFrom || dateTo) && ` · ${t('admin.audit.filteredByDate')}`}
+              {escalationOnly && ` · ${t('admin.audit.escalationsOnly')}`}
             </p>
             <button
               onClick={fetchRows}
               className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
             >
               <RefreshCw className="w-3 h-3" />
-              Refresh
+              {t('admin.metrics.refresh')}
             </button>
           </div>
         </div>

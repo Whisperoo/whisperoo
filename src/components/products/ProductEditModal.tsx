@@ -70,6 +70,7 @@ const productSchema = z.object({
   durationMinutes: z.number().optional(),
   pageCount: z.number().optional(),
   isActive: z.boolean(),
+  isHospitalResource: z.boolean().default(false),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -168,6 +169,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
       durationMinutes: product.duration_minutes || undefined,
       pageCount: product.page_count || undefined,
       isActive: product.is_active !== false,
+      isHospitalResource: (product as any).is_hospital_resource || false,
     },
   });
 
@@ -534,6 +536,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
         is_active: data.isActive,
         has_multiple_files: totalFiles > 1,
         total_files_count: totalFiles,
+        is_hospital_resource: data.isHospitalResource,
       };
 
       if (data.productType === "video" && data.durationMinutes) {
@@ -981,6 +984,32 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                   </FormItem>
                 )}
               />
+
+              {/* Hospital Resource Checkbox */}
+              {user?.email === 'engineering@whisperoo.app' && (
+                <FormField
+                  control={form.control}
+                  name="isHospitalResource"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Mark as Hospital Resource
+                        </FormLabel>
+                        <FormDescription>
+                          Check this if this is an official hospital resource for the dashboard metrics.
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* Categories */}
               <FormField

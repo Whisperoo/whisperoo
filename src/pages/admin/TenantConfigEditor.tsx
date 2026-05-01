@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Plus, Trash2, Save, Building2, Palette, Link, Phone, Mail, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { TenantConfig, TenantDepartment } from '@/contexts/TenantContext';
+import { useTranslation } from 'react-i18next';
 
 interface TenantConfigEditorProps {
   tenantId: string | null;
@@ -20,6 +21,7 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const { t } = useTranslation();
 
   // Form state mirrors TenantConfig
   const [displayName, setDisplayName] = useState('');
@@ -91,7 +93,7 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
     return (
       <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-3">
         <Building2 className="w-10 h-10 opacity-30" />
-        <p className="text-sm">Select a hospital to edit its configuration.</p>
+        <p className="text-sm">{t('admin.config.selectHospital')}</p>
       </div>
     );
   }
@@ -107,30 +109,30 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
   return (
     <div className="space-y-8 max-w-2xl">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Hospital Configuration</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{t('admin.config.title')}</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Manage branding and department contacts for <span className="font-medium text-gray-700">{tenant?.name}</span>.
+          {t('admin.config.description')} <span className="font-medium text-gray-700">{tenant?.name}</span>.
         </p>
       </div>
 
       {/* ── Branding ── */}
       <section className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 space-y-5">
         <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-          <Palette className="w-4 h-4 text-blue-500" /> Branding
+          <Palette className="w-4 h-4 text-blue-500" /> {t('admin.config.branding')}
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-gray-600 mb-1 block">Display Name</label>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">{t('admin.config.displayName')}</label>
             <input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="e.g. St. Mary's Medical Center"
+              placeholder={t('admin.config.displayNamePlaceholder')}
               className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600 mb-1 block">Brand Primary Color</label>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">{t('admin.config.primaryColor')}</label>
             <div className="flex items-center gap-2">
               <input
                 type="color"
@@ -150,7 +152,7 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
 
         <div>
           <label className="text-xs font-medium text-gray-600 mb-1 block flex items-center gap-1">
-            <Link className="w-3 h-3" /> Logo URL
+            <Link className="w-3 h-3" /> {t('admin.config.logoUrl')}
           </label>
           <input
             value={logoUrl}
@@ -166,7 +168,7 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
                 className="h-10 object-contain rounded border border-gray-100"
                 onError={(e) => (e.currentTarget.style.display = 'none')}
               />
-              <span className="text-xs text-gray-400">Preview</span>
+              <span className="text-xs text-gray-400">{t('admin.config.logoPreview')}</span>
             </div>
           )}
         </div>
@@ -176,19 +178,19 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
       <section className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Phone className="w-4 h-4 text-blue-500" /> Department Contacts
+            <Phone className="w-4 h-4 text-blue-500" /> {t('admin.config.departments')}
           </h3>
           <button
             onClick={addDept}
             className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
           >
-            <Plus className="w-3.5 h-3.5" /> Add Department
+            <Plus className="w-3.5 h-3.5" /> {t('admin.config.addDepartment')}
           </button>
         </div>
 
         {departments.length === 0 && (
           <p className="text-xs text-gray-400 text-center py-4">
-            No departments configured. Add one to show contact info on expert profiles.
+            {t('admin.config.noDepartments')}
           </p>
         )}
 
@@ -201,7 +203,7 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
               <input
                 value={dept.name}
                 onChange={(e) => updateDept(i, 'name', e.target.value)}
-                placeholder="Department name"
+                placeholder={t('admin.config.departmentName')}
                 className="text-sm border border-gray-200 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
               />
               <div className="flex items-center gap-1">
@@ -209,7 +211,7 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
                 <input
                   value={dept.phone ?? ''}
                   onChange={(e) => updateDept(i, 'phone', e.target.value)}
-                  placeholder="Phone number"
+                  placeholder={t('admin.config.phoneNumber')}
                   className="flex-1 text-sm border border-gray-200 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
                 />
               </div>
@@ -218,7 +220,7 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
                 <input
                   value={dept.email ?? ''}
                   onChange={(e) => updateDept(i, 'email', e.target.value)}
-                  placeholder="Email"
+                  placeholder={t('admin.config.email')}
                   className="flex-1 text-sm border border-gray-200 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
                 />
                 <button
@@ -241,11 +243,11 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
           className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-60 transition-colors"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? 'Saving…' : 'Save Configuration'}
+          {saving ? t('admin.config.saving') : t('admin.config.saveConfig')}
         </button>
         {saved && (
           <span className="flex items-center gap-1 text-sm text-emerald-600 font-medium">
-            <CheckCircle2 className="w-4 h-4" /> Saved!
+            <CheckCircle2 className="w-4 h-4" /> {t('admin.config.saved')}
           </span>
         )}
       </div>

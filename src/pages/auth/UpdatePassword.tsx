@@ -6,9 +6,11 @@ import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { useTranslation } from 'react-i18next';
 
 const UpdatePassword: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
@@ -34,8 +36,8 @@ const UpdatePassword: React.FC = () => {
         setHasValidSession(true);
       } else {
         toast({
-          title: "Invalid or expired link",
-          description: "Please request a new password reset link.",
+          title: t('auth.updatePassword.invalidLink'),
+          description: t('auth.updatePassword.invalidLinkDesc'),
           variant: "destructive",
         });
         navigate("/auth/login");
@@ -43,8 +45,8 @@ const UpdatePassword: React.FC = () => {
     } catch (error) {
       console.error("Session check error:", error);
       toast({
-        title: "Error",
-        description: "Failed to validate reset link.",
+        title: t('auth.updatePassword.error'),
+        description: t('auth.updatePassword.validateError'),
         variant: "destructive",
       });
       navigate("/auth/login");
@@ -59,8 +61,8 @@ const UpdatePassword: React.FC = () => {
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       toast({
-        title: "Passwords don't match",
-        description: "Please make sure both passwords are identical.",
+        title: t('auth.updatePassword.passwordsDontMatch'),
+        description: t('auth.updatePassword.passwordsDontMatchDesc'),
         variant: "destructive",
       });
       return;
@@ -69,8 +71,8 @@ const UpdatePassword: React.FC = () => {
     // Validate password strength
     if (formData.password.length < 6) {
       toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long.",
+        title: t('auth.updatePassword.passwordTooShort'),
+        description: t('auth.updatePassword.passwordTooShortDesc'),
         variant: "destructive",
       });
       return;
@@ -89,8 +91,8 @@ const UpdatePassword: React.FC = () => {
       }
 
       toast({
-        title: "Password updated!",
-        description: "Your password has been successfully reset.",
+        title: t('auth.updatePassword.passwordUpdated'),
+        description: t('auth.updatePassword.passwordUpdatedDesc'),
       });
 
       // Optional: Sign out all other sessions for security
@@ -101,9 +103,9 @@ const UpdatePassword: React.FC = () => {
     } catch (error: any) {
       console.error("Password update error:", error);
       toast({
-        title: "Update failed",
+        title: t('auth.updatePassword.updateFailed'),
         description:
-          error.message || "Failed to update password. Please try again.",
+          error.message || t('auth.updatePassword.updateFailedDesc'),
         variant: "destructive",
       });
     } finally {
@@ -117,7 +119,7 @@ const UpdatePassword: React.FC = () => {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-700 mx-auto mb-4"></div>
-            <p className="text-gray-600">Validating reset link...</p>
+            <p className="text-gray-600">{t('auth.updatePassword.validatingLink')}</p>
           </div>
         </div>
       </AuthLayout>
@@ -131,15 +133,15 @@ const UpdatePassword: React.FC = () => {
 
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-indigo-700">
-            Set New Password
+            {t('auth.updatePassword.title')}
           </h1>
-          <p className="text-gray-500">Choose a strong, memorable password</p>
+          <p className="text-gray-500">{t('auth.updatePassword.subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              New Password
+              {t('auth.updatePassword.newPassword')}
             </label>
             <Input
               type="password"
@@ -147,7 +149,7 @@ const UpdatePassword: React.FC = () => {
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
-              placeholder="Enter new password (min. 6 characters)"
+              placeholder={t('auth.updatePassword.newPasswordPlaceholder')}
               className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200"
               minLength={6}
               required
@@ -156,7 +158,7 @@ const UpdatePassword: React.FC = () => {
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              Confirm Password
+              {t('auth.updatePassword.confirmPassword')}
             </label>
             <Input
               type="password"
@@ -164,7 +166,7 @@ const UpdatePassword: React.FC = () => {
               onChange={(e) =>
                 setFormData({ ...formData, confirmPassword: e.target.value })
               }
-              placeholder="Confirm your new password"
+              placeholder={t('auth.updatePassword.confirmPasswordPlaceholder')}
               className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200"
               minLength={6}
               required
@@ -174,11 +176,11 @@ const UpdatePassword: React.FC = () => {
           <div className="text-sm text-gray-500 space-y-1">
             <p className="flex items-center">
               <span className="inline-block w-2 h-2 bg-gray-300 rounded-full mr-2"></span>
-              At least 6 characters long
+              {t('auth.updatePassword.requirement1')}
             </p>
             <p className="flex items-center">
               <span className="inline-block w-2 h-2 bg-gray-300 rounded-full mr-2"></span>
-              Avoid common words or patterns
+              {t('auth.updatePassword.requirement2')}
             </p>
           </div>
 
@@ -189,18 +191,18 @@ const UpdatePassword: React.FC = () => {
               !formData.password || !formData.confirmPassword || isLoading
             }
           >
-            {isLoading ? "Updating Password..." : "Reset Password"}
+            {isLoading ? t('auth.updatePassword.updating') : t('auth.updatePassword.resetButton')}
           </Button>
         </form>
 
         <div className="text-center">
           <p className="text-gray-500 text-sm">
-            Remember your password?{" "}
+            {t('auth.updatePassword.rememberPassword')}{" "}
             <button
               onClick={() => navigate("/auth/login")}
               className="text-indigo-700 font-medium hover:underline"
             >
-              Back to Sign In
+              {t('auth.updatePassword.backToSignIn')}
             </button>
           </p>
         </div>

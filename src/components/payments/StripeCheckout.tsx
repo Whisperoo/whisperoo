@@ -14,6 +14,8 @@ interface StripeCheckoutProps {
   productId: string;
   productTitle: string;
   amount: number;
+  discountCode?: string;
+  giftInfo?: { recipientEmail: string; recipientName: string; giftMessage: string };
   onSuccess: (purchaseId: string) => void;
   onError: (error: string) => void;
   onCancel: () => void;
@@ -23,6 +25,8 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   productId,
   productTitle,
   amount,
+  discountCode,
+  giftInfo,
   onSuccess,
   onError,
   onCancel,
@@ -36,9 +40,14 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
 
   useEffect(() => {
     const initializePayment = async () => {
-      const result = await createPaymentIntent(productId);
+      const result = await createPaymentIntent(productId, discountCode, giftInfo);
 
       if (result) {
+        // Handle free purchases (100% discount)
+        if (result.paymentIntentId === 'free' && !result.clientSecret) {
+          onSuccess(result.purchaseId);
+          return;
+        }
         setClientSecret(result.clientSecret);
         setPurchaseId(result.purchaseId);
       } else {
@@ -46,8 +55,9 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
       }
     };
 
+    // Re-initialize payment intent if discount code or gift info changes
     initializePayment();
-  }, [productId]);
+  }, [productId, discountCode, giftInfo]);
 
   const handlePaymentSuccess = async () => {
     if (!purchaseId) return;

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut } from 'lucide-react';
 import HospitalSelector from './HospitalSelector';
 import MetricsDash from './MetricsDash';
@@ -18,6 +19,7 @@ type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'config';
 const SuperAdminPortal: React.FC = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [authorized, setAuthorized] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
@@ -35,8 +37,8 @@ const SuperAdminPortal: React.FC = () => {
       setAuthorized(true);
     } else {
       toast({
-        title: 'Access Denied',
-        description: 'You do not have super admin privileges.',
+        title: t('admin.portal.accessDenied'),
+        description: t('admin.portal.accessDeniedDesc'),
         variant: 'destructive',
       });
       navigate('/dashboard');
@@ -49,13 +51,13 @@ const SuperAdminPortal: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto" />
-          <p className="text-gray-600">Verifying access...</p>
+          <p className="text-gray-600">{t('admin.portal.verifyingAccess')}</p>
         </div>
       </div>
     );
   }
 
-  const currentDate = new Date().toLocaleDateString('en-US', {
+  const currentDate = new Date().toLocaleDateString(i18n.language === 'es' ? 'es-ES' : i18n.language === 'vi' ? 'vi-VN' : 'en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -72,7 +74,7 @@ const SuperAdminPortal: React.FC = () => {
             {/* Left: Branding */}
             <div className="flex items-center gap-3">
               <Activity className="w-7 h-7 text-blue-600 stroke-[2.5]" />
-              <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Admin</h1>
+              <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">{t('admin.portal.title')}</h1>
             </div>
 
             {/* Right: Date & Actions */}
@@ -91,7 +93,7 @@ const SuperAdminPortal: React.FC = () => {
                 title="Sign out of Admin Dashboard"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline text-xs">Sign Out</span>
+                <span className="hidden sm:inline text-xs">{t('admin.portal.signOut')}</span>
               </button>
             </div>
           </div>
@@ -110,11 +112,11 @@ const SuperAdminPortal: React.FC = () => {
             {/* Right: Tabs */}
             <div className="flex flex-wrap items-center gap-1 bg-gray-50 p-1.5 rounded-xl">
               {([
-                { id: 'metrics',  icon: BarChart3,      label: 'Metrics'  },
-                { id: 'ai',       icon: MessageSquare,  label: 'AI Logs'  },
-                { id: 'content',  icon: PackageSearch,  label: 'Content'  },
-                { id: 'experts',  icon: Users,          label: 'Experts'  },
-                { id: 'config',   icon: Settings2,      label: 'Config'   },
+                { id: 'metrics',  icon: BarChart3,      label: t('admin.portal.tabs.metrics')  },
+                { id: 'ai',       icon: MessageSquare,  label: t('admin.portal.tabs.aiLogs')  },
+                { id: 'content',  icon: PackageSearch,  label: t('admin.portal.tabs.content')  },
+                { id: 'experts',  icon: Users,          label: t('admin.portal.tabs.experts')  },
+                { id: 'config',   icon: Settings2,      label: t('admin.portal.tabs.config')   },
               ] as { id: Tab; icon: React.ElementType; label: string }[]).map(({ id, icon: Icon, label }) => (
                 <button
                   key={id}

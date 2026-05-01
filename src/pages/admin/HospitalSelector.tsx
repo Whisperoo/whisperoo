@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Building2, ChevronDown, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from 'react-i18next';
 
 interface Tenant {
   id: string;
@@ -14,6 +15,7 @@ interface HospitalSelectorProps {
 }
 
 const HospitalSelector: React.FC<HospitalSelectorProps> = ({ selectedTenantId, onTenantChange }) => {
+  const { t } = useTranslation();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -52,8 +54,8 @@ const HospitalSelector: React.FC<HospitalSelectorProps> = ({ selectedTenantId, o
     ? tenants.find((t) => t.id === selectedTenantId)
     : null;
 
-  const displayName = selected ? selected.name : 'All Hospitals';
-  const displayRegion = selected?.region ?? 'Aggregate View';
+  const displayName = selected ? selected.name : t('admin.hospital.allHospitals');
+  const displayRegion = selected?.region ?? t('admin.hospital.aggregateView');
 
   return (
     <div className="relative" ref={ref}>
@@ -82,8 +84,8 @@ const HospitalSelector: React.FC<HospitalSelectorProps> = ({ selectedTenantId, o
               <Building2 className="w-3.5 h-3.5 text-blue-600" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-800">All Hospitals</p>
-              <p className="text-xs text-gray-500">Aggregate View</p>
+              <p className="text-sm font-medium text-gray-800">{t('admin.hospital.allHospitals')}</p>
+              <p className="text-xs text-gray-500">{t('admin.hospital.aggregateView')}</p>
             </div>
             {selectedTenantId === null && <Check className="w-4 h-4 text-blue-600" />}
           </button>

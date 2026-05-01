@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface SubMetric {
   label: string;
@@ -55,6 +56,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
   tooltip,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const { t } = useTranslation();
   const displayValue = value === null || value === undefined
     ? '—'
     : `${valuePrefix}${value}${valueSuffix}`;
@@ -83,7 +85,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
                 </button>
                 {showTooltip && (
                   <div className="absolute left-0 top-5 z-50 w-56 bg-gray-900 text-white text-[11px] leading-relaxed rounded-lg px-3 py-2.5 shadow-xl">
-                    <p className="font-semibold mb-1 text-gray-200">How it's calculated</p>
+                    <p className="font-semibold mb-1 text-gray-200">{t('admin.kpi.howCalculated')}</p>
                     <p>{tooltip}</p>
                     <div className="absolute -top-1.5 left-2 w-3 h-3 bg-gray-900 rotate-45" />
                   </div>
@@ -95,7 +97,7 @@ const KpiCard: React.FC<KpiCardProps> = ({
           <div className="flex items-center gap-2 flex-shrink-0">
             {scaffolded && (
               <span className="text-[10px] font-bold bg-amber-100 text-amber-700 rounded-full px-2.5 py-0.5">
-                Estimated
+                {t('admin.kpi.estimated')}
               </span>
             )}
             {delta !== null && delta !== undefined && !scaffolded && (

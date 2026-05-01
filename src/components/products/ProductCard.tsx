@@ -288,9 +288,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
     if (hasFullAccess) {
       // Show full content viewer for purchased/saved content
+      productService.trackProductEvent(product.id, "download", user.id).catch(console.error);
       setShowPreview(true);
     } else {
       // Show preview modal for non-purchased content (no error messages)
+      productService.trackProductEvent(product.id, "preview", user.id).catch(console.error);
       setShowPreviewModal(true);
     }
   };
@@ -373,11 +375,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Badges */}
           <div className="absolute inset-0 flex items-start justify-between p-4 rounded-tl-[16px] rounded-tr-[16px]">
-            {/* Product Type Badge */}
-            <div className="backdrop-blur-[2px] justify-center bg-white/35 rounded-full px-2 flex items-center">
-              <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
-                {isCourse ? "Course" : product.product_type}
-              </p>
+            <div className="flex flex-col gap-2">
+              {/* Product Type Badge */}
+              <div className="backdrop-blur-[2px] justify-center bg-white/35 rounded-full px-2 flex items-center w-fit">
+                <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
+                  {isCourse ? "Course" : product.product_type}
+                </p>
+              </div>
+              
+              {/* Hospital Resource Badge */}
+              {(product as any).is_hospital_resource && (
+                <div className="backdrop-blur-[2px] justify-center bg-indigo-500/80 rounded-full px-2 flex items-center w-fit shadow-sm">
+                  <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans'] flex items-center gap-1">
+                    Hospital Resource
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Right side icons */}

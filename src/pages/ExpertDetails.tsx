@@ -170,6 +170,15 @@ const ExpertDetails: React.FC = () => {
       return;
     }
     
+    // For Francie and Karen, do an "Inquire" flow instead of actual checkout
+    if (expert?.first_name === 'Francie' || expert?.first_name === 'Karen') {
+      toast({
+        title: t('experts.inquirySent', 'Inquiry Sent'),
+        description: t('experts.inquiryDesc', "We'll notify the expert directly. They'll reach out within 24-48 hours to coordinate a time that works for you."),
+      });
+      return;
+    }
+    
     if (!consultationProduct) {
       console.error('Consultation product not available');
       return;
@@ -315,7 +324,9 @@ const ExpertDetails: React.FC = () => {
                           className="w-full mt-3"
                           onClick={handleBookConsultation}
                         >
-                          {t('experts.bookConsultation')}
+                          {(expert.first_name === 'Francie' || expert.first_name === 'Karen') 
+                            ? t('experts.inquireCTA', 'Inquire')
+                            : t('experts.bookConsultation')}
                         </Button>
                       </div>
                     </div>
