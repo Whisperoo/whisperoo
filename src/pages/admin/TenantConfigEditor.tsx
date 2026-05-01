@@ -11,6 +11,7 @@ interface TenantConfigEditorProps {
 interface TenantRow {
   id: string;
   name: string;
+  slug: string;
   config: TenantConfig | null;
 }
 
@@ -37,7 +38,7 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
     try {
       const { data, error } = await supabase
         .from('tenants')
-        .select('id, name, config')
+        .select('id, name, slug, config')
         .eq('id', tenantId)
         .single();
       if (error) throw error;
@@ -301,29 +302,40 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
         <p className="text-sm text-gray-500">
           Print or display this QR code in the hospital. When users scan it, they will automatically be affiliated with {tenant?.name} during signup.
         </p>
-        <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
-          <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-            <img 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://whisperoo.app/signup?tenant_id=${tenantId}`)}`} 
-              alt="Hospital QR Code"
-              className="w-32 h-32"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium text-gray-600">Signup Link:</p>
-            <code className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-800 break-all">
-              https://whisperoo.app/signup?tenant_id={tenantId}
-            </code>
-            <a 
-              href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(`https://whisperoo.app/signup?tenant_id=${tenantId}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-2 flex items-center gap-1"
-            >
-              Download High-Res QR Code &rarr;
-            </a>
-          </div>
-        </div>
+        {(() => {
+          const signupUrl = `${window.location.origin}/auth/create?tenant=${tenant?.slug || tenantId}`;
+          return (
+            <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+              <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(signupUrl)}`} 
+                  alt="Hospital QR Code"
+                  className="w-32 h-32"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-medium text-gray-600">Signup Link:</p>
+                <code className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-800 break-all">
+                  {signupUrl}
+                </code>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(signupUrl); alert('Link copied!'); }}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-1"
+                >
+                  Copy Link
+                </button>
+                <a 
+                  href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(signupUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                >
+                  Download High-Res QR Code &rarr;
+                </a>
+              </div>
+            </div>
+          );
+        })()}
       </section>
 
       {/* ── Actions ── */}

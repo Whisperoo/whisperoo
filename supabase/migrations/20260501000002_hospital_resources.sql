@@ -38,8 +38,7 @@ BEGIN
       AND (p_start_date IS NULL OR pu.purchased_at::date >= p_start_date)
       AND (p_end_date IS NULL OR pu.purchased_at::date <= p_end_date)
     LEFT JOIN profiles prof ON prof.id = pu.user_id
-    WHERE p.status = 'published'
-      AND (p_tenant_id IS NULL OR prof.tenant_id = p_tenant_id OR prof.id IS NULL)
+    WHERE (p_tenant_id IS NULL OR prof.tenant_id = p_tenant_id OR prof.id IS NULL)
     GROUP BY p.id, p.title, p.product_type, p.is_hospital_resource
     ORDER BY total_purchases DESC
   ) t

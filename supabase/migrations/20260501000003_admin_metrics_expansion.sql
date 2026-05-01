@@ -295,11 +295,65 @@ BEGIN
       'hospital_resource_eng',   COALESCE(v_hosp_res_eng, 0),
       'checklist_engagement',    COALESCE(v_checklist_eng, 0)
     ),
-    'enrollment_trend',  '[]'::jsonb,
-    'escalation_trend',  '[]'::jsonb,
-    'feature_usage',     '[]'::jsonb,
+    'enrollment_trend',  COALESCE((
+      SELECT jsonb_agg(jsonb_build_object('month', m, 'count', c) ORDER BY m)
+      FROM (
+        SELECT to_char(p.created_at, 'YYYY-MM') AS m, COUNT(*) AS c
+        FROM profiles p
+        WHERE p.onboarded = true
+          AND (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
+          AND p.created_at >= v_6m_ago
+        GROUP BY to_char(p.created_at, 'YYYY-MM')
+      ) sub
+    ), '[]'::jsonb),
+    'escalation_trend',  COALESCE((
+      SELECT jsonb_agg(jsonb_build_object('month', m, 'rate', r) ORDER BY m)
+      FROM (
+        SELECT
+          to_char(msg.created_at, 'YYYY-MM') AS m,
+          ROUND(COUNT(*) FILTER (WHERE msg.is_flagged_for_review = true)::numeric / NULLIF(COUNT(*), 0) * 100, 1) AS r
+        FROM messages msg
+        JOIN sessions s ON s.id = msg.session_id
+        JOIN profiles p ON p.id = s.user_id
+        WHERE msg.role = 'user'
+          AND (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
+          AND msg.created_at >= v_6m_ago
+        GROUP BY to_char(msg.created_at, 'YYYY-MM')
+      ) sub
+    ), '[]'::jsonb),
+    'feature_usage',     COALESCE((
+      SELECT jsonb_agg(jsonb_build_object('feature', f, 'count', c, 'pct', ROUND(c::numeric / NULLIF(v_total_enrolled, 0) * 100, 1)))
+      FROM (
+        SELECT 'AI Chat' AS f, COUNT(DISTINCT s.user_id) AS c
+        FROM sessions s JOIN profiles p ON p.id = s.user_id
+        WHERE (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
+          AND s.created_at >= v_effective_start AND s.created_at <= v_effective_end
+        UNION ALL
+        SELECT 'Purchases' AS f, COUNT(DISTINCT pu.user_id) AS c
+        FROM purchases pu JOIN profiles p ON p.id = pu.user_id
+        WHERE (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
+          AND pu.purchased_at >= v_effective_start AND pu.purchased_at <= v_effective_end
+        UNION ALL
+        SELECT 'Checklist' AS f, COUNT(DISTINCT cp.user_id) AS c
+        FROM care_checklist_progress cp JOIN profiles p ON p.id = cp.user_id
+        WHERE (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
+          AND cp.created_at >= v_effective_start AND cp.created_at <= v_effective_end
+      ) sub
+    ), '[]'::jsonb),
     'concern_themes',    '[]'::jsonb,
-    'checklist_trend',   '[]'::jsonb
+    'checklist_trend',   COALESCE((
+      SELECT jsonb_agg(jsonb_build_object('month', m, 'rate', r) ORDER BY m)
+      FROM (
+        SELECT
+          to_char(cp.created_at, 'YYYY-MM') AS m,
+          ROUND(COUNT(*) FILTER (WHERE cp.completed = true)::numeric / NULLIF(COUNT(*), 0) * 100, 1) AS r
+        FROM care_checklist_progress cp
+        JOIN profiles p ON p.id = cp.user_id
+        WHERE (p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)
+          AND cp.created_at >= v_6m_ago
+        GROUP BY to_char(cp.created_at, 'YYYY-MM')
+      ) sub
+    ), '[]'::jsonb)
   );
 
   RETURN v_result;
