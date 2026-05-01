@@ -18,6 +18,7 @@ import {
   File,
   Play,
   Eye,
+  Heart,
 } from "lucide-react";
 import {
   ProductWithDetails,
@@ -54,6 +55,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [isPurchased, setIsPurchased] = useState(false);
   const [isCheckingPurchase, setIsCheckingPurchase] = useState(false);
   const [productFiles, setProductFiles] = useState<ProductFile[]>([]);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
 
   const isFreeProduct = product.price === 0;
   const hasContent = !!(product.primary_file_url || product.file_url);
@@ -90,6 +93,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       checkPurchaseStatus();
     }
   }, [user, product.id, isFreeProduct]);
+
+  // Check wishlist status
+  React.useEffect(() => {
+    if (user) {
+      const checkWishlist = async () => {
+        const status = await productService.checkWishlistStatus(product.id, user.id);
+        setIsWishlisted(status);
+      };
+      checkWishlist();
+    }
+  }, [user, product.id]);
 
   // Load product files if this is a multi-file product
   React.useEffect(() => {
@@ -280,6 +294,41 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       setShowPreviewModal(true);
     }
   };
+
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to add items to your wishlist.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isTogglingWishlist) return;
+
+    setIsTogglingWishlist(true);
+    try {
+      const newState = await productService.toggleWishlist(product.id, user.id);
+      setIsWishlisted(newState);
+      toast({
+        title: newState ? "Added to Wishlist" : "Removed from Wishlist",
+        description: newState ? "Saved to your items." : "Removed from your items.",
+      });
+    } catch (error) {
+      console.error("Error toggling wishlist:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update wishlist. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTogglingWishlist(false);
+    }
+  };
+
   const formatFileSize = (mb: number | null) => {
     if (!mb) return "";
     if (mb < 1) return `${Math.round(mb * 1024)} KB`;
@@ -331,14 +380,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               </p>
             </div>
 
-            {/* Lesson Count Badge */}
-            {lessonCount > 1 && (
-              <div className="backdrop-blur-[2px] w-20 text-center bg-white/35 rounded-full px-2 flex justify-center items-center">
-                <p className="font-bold  text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
-                  {lessonCount} Lessons
-                </p>
-              </div>
-            )}
+            {/* Right side icons */}
+            <div className="flex flex-col gap-2 items-end">
+              {/* Lesson Count Badge */}
+              {lessonCount > 1 && (
+                <div className="backdrop-blur-[2px] w-20 text-center bg-white/35 rounded-full px-2 flex justify-center items-center">
+                  <p className="font-bold  text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
+                    {lessonCount} Lessons
+                  </p>
+                </div>
+              )}
+              
+              {/* Wishlist Heart */}
+              <button 
+                onClick={handleToggleWishlist}
+                disabled={isTogglingWishlist}
+                className="backdrop-blur-[2px] bg-white/35 rounded-full p-1.5 flex items-center justify-center hover:bg-white/50 transition-colors z-10"
+              >
+                <Heart 
+                  className={`w-4 h-4 transition-colors ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-white'}`} 
+                />
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
@@ -396,14 +459,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </p>
           </div>
 
-          {/* Lesson Count Badge */}
-          {lessonCount > 1 && (
-            <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2  flex items-center justify-center">
-              <p className="font-bold  text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
-                {lessonCount} Lessons
-              </p>
-            </div>
-          )}
+          {/* Right side icons */}
+          <div className="flex flex-col gap-2 items-end z-10">
+            {/* Lesson Count Badge */}
+            {lessonCount > 1 && (
+              <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2  flex items-center justify-center">
+                <p className="font-bold  text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
+                  {lessonCount} Lessons
+                </p>
+              </div>
+            )}
+
+            {/* Wishlist Heart */}
+            <button 
+              onClick={handleToggleWishlist}
+              disabled={isTogglingWishlist}
+              className="backdrop-blur-[2px] bg-white/35 rounded-full p-1.5 flex items-center justify-center hover:bg-white/50 transition-colors"
+            >
+              <Heart 
+                className={`w-4 h-4 transition-colors ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-white'}`} 
+              />
+            </button>
+          </div>
         </div>
       </div>
 

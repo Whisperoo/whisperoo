@@ -42,6 +42,8 @@ export const ProductDetailPage: React.FC = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [purchaseInfo, setPurchaseInfo] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
   const currentLang = i18n.language || 'en';
   const {
     data: product,
@@ -91,6 +93,17 @@ export const ProductDetailPage: React.FC = () => {
       productService.trackProductEvent(productId, "view", user?.id);
     }
   }, [productId, user]);
+
+  // Check wishlist status
+  useEffect(() => {
+    if (user && productId) {
+      const checkWishlist = async () => {
+        const status = await productService.checkWishlistStatus(productId, user.id);
+        setIsWishlisted(status);
+      };
+      checkWishlist();
+    }
+  }, [user, productId]);
 
   // Load product files if this is a multi-file product
   useEffect(() => {
@@ -185,6 +198,28 @@ export const ProductDetailPage: React.FC = () => {
     // If not purchased, show preview modal (no error messages)
     setShowPreviewModal(true);
   };
+
+  const handleToggleWishlist = async () => {
+    if (!user) {
+      navigate("/auth/login");
+      return;
+    }
+
+    if (isTogglingWishlist || !productId) return;
+
+    setIsTogglingWishlist(true);
+    try {
+      const newState = await productService.toggleWishlist(productId, user.id);
+      setIsWishlisted(newState);
+      toast.success(newState ? "Added to Wishlist" : "Removed from Wishlist");
+    } catch (error) {
+      console.error("Error toggling wishlist:", error);
+      toast.error("Failed to update wishlist");
+    } finally {
+      setIsTogglingWishlist(false);
+    }
+  };
+
   const handlePreviewClick = () => {
     if (!user) {
       navigate("/auth/login");
@@ -477,26 +512,39 @@ export const ProductDetailPage: React.FC = () => {
                     </div>
                   )}
 
-                  {isPurchased && product.product_type !== "consultation" ? (
+                  <div className="flex gap-2">
+                    {isPurchased && product.product_type !== "consultation" ? (
+                      <Button
+                        onClick={handleViewContent}
+                        className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
+                        size="lg"
+                      >
+                        <Eye className="h-4 w-4" />
+                        {t('products.viewContent')}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={
+                          isFreeProduct ? handleSaveFreeContent : handlePurchase
+                        }
+                        className="flex-1"
+                        size="lg"
+                      >
+                        {isFreeProduct ? t('products.save') : t('products.purchaseNow')}
+                      </Button>
+                    )}
+
                     <Button
-                      onClick={handleViewContent}
-                      className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                      variant="outline"
                       size="lg"
+                      className="px-3 shrink-0"
+                      onClick={handleToggleWishlist}
+                      disabled={isTogglingWishlist}
+                      title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
                     >
-                      <Eye className="h-4 w-4" />
-                      {t('products.viewContent')}
+                      <Heart className={`h-5 w-5 ${isWishlisted ? "fill-red-500 text-red-500" : "text-gray-500"}`} />
                     </Button>
-                  ) : (
-                    <Button
-                      onClick={
-                        isFreeProduct ? handleSaveFreeContent : handlePurchase
-                      }
-                      className="w-full"
-                      size="lg"
-                    >
-                      {isFreeProduct ? t('products.save') : t('products.purchaseNow')}
-                    </Button>
-                  )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

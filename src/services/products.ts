@@ -930,6 +930,105 @@ export const productService = {
     if (error) throw error;
   },
 
+  // ── Wishlist Methods ─────────────────────────────────────────────────────
+
+  async toggleWishlist(productId: string, userId: string): Promise<boolean> {
+    // Check if it exists
+    const { data, error } = await supabase
+      .from("product_wishlists")
+      .select("id")
+      .eq("product_id", productId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (data) {
+      // Remove it
+      const { error: deleteError } = await supabase
+        .from("product_wishlists")
+        .delete()
+        .eq("id", data.id);
+      if (deleteError) throw deleteError;
+      return false; // Not in wishlist anymore
+    } else {
+      // Add it
+      const { error: insertError } = await supabase
+        .from("product_wishlists")
+        .insert({
+          product_id: productId,
+          user_id: userId,
+        });
+      if (insertError) throw insertError;
+      return true; // Added to wishlist
+    }
+  },
+
+  async checkWishlistStatus(productId: string, userId: string): Promise<boolean> {
+    const { data, error } = await supabase
+      .from("product_wishlists")
+      .select("id")
+      .eq("product_id", productId)
+      .eq("user_id", userId)
+      .maybeSingle();
+      
+    if (error) {
+      console.error("Error checking wishlist status:", error);
+      return false;
+    }
+    return !!data;
+  },
+
+  async getUserWishlist(userId: string): Promise<ProductWithDetails[]> {
+    const { data: wishlists, error: wishError } = await supabase
+      .from("product_wishlists")
+      .select("product_id")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (wishError) throw wishError;
+    if (!wishlists || wishlists.length === 0) return [];
+
+    const productIds = wishlists.map(w => w.product_id);
+
+    const { data: products, error: productsError } = await supabase
+      .from("products")
+      .select(`
+        *,
+        expert:profiles!products_expert_id_fkey(
+          id,
+          first_name,
+          profile_image_url
+        ),
+        categories:product_category_mappings(
+          category:product_categories(*)
+        ),
+        reviews:product_reviews(rating)
+      `)
+      .in("id", productIds)
+      .eq("is_active", true);
+
+    if (productsError) throw productsError;
+
+    // Calculate ratings
+    const productsWithRatings = (products || []).map((product) => {
+      const ratings = product.reviews?.map((r: any) => r.rating).filter(Boolean) || [];
+      const averageRating = ratings.length > 0 
+        ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length 
+        : null;
+      return {
+        ...product,
+        average_rating: averageRating,
+        total_reviews: ratings.length,
+      };
+    });
+
+    // Sort to match wishlist creation order
+    return productsWithRatings.sort((a, b) => {
+      return productIds.indexOf(a.id) - productIds.indexOf(b.id);
+    }) as ProductWithDetails[];
+  },
+
   // Get expert's products
   // Note: expertId is profiles.id where account_type = 'expert'
   // async getExpertProducts(expertId: string): Promise<ProductWithDetails[]> {
