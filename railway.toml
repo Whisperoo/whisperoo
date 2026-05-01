@@ -3,7 +3,7 @@ builder = "nixpacks"
 buildCommand = "NODE_OPTIONS=--max-old-space-size=4096 npm run build"
 
 [deploy]
-startCommand = "npm run start"
+startCommand = "npx serve -s dist -l ${PORT:-3000}"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"

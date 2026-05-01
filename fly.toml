@@ -19,7 +19,7 @@ app = "whisperoo-app"
 primary_region = "iad"   # US East — closest to hospital clients
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = "Dockerfile.fly"
 
 [[services]]
   internal_port = 8080
