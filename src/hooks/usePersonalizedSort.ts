@@ -60,7 +60,7 @@ export function usePersonalizedSort() {
     });
 
     // Prenatal boost: +4 for expecting users
-    if (profile.expecting_status === 'expecting') {
+    if (profile.expecting_status === 'yes') {
       if ([...allSlugs].some((s) => PRENATAL_SLUGS.has(s))) score += 4;
     }
 

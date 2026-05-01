@@ -44,7 +44,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   const [productFiles, setProductFiles] = useState<ProductFile[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const isMobile = useIsMobile();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'en';
   
   const displayTitle = currentLang === 'es' && product.title_es ? product.title_es : currentLang === 'vi' && product.title_vi ? product.title_vi : product.title;

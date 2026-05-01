@@ -67,9 +67,9 @@ const Dashboard: React.FC = () => {
               {config.branding?.display_name || tenant.name}
             </h2>
             {/* Show user's department if captured */}
-            {profile?.acquisition_department && (
+            {(profile as any)?.acquisition_department && (
               <p className="text-xs font-semibold text-indigo-600 mb-2">
-                {t('dashboard.hospitalBanner.department', { department: (profile.acquisition_department as string).toUpperCase() })}
+                {t('dashboard.hospitalBanner.department', { department: ((profile as any).acquisition_department as string).toUpperCase() })}
               </p>
             )}
             <p className="text-sm text-gray-700 mb-3">
@@ -79,8 +79,8 @@ const Dashboard: React.FC = () => {
               <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                 {config.departments.map((dept, idx) => {
                   // Highlight the user's own department
-                  const isUserDept = profile?.acquisition_department && 
-                    dept.name.toLowerCase().includes((profile.acquisition_department as string).toLowerCase());
+                  const isUserDept = (profile as any)?.acquisition_department &&
+                    dept.name.toLowerCase().includes(((profile as any).acquisition_department as string).toLowerCase());
                   return dept.phone ? (
                     <a key={idx} href={`tel:${dept.phone.replace(/[^0-9]/g, '')}`} className={`inline-flex items-center text-xs font-semibold px-2.5 py-1.5 border shadow-sm rounded-md hover:bg-gray-50 transition group ${
                       isUserDept 

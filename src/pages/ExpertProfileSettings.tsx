@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, User, Award, Settings, Shield } from "lucide-react";
+import { ArrowLeft, User, Award, Settings, Shield, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +10,7 @@ import { ExpertPersonalSection } from "@/components/expert/ExpertPersonalSection
 import { ExpertVerificationSection } from "@/components/expert/ExpertVerificationSection";
 import { ExpertConsultationSettings } from "@/components/expert/ExpertConsultationSettings";
 import { MobileTabs } from "@/components/mobile-tabs/MobileTabs";
+import { SalesAnalyticsDashboard } from "@/components/expert/SalesAnalyticsDashboard";
 
 export const ExpertProfileSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -69,7 +70,7 @@ export const ExpertProfileSettings: React.FC = () => {
             onValueChange={setActiveTab}
             className="space-y-6"
           >
-            <TabsList className="grid grid-cols-4">
+            <TabsList className="grid grid-cols-5">
               <TabsTrigger value="professional" className="gap-2 flex-shrink-0">
                 <Award className="h-4 w-4" />
                 Professional
@@ -85,6 +86,10 @@ export const ExpertProfileSettings: React.FC = () => {
               <TabsTrigger value="verification" className="gap-2 flex-shrink-0">
                 <Shield className="h-4 w-4" />
                 Verification
+              </TabsTrigger>
+              <TabsTrigger value="sales" className="gap-2 flex-shrink-0">
+                <BarChart2 className="h-4 w-4" />
+                Sales
               </TabsTrigger>
             </TabsList>
 
@@ -136,6 +141,10 @@ export const ExpertProfileSettings: React.FC = () => {
                 </p>
                 <ExpertVerificationSection />
               </div>
+            </TabsContent>
+
+            <TabsContent value="sales" className="space-y-6">
+              <SalesAnalyticsDashboard />
             </TabsContent>
           </Tabs>
         </CardContent>
