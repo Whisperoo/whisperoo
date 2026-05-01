@@ -95,9 +95,22 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
     if (!newHospitalName.trim()) return;
     setCreating(true);
     try {
+      // Auto-generate a slug from the name (lowercase, spaces to hyphens, no special chars)
+      const slug = newHospitalName.trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        + '-' + Date.now().toString(36); // append unique suffix to avoid collisions
+
       const { data, error } = await supabase
         .from('tenants')
-        .insert([{ name: newHospitalName.trim(), config: {}, is_active: true }])
+        .insert([{ 
+          name: newHospitalName.trim(), 
+          slug,
+          config: {}, 
+          is_active: true 
+        }])
         .select()
         .single();
       
@@ -105,9 +118,9 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
       
       // Reload the page so the dropdown updates and the new hospital can be selected
       window.location.reload();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating tenant:', err);
-      alert('Failed to create hospital');
+      alert(`Failed to create hospital: ${err.message || 'Unknown error'}`);
     } finally {
       setCreating(false);
     }

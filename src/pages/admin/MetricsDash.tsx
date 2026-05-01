@@ -75,8 +75,8 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         'fn_get_admin_dashboard',
         { 
           p_tenant_id: tenantId ?? null,
-          p_start_date: startDate ? `${startDate}T00:00:00Z` : null,
-          p_end_date: endDate ? `${endDate}T23:59:59Z` : null
+          p_start_date: startDate || null,
+          p_end_date: endDate || null
         }
       );
       if (rpcError) throw rpcError;
@@ -85,8 +85,8 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         'fn_get_resource_utilization',
         { 
           p_tenant_id: tenantId ?? null,
-          p_start_date: startDate ? `${startDate}T00:00:00Z` : null,
-          p_end_date: endDate ? `${endDate}T23:59:59Z` : null
+          p_start_date: startDate || null,
+          p_end_date: endDate || null
         }
       );
       if (resourceError) throw resourceError;
