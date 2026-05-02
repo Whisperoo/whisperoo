@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { TenantConfig } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
 import AdminProductForm from './AdminProductForm';
+import { toast } from '@/hooks/use-toast';
 
 interface ContentCurationPanelProps {
   tenantId: string | null;
@@ -109,7 +110,7 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
       if (error) throw error;
       fetchData();
     } catch (err: any) {
-      alert(`Failed to delete: ${err.message}`);
+      toast({ title: 'Error', description: `Failed to delete: ${err.message}`, variant: 'destructive' });
     } finally {
       setDeletingId(null);
     }

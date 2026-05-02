@@ -22,7 +22,7 @@ interface LanguageSwitcherProps {
 
 const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) => {
   const { i18n, t } = useTranslation();
-  const { profile, user } = useAuth();
+  const { profile, user, updateProfile } = useAuth();
   const [saving, setSaving] = useState(false);
 
   // Sync language from profile on mount
@@ -41,10 +41,8 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
     if (!user) return;
     setSaving(true);
     try {
-      await supabase
-        .from('profiles')
-        .update({ language_preference: langCode })
-        .eq('id', user.id);
+      const { error } = await updateProfile({ language_preference: langCode } as any);
+      if (error) throw error;
 
       toast({
         title: t('settings.language.savedToast'),

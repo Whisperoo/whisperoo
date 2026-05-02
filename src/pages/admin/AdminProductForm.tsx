@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { toast } from '@/hooks/use-toast';
 
 interface AdminProductFormProps {
   productId: string | null; // null or 'new' = create, string = edit
@@ -132,6 +133,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
         const { error: updateErr } = await supabase.from('products').update(payload).eq('id', productId);
         if (updateErr) throw updateErr;
       }
+      toast({ title: 'Success', description: `Content successfully ${isNew ? 'created' : 'updated'}.` });
       onSaved();
       onClose();
     } catch (err: any) {

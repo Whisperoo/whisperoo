@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Loader2, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { toast } from '@/hooks/use-toast';
 
 const COMMON_SPECIALTIES = [
   'Child Development', 'Parenting Strategies', 'Sleep Training', 'Nutrition',
@@ -132,6 +133,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           .eq('id', expertId);
         if (updateErr) throw updateErr;
       }
+      toast({ title: 'Success', description: `Expert successfully ${isNew ? 'added' : 'updated'}.` });
       onSaved();
       onClose();
     } catch (err: any) {

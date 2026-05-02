@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { TenantConfig } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
 import AdminExpertForm from './AdminExpertForm';
+import { toast } from '@/hooks/use-toast';
 
 interface ExpertCurationPanelProps {
   tenantId: string | null;
@@ -96,7 +97,7 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
       if (error) throw error;
       fetchData();
     } catch (err: any) {
-      alert(`Failed to delete: ${err.message}`);
+      toast({ title: 'Error', description: `Failed to delete: ${err.message}`, variant: 'destructive' });
     } finally {
       setDeletingId(null);
     }

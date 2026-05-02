@@ -3,6 +3,18 @@ import { Plus, Trash2, Save, Building2, Palette, Link, Phone, Mail, Loader2, Che
 import { supabase } from '@/lib/supabase';
 import { TenantConfig, TenantDepartment } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
+import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TenantConfigEditorProps {
   tenantId: string | null;
@@ -24,6 +36,7 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
   const [saved, setSaved] = useState(false);
   const [newHospitalName, setNewHospitalName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { t } = useTranslation();
 
   // Form state mirrors TenantConfig
@@ -121,9 +134,25 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
       window.location.reload();
     } catch (err: any) {
       console.error('Error creating tenant:', err);
-      alert(`Failed to create hospital: ${err.message || 'Unknown error'}`);
+      toast({ title: 'Error', description: `Failed to create hospital: ${err.message || 'Unknown error'}`, variant: 'destructive' });
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDeleteTenant = async () => {
+    if (!tenantId) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from('tenants').delete().eq('id', tenantId);
+      if (error) throw error;
+      toast({ title: 'Tenant Deleted', description: 'The hospital tenant was successfully deleted.' });
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Error deleting tenant:', err);
+      toast({ title: 'Error', description: `Failed to delete: ${err.message}`, variant: 'destructive' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -319,8 +348,8 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
                   {signupUrl}
                 </code>
                 <button
-                  onClick={() => { navigator.clipboard.writeText(signupUrl); alert('Link copied!'); }}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-1"
+                  onClick={() => { navigator.clipboard.writeText(signupUrl); toast({ title: 'Link Copied', description: 'Signup link copied to clipboard.' }); }}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-1 inline-flex w-max"
                 >
                   Copy Link
                 </button>
@@ -339,20 +368,48 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
       </section>
 
       {/* ── Actions ── */}
-      <div className="flex items-center justify-end pt-4 pb-12">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-60 transition-colors"
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? t('admin.config.saving') : t('admin.config.saveConfig')}
-        </button>
-        {saved && (
-          <span className="flex items-center gap-1 text-sm text-emerald-600 font-medium">
-            <CheckCircle2 className="w-4 h-4" /> {t('admin.config.saved')}
-          </span>
-        )}
+      <div className="flex items-center justify-between pt-4 pb-12 border-t border-gray-100">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button
+              disabled={deleting}
+              className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Delete Hospital
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the <strong>{tenant?.name}</strong> hospital and remove its configuration. 
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteTenant} className="bg-red-600 hover:bg-red-700">
+                Yes, delete hospital
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <div className="flex items-center gap-4">
+          {saved && (
+            <span className="flex items-center gap-1 text-sm text-emerald-600 font-medium">
+              <CheckCircle2 className="w-4 h-4" /> {t('admin.config.saved')}
+            </span>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-60 transition-colors shadow-sm"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {saving ? t('admin.config.saving') : t('admin.config.saveConfig')}
+          </button>
+        </div>
       </div>
     </div>
   );
