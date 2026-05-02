@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 const CreateAccount: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { signUp, user, profile } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -39,6 +39,15 @@ const CreateAccount: React.FC = () => {
         .then(({ data }) => setTenantInfo(data));
     }
   }, [tenantSlug]);
+
+  const handleSkipAffiliation = () => {
+    setTenantInfo(null);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('tenant');
+    newParams.delete('source');
+    newParams.delete('dept');
+    setSearchParams(newParams, { replace: true });
+  };
 
   // Watch for profile to be loaded after signup
   useEffect(() => {
@@ -175,6 +184,18 @@ const CreateAccount: React.FC = () => {
               ? t('auth.createAccount.signingUpVia', { name: tenantInfo.config?.branding?.display_name || tenantInfo.name, dept: queryDept.toUpperCase() })
               : t('auth.createAccount.subtitle')}
           </p>
+          
+          {tenantInfo && (
+            <div className="mt-4 pt-4 flex flex-col items-center gap-2">
+              <button 
+                onClick={handleSkipAffiliation}
+                type="button"
+                className="text-xs text-gray-400 hover:text-indigo-600 underline transition-colors"
+              >
+                Not a patient here? Continue directly to Whisperoo
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Form */}
