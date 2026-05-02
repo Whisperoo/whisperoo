@@ -29,3 +29,13 @@ CREATE POLICY "Super admin can update products"
 CREATE POLICY "Super admin can delete products"
   ON public.products FOR DELETE
   USING ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app'));
+
+-- ── SELECT policies (admin sees ALL data regardless of status) ────
+
+CREATE POLICY "Super admin can view all products"
+  ON public.products FOR SELECT
+  USING ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app'));
+
+CREATE POLICY "Super admin can view all profiles"
+  ON public.profiles FOR SELECT
+  USING ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app'));

@@ -35,10 +35,19 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
     try {
       const { data: prods, error: prodError } = await supabase
         .from('products')
-        .select('id, title, product_type, price, is_free, status, thumbnail_url, is_hospital_resource')
+        .select('*')
         .order('title');
       if (prodError) throw prodError;
-      setProducts(prods ?? []);
+      setProducts((prods ?? []).map((p: any) => ({
+        id: p.id,
+        title: p.title || '',
+        product_type: p.product_type || 'document',
+        price: p.price || 0,
+        is_free: p.is_free ?? (p.price === 0),
+        status: p.status || 'published',
+        thumbnail_url: p.thumbnail_url || null,
+        is_hospital_resource: p.is_hospital_resource ?? false,
+      })));
 
       if (tenantId) {
         const { data: tenantRow, error: tenantError } = await supabase
