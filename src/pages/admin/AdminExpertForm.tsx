@@ -68,7 +68,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
       setLoading(true);
       const { data, error: fetchErr } = await supabase
         .from('profiles')
-        .select('first_name, email, profile_image_url, expert_bio, expert_specialties, expert_credentials, expert_experience_years, expert_consultation_rate, expert_availability_status, expert_rating')
+        .select('*')
         .eq('id', expertId)
         .single();
       if (fetchErr) {
@@ -101,24 +101,20 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
 
     try {
       if (isNew) {
-        const { error: insertErr } = await supabase
-          .from('profiles')
-          .insert([{
-            first_name: form.first_name.trim(),
-            email: form.email.trim() || null,
-            profile_image_url: form.profile_image_url.trim() || null,
-            expert_bio: form.expert_bio.trim(),
-            expert_specialties: form.expert_specialties,
-            expert_credentials: form.expert_credentials,
-            expert_experience_years: form.expert_experience_years,
-            expert_consultation_rate: form.expert_consultation_rate,
-            expert_availability_status: form.expert_availability_status,
-            expert_rating: form.expert_rating,
-            account_type: 'expert',
-            expert_verified: true,
-            onboarded: true,
-          }]);
-        if (insertErr) throw insertErr;
+        // Must use server-side function because profiles.id is FK to auth.users
+        const { data: newId, error: rpcErr } = await supabase.rpc('fn_admin_create_expert', {
+          p_first_name: form.first_name.trim(),
+          p_email: form.email.trim() || null,
+          p_profile_image_url: form.profile_image_url.trim() || null,
+          p_expert_bio: form.expert_bio.trim() || null,
+          p_expert_specialties: form.expert_specialties,
+          p_expert_credentials: form.expert_credentials,
+          p_expert_experience_years: form.expert_experience_years,
+          p_expert_consultation_rate: form.expert_consultation_rate,
+          p_expert_availability_status: form.expert_availability_status,
+          p_expert_rating: form.expert_rating,
+        });
+        if (rpcErr) throw rpcErr;
       } else {
         const { error: updateErr } = await supabase
           .from('profiles')
