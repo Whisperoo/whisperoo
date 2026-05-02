@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Star, Loader2, Users } from 'lucide-react';
+import { Star, Loader2, Users, Plus, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { TenantConfig } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
+import AdminExpertForm from './AdminExpertForm';
 
 interface ExpertCurationPanelProps {
   tenantId: string | null;
@@ -15,6 +16,7 @@ interface Expert {
   profile_image_url: string | null;
   expert_rating: number | null;
   expert_experience_years: number | null;
+  expert_availability_status: string | null;
 }
 
 const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) => {
@@ -23,6 +25,8 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
   const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null);
   const [loading, setLoading] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [editingExpert, setEditingExpert] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { t } = useTranslation();
 
   const fetchData = useCallback(async () => {
@@ -30,7 +34,7 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
     try {
       const { data: expertData, error: expertError } = await supabase
         .from('profiles')
-        .select('id, first_name, expert_specialties, profile_image_url, expert_rating, expert_experience_years')
+        .select('id, first_name, expert_specialties, profile_image_url, expert_rating, expert_experience_years, expert_availability_status')
         .eq('account_type', 'expert')
         .eq('expert_verified', true)
         .order('expert_rating', { ascending: false });
@@ -84,14 +88,19 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
     }
   };
 
-  if (!tenantId) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-3">
-        <Users className="w-10 h-10 opacity-30" />
-        <p className="text-sm">{t('admin.experts.selectHospital')}</p>
-      </div>
-    );
-  }
+  const handleDelete = async (expertId: string) => {
+    if (!confirm('Are you sure you want to delete this expert? This will also remove all their associated products.')) return;
+    setDeletingId(expertId);
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', expertId);
+      if (error) throw error;
+      fetchData();
+    } catch (err: any) {
+      alert(`Failed to delete: ${err.message}`);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -101,27 +110,50 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
     );
   }
 
+  const statusColor: Record<string, string> = {
+    available: 'bg-green-100 text-green-700',
+    busy: 'bg-yellow-100 text-yellow-700',
+    unavailable: 'bg-red-100 text-red-700',
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">{t('admin.experts.title')}</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          {t('admin.experts.description')}{' '}
-          <span className="font-medium text-gray-700">{t('admin.experts.featuredCount', { count: boostIds.length })}</span>
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">{t('admin.experts.title')}</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Manage expert profiles.{' '}
+            <span className="font-medium text-gray-700">{experts.length} experts total</span>
+            {tenantId && <> · <span className="font-medium text-amber-600">{boostIds.length} featured</span></>}
+          </p>
+        </div>
+        <button
+          onClick={() => setEditingExpert('new')}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Add Expert
+        </button>
       </div>
 
       <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm overflow-hidden">
         {experts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-2">
-            <Users className="w-8 h-8 opacity-30" />
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-3">
+            <Users className="w-10 h-10 opacity-30" />
             <p className="text-sm">{t('admin.experts.noExperts')}</p>
+            <button
+              onClick={() => setEditingExpert('new')}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Add your first expert →
+            </button>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {experts.map((expert) => {
               const isBoosted = boostIds.includes(expert.id);
               const isToggling = togglingId === expert.id;
+              const isDeleting = deletingId === expert.id;
               return (
                 <div
                   key={expert.id}
@@ -141,10 +173,17 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{expert.first_name}</p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {expert.expert_specialties?.[0] ?? t('admin.experts.generalExpert')}
-                      {expert.expert_experience_years ? ` · ${t('admin.experts.yearsExp', { years: expert.expert_experience_years })}` : ''}
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-gray-500 truncate">
+                        {expert.expert_specialties?.[0] ?? t('admin.experts.generalExpert')}
+                        {expert.expert_experience_years ? ` · ${expert.expert_experience_years} yrs` : ''}
+                      </p>
+                      {expert.expert_availability_status && (
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize ${statusColor[expert.expert_availability_status] ?? 'bg-gray-100 text-gray-500'}`}>
+                          {expert.expert_availability_status}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Rating */}
@@ -155,30 +194,62 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
                     </div>
                   )}
 
-                  {/* Feature toggle */}
-                  <button
-                    onClick={() => handleToggleBoost(expert.id)}
-                    disabled={isToggling}
-                    title={isBoosted ? t('admin.experts.removeFromFeatured') : t('admin.experts.featureExpert')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all disabled:opacity-50 ${
-                      isBoosted
-                        ? 'bg-amber-50 border-amber-300 text-amber-700 hover:border-red-300 hover:text-red-500 hover:bg-red-50'
-                        : 'border-gray-200 text-gray-400 hover:border-amber-300 hover:text-amber-600 hover:bg-amber-50'
-                    }`}
-                  >
-                    {isToggling ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Star className={`w-3.5 h-3.5 ${isBoosted ? 'fill-amber-400' : ''}`} />
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {/* Feature toggle (only when a tenant is selected) */}
+                    {tenantId && (
+                      <button
+                        onClick={() => handleToggleBoost(expert.id)}
+                        disabled={isToggling}
+                        title={isBoosted ? t('admin.experts.removeFromFeatured') : t('admin.experts.featureExpert')}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all disabled:opacity-50 ${
+                          isBoosted
+                            ? 'bg-amber-50 border-amber-300 text-amber-700 hover:border-red-300 hover:text-red-500 hover:bg-red-50'
+                            : 'border-gray-200 text-gray-400 hover:border-amber-300 hover:text-amber-600 hover:bg-amber-50'
+                        }`}
+                      >
+                        {isToggling ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Star className={`w-3.5 h-3.5 ${isBoosted ? 'fill-amber-400' : ''}`} />
+                        )}
+                      </button>
                     )}
-                    {isBoosted ? t('admin.experts.featured') : t('admin.experts.feature')}
-                  </button>
+
+                    {/* Edit */}
+                    <button
+                      onClick={() => setEditingExpert(expert.id)}
+                      className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                      title="Edit expert"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Delete */}
+                    <button
+                      onClick={() => handleDelete(expert.id)}
+                      disabled={isDeleting}
+                      className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50"
+                      title="Delete expert"
+                    >
+                      {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Expert Form Modal */}
+      {editingExpert && (
+        <AdminExpertForm
+          expertId={editingExpert}
+          onClose={() => setEditingExpert(null)}
+          onSaved={() => fetchData()}
+        />
+      )}
     </div>
   );
 };
