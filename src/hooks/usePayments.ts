@@ -166,15 +166,12 @@ export const usePayments = () => {
         .eq('product_id', productId)
         .eq('status', 'completed')
         .abortSignal(controller.signal)
-        .single();
+        .limit(1)
+        .maybeSingle();
 
       clearTimeout(timeoutId);
 
       if (error) {
-        // PGRST116 means no rows returned, which is expected if no purchase exists
-        if (error.code === 'PGRST116') {
-          return false;
-        }
         console.error('Error checking purchase status:', error);
         return false;
       }
@@ -205,9 +202,10 @@ export const usePayments = () => {
         .eq('user_id', user.id)
         .eq('product_id', productId)
         .eq('status', 'completed')
-        .single();
+        .limit(1)
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching user purchase:', error);
         return null;
       }
