@@ -30,14 +30,14 @@ const OnboardingKids: React.FC = () => {
     if (expectingStatus) {
       const saveData = async () => {
         setIsSaving(true);
-        console.log('OnboardingKids: Saving data...', { expectingStatus, dueDate });
+        console.log('OnboardingKids: Saving data...');
         
         try {
           const profileResult = await updateProfile({ expecting_status: expectingStatus as 'yes' | 'no' | 'trying' });
           console.log('Profile update result:', profileResult);
           
           if (expectingStatus === 'yes' && dueDate && expectedBabyName.trim()) {
-            console.log('Saving expecting baby with due date and name:', dueDate.toISOString().split('T')[0], expectedBabyName);
+            console.log('Saving expecting baby data...');
             const result = await saveExpectingBaby(dueDate.toISOString().split('T')[0], expectedBabyName);
             console.log('Save expecting baby result:', result);
             

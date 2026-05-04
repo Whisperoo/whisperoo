@@ -99,7 +99,7 @@ const CreateAccount: React.FC = () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
-    console.log('Creating account for:', formData.email);
+    console.log('Creating account...');
     
     try {
       const acquisitionSource = querySource || (tenantSlug ? 'qr_hospital' : 'organic');

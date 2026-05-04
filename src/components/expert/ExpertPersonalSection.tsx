@@ -11,7 +11,7 @@ import AvatarUpload from "@/components/ui/AvatarUpload";
 import ChildrenManager from "@/components/ui/ChildrenManager";
 
 export const ExpertPersonalSection: React.FC = () => {
-  const { profile, updateProfile } = useAuth();
+  const { profile, updateProfile, user } = useAuth();
   const [formData, setFormData] = useState({
     first_name: "",
     role: "mom" as "mom" | "dad" | "caregiver" | "other",
@@ -144,7 +144,7 @@ export const ExpertPersonalSection: React.FC = () => {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
-              value={profile.email}
+              value={user?.email || ''}
               disabled
               className="bg-gray-50"
             />

@@ -42,7 +42,7 @@ const iconMap = {
 const SideNavBar: React.FC<SideNavBarProps> = ({ isMobileOverlay = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { 
     sidebarCollapsed, 
     setSidebarCollapsed,
@@ -248,7 +248,7 @@ const SideNavBar: React.FC<SideNavBarProps> = ({ isMobileOverlay = false }) => {
                   {profile.first_name}
                 </p>
                 <p className="text-xs text-gray-500 truncate">
-                  {profile.email}
+                  {user?.email}
                 </p>
               </div>
             </div>

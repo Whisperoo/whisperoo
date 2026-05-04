@@ -13,7 +13,6 @@ CREATE TYPE expecting_status AS ENUM ('yes', 'no', 'trying');
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   first_name TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
   role user_role,
   custom_role TEXT,
   expecting_status expecting_status,
@@ -39,11 +38,10 @@ CREATE TABLE kids (
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, first_name, email)
+  INSERT INTO profiles (id, first_name)
   VALUES (
     NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
-    NEW.email
+    COALESCE(NEW.raw_user_meta_data->>'first_name', '')
   );
   RETURN NEW;
 END;
@@ -110,7 +108,6 @@ CREATE POLICY "Users can delete own kids"
 
 
 -- Create indexes for better performance
-CREATE INDEX idx_profiles_email ON profiles(email);
 CREATE INDEX idx_kids_parent_id ON kids(parent_id);
 
 

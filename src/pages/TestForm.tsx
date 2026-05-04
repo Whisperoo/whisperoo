@@ -6,7 +6,7 @@ const TestForm: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('TEST FORM SUBMITTED!', { email, password });
+    console.log('TEST FORM SUBMITTED!');
     alert('Form submitted! Check console.');
   };
 

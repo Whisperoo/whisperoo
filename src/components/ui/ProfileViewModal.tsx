@@ -32,7 +32,7 @@ interface Child {
 }
 
 const ProfileViewModal: React.FC<ProfileViewModalProps> = ({ isOpen, onClose }) => {
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
   const [children, setChildren] = useState<Child[]>([])
   const [loading, setLoading] = useState(true)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -146,7 +146,7 @@ const ProfileViewModal: React.FC<ProfileViewModalProps> = ({ isOpen, onClose }) 
                         }
                       </span>
                     </div>
-                    <p className="text-gray-600">{profile.email}</p>
+                    <p className="text-gray-600">{user?.email}</p>
                   </div>
                 </div>
               </CardContent>

@@ -1,5 +1,6 @@
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/components/navigation/AppLayout";
+import { SessionTimeoutTracker } from "@/components/auth/SessionTimeoutTracker";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -51,6 +52,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <SessionTimeoutTracker />
               <NavigationProvider>
                 <Routes>
                   <Route path="/" element={<Splash />} />

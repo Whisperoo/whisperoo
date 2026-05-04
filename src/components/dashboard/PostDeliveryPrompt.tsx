@@ -72,7 +72,7 @@ const PostDeliveryPrompt: React.FC<PostDeliveryPromptProps> = ({ expectingKids, 
       }
 
       console.log('[PostDeliveryPrompt] Updating kid:', selectedKid);
-      console.log('[PostDeliveryPrompt] Update payload:', JSON.stringify(updateData));
+      console.log('[PostDeliveryPrompt] Update payload prepared');
 
       const { data, error, status, statusText } = await supabase
         .from('kids')

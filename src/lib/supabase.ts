@@ -17,7 +17,6 @@ export type Database = {
         Row: {
           id: string
           first_name: string
-          email: string
           role: 'mom' | 'dad' | 'caregiver' | 'other' | null
           custom_role: string | null
           expecting_status: 'yes' | 'no' | 'trying' | null
@@ -30,7 +29,6 @@ export type Database = {
         Insert: {
           id: string
           first_name: string
-          email: string
           role?: 'mom' | 'dad' | 'caregiver' | 'other' | null
           custom_role?: string | null
           expecting_status?: 'yes' | 'no' | 'trying' | null
@@ -43,7 +41,6 @@ export type Database = {
         Update: {
           id?: string
           first_name?: string
-          email?: string
           role?: 'mom' | 'dad' | 'caregiver' | 'other' | null
           custom_role?: string | null
           expecting_status?: 'yes' | 'no' | 'trying' | null

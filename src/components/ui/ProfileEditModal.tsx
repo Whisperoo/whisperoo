@@ -27,7 +27,7 @@ interface ProfileEditModalProps {
 
 const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, onChildrenChange }) => {
   const { t } = useTranslation()
-  const { profile, updateProfile } = useAuth()
+  const { profile, updateProfile, user } = useAuth()
   const [formData, setFormData] = useState({
     first_name: '',
     role: 'mom' as 'mom' | 'dad' | 'caregiver' | 'other',
@@ -165,7 +165,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, on
                 <Label htmlFor="email">{t('profileEdit.email')}</Label>
                 <Input
                   id="email"
-                  value={profile.email}
+                  value={user?.email || ''}
                   disabled
                   className="bg-gray-50"
                 />

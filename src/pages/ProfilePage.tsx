@@ -36,7 +36,7 @@ interface Session {
 
 const ProfilePage: React.FC = () => {
   const { t } = useTranslation()
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
   const navigate = useNavigate()
   const [children, setChildren] = useState<Child[]>([])
   const [loading, setLoading] = useState(true)
@@ -224,7 +224,7 @@ const ProfilePage: React.FC = () => {
                       }
                     </span>
                   </div>
-                  <p className="text-gray-600">{profile.email}</p>
+                  <p className="text-gray-600">{user?.email}</p>
                 </div>
               </div>
             </CardContent>

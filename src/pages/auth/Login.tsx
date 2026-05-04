@@ -35,7 +35,7 @@ const Login: React.FC = () => {
 
   const handleLogin = async () => {
     setIsLoading(true);
-    console.log("Signing in user:", formData.email);
+    console.log("Signing in user");
 
     try {
       const { user, error } = await signIn(formData.email, formData.password);
