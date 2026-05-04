@@ -21,15 +21,15 @@ const OnboardingTopics: React.FC = () => {
 
   return (
     <MultiSelectQuestion
-      stepIndex={5}
-      totalSteps={5}
+      stepIndex={4}
+      totalSteps={4}
       id="topics_of_interest"
       question={t('onboarding.topics.question')}
       subtitle={t('onboarding.topics.subtitle')}
       options={topicOptions}
       nextRoute="/onboarding/complete"
       skipRoute="/onboarding/complete"
-      backRoute="/onboarding/parenting-styles"
+      backRoute="/onboarding/kids-count"
     />
   );
 };

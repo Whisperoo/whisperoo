@@ -5,8 +5,15 @@ import BackButton from '../../components/ui/BackButton';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import Divider from '../../components/ui/Divider';
-import GoogleAuthButton from '../../components/ui/GoogleAuthButton';
 import { Checkbox } from '../../components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -142,19 +149,6 @@ const CreateAccount: React.FC = () => {
     }
   };
 
-  const handleGoogleAuth = async () => {
-    try {
-      // TODO: Implement Google OAuth
-      console.log('Google auth triggered');
-      toast({
-        title: "Google sign-in",
-        description: "Google authentication coming soon!",
-      });
-    } catch (error) {
-      console.error('Google auth error:', error);
-    }
-  };
-
   const isFormValid = formData.firstName.trim() && 
                      formData.email.trim() && 
                      formData.password.trim() &&
@@ -259,10 +253,6 @@ const CreateAccount: React.FC = () => {
             )}
           </div>
 
-          <Divider label={t('auth.createAccount.or')} />
-
-          <GoogleAuthButton onClick={handleGoogleAuth} />
-
           <div className="space-y-2">
             <label className="flex items-start space-x-3 cursor-pointer">
               <Checkbox
@@ -270,7 +260,25 @@ const CreateAccount: React.FC = () => {
                 onCheckedChange={(checked) => setFormData({ ...formData, agreeToTerms: checked === true })}
               />
               <span className="text-sm text-gray-700 leading-5">
-                {t('auth.createAccount.agreeTerms')}
+                I agree to the{" "}
+                <Dialog>
+                  <DialogTrigger className="text-indigo-700 hover:underline">
+                    Terms of Service and Privacy Policy
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Terms of Service and Privacy Policy</DialogTitle>
+                    </DialogHeader>
+                    <DialogDescription>
+                      <div className="space-y-4 text-sm text-gray-700">
+                        <p><strong>1. Acceptance of Terms</strong><br/>By accessing or using Whisperoo, you agree to be bound by these Terms of Service.</p>
+                        <p><strong>2. Privacy Policy</strong><br/>Your privacy is important to us. We collect and use personal information as described in our Privacy Policy to provide and improve our services.</p>
+                        <p><strong>3. Use of Service</strong><br/>You agree to use Whisperoo only for lawful purposes and in accordance with these Terms.</p>
+                        <p><strong>4. Medical Disclaimer</strong><br/>Whisperoo's AI Chat Genie provides general information and support only. It is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+                      </div>
+                    </DialogDescription>
+                  </DialogContent>
+                </Dialog>
               </span>
             </label>
             {errors.agreeToTerms && (

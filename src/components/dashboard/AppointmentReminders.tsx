@@ -278,9 +278,9 @@ export const AppointmentReminders: React.FC = () => {
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span
-                    className={`text-sm font-bold transition-all duration-200 ${
+                    className={`text-sm font-bold transition-all duration-200 break-words w-full sm:w-auto flex-1 ${
                       isCompleted ? 'text-gray-500 line-through' : 'text-gray-900'
                     }`}
                   >
@@ -291,7 +291,7 @@ export const AppointmentReminders: React.FC = () => {
                       : template.title}
                   </span>
                   {!isCompleted && isUrgent && (
-                    <span className="flex-shrink-0 flex items-center text-[10px] uppercase tracking-wider font-bold text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full">
+                    <span className="flex-shrink-0 flex items-center text-[10px] uppercase tracking-wider font-bold text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full mt-1 sm:mt-0">
                       <Clock className="w-3 h-3 mr-1" />
                       {t('appointments.badge.actionNeeded')}
                     </span>

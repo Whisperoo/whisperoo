@@ -319,6 +319,11 @@ async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = nul
   // Only use semantic search — no all-experts fallback
   let experts = await findMatchingExpertsBySemantic(supabase, message);
 
+  // Fallback to keyword matching if semantic search returns no results
+  if (experts.length === 0) {
+    experts = await findMatchingExpertsByKeywords(supabase, message);
+  }
+
   // Sort by similarity then rating
   experts.sort((a, b) => {
     if (a.similarity_score && b.similarity_score) return b.similarity_score - a.similarity_score;
@@ -372,7 +377,7 @@ async function findMatchingExpertsBySemantic(supabase, message) {
     // Search for similar experts with very permissive threshold for initial retrieval
     const { data: similarExperts, error } = await supabase.rpc('find_similar_experts', {
       query_embedding: queryEmbedding,
-      match_threshold: 0.25,  // Very permissive to catch all potential matches
+      match_threshold: 0.15,  // Very permissive to catch all potential matches
       match_count: 10        // Get more potential matches for AI to evaluate
     });
 
@@ -392,7 +397,7 @@ async function findMatchingExpertsBySemantic(supabase, message) {
 
     // Filter by similarity score and return formatted results - let AI decide relevance
     const filteredExperts = similarExperts
-      .filter(expert => expert.similarity >= 0.30)  // Lowered to catch colloquial phrasing
+      .filter(expert => expert.similarity >= 0.15)  // Lowered to catch colloquial phrasing
       .map(expert => ({
         id: expert.expert_id,
         name: expert.first_name || 'Expert',

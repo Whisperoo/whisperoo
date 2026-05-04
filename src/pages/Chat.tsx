@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import MessageBubble from '@/components/chat/MessageBubble';
 import ChildSwitcher from '@/components/chat/ChildSwitcher';
 import { ChatHistorySettings } from '@/components/chat/ChatHistorySettings';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useTranslation } from 'react-i18next';
 
 // Supabase client is now imported from lib/supabase
@@ -358,12 +359,23 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
       <div className="text-center py-2 px-4">
         <p className="text-xs text-gray-400">
           {t('chat.disclaimer')}{' '}
-          <button
-            onClick={() => navigate('/')}
-            className="underline hover:text-gray-600 transition-colors"
-          >
-            {t('chat.learnMore')}
-          </button>
+          <Dialog>
+            <DialogTrigger className="underline hover:text-gray-600 transition-colors">
+              {t('chat.learnMore')}
+            </DialogTrigger>
+            <DialogContent className="max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Medical Disclaimer</DialogTitle>
+              </DialogHeader>
+              <DialogDescription>
+                <div className="space-y-4 text-sm text-gray-700 mt-4 text-left">
+                  <p>Whisperoo’s AI Chat Genie provides general information and support only. It is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+                  <p>Always seek the advice of your pediatrician, physician, or other qualified healthcare provider with any questions you may have regarding your child’s health or well-being. Never disregard professional medical advice or delay in seeking it because of something you have read on Whisperoo.</p>
+                  <p>If you think you may have a medical emergency, call your doctor or 911 immediately. Whisperoo does not recommend or endorse any specific tests, physicians, products, procedures, opinions, or other information that may be mentioned on the site.</p>
+                </div>
+              </DialogDescription>
+            </DialogContent>
+          </Dialog>
         </p>
       </div>
 

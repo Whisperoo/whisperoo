@@ -329,10 +329,10 @@ const CareChecklist: React.FC = () => {
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs" aria-hidden="true">{categoryMeta.icon}</span>
+                        <div className="flex flex-wrap items-start gap-2 mb-0.5">
+                          <span className="text-xs mt-0.5" aria-hidden="true">{categoryMeta.icon}</span>
                           <span
-                            className={`text-sm font-medium transition-all duration-200 ${
+                            className={`text-sm font-medium transition-all duration-200 flex-1 min-w-0 break-words ${
                               isCompleted ? 'text-gray-400 line-through' : 'text-gray-800'
                             }`}
                           >

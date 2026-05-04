@@ -59,13 +59,13 @@ const OnboardingKidsCount: React.FC = () => {
 
   const handleNext = () => {
     if (hasKids === 'no') {
-      navigate('/onboarding/parenting-styles');
+      navigate('/onboarding/topics');
     } else if (hasKids === 'yes' && !showKidsDetails) {
       setShowKidsDetails(true);
     } else if (showKidsDetails) {
       const validKids = getValidKids(kidsData);
       if (validKids.length === kidsCount) {
-        navigate('/onboarding/parenting-styles');
+        navigate('/onboarding/topics');
       }
     }
   };

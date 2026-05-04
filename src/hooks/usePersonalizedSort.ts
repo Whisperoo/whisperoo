@@ -39,13 +39,16 @@ export function usePersonalizedSort() {
 
       let score = 0;
 
-      // Collect all matchable slugs from this product
       const categorySlugs = (product.categories ?? [])
         .map((c: any) => (c.category?.slug ?? '') as string)
         .filter(Boolean);
 
       const productTags: string[] = ((product as any).tags ?? []);
-      const allSlugs = new Set([...categorySlugs, ...productTags]);
+      
+      const expertSpecialties: string[] = (product.expert?.expert_specialties ?? [])
+        .map((s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '-'));
+
+      const allSlugs = new Set([...categorySlugs, ...productTags, ...expertSpecialties]);
 
       // +3 per slug that matches a topic the user selected
       (profile.topics_of_interest ?? []).forEach((topic) => {

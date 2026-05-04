@@ -41,7 +41,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <main
-      className={`${isMobile ? "px-4 py-6" : "max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}
+      className={`w-full overflow-x-hidden ${isMobile ? "px-4 py-6" : "max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}
     >
       {/* Welcome Section */}
       <div className="mb-6">
@@ -63,8 +63,8 @@ const Dashboard: React.FC = () => {
                {tenant.name.charAt(0)}
              </div>
           )}
-          <div className="text-center sm:text-left flex-1">
-            <h2 className="text-lg font-bold text-brand-dark mb-1" style={{color: config.branding?.primary_color}}>
+          <div className="text-center sm:text-left flex-1 min-w-0 w-full">
+            <h2 className="text-lg font-bold text-brand-dark mb-1 break-words" style={{color: config.branding?.primary_color}}>
               {config.branding?.display_name || tenant.name}
             </h2>
             {/* Show user's department if captured */}
@@ -109,15 +109,15 @@ const Dashboard: React.FC = () => {
           onClick={() => navigate("/experts")}
           className="bg-indigo-50 rounded-xl p-4 mb-6 border border-indigo-200 cursor-pointer hover:bg-indigo-100 hover:border-indigo-300 transition-all duration-200 flex items-center justify-between"
         >
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center">
+          <div className="flex items-center space-x-3 flex-1 min-w-0 pr-2">
+            <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
               <Building2 className="w-5 h-5 text-indigo-600" />
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-indigo-900">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-bold text-indigo-900 truncate">
                 {t('dashboard.expertsLink.title')}
               </h3>
-              <p className="text-xs text-indigo-600">
+              <p className="text-xs text-indigo-600 truncate">
                 {t('dashboard.expertsLink.subtitle', { hospitalName: config?.branding?.display_name || tenant.name })}
               </p>
             </div>
@@ -131,9 +131,9 @@ const Dashboard: React.FC = () => {
         onClick={() => navigate("/chat")}
         className="bg-white rounded-xl shadow-card p-6 mb-6 border border-gray-200 cursor-pointer hover:shadow-elevated transition-all duration-200 hover:border-brand-primary"
       >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-between mb-4 w-full">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div className="flex items-center space-x-2 flex-shrink-0">
               <img
                 src="/stork-avatar.png"
                 alt="Whisperoo"
@@ -141,11 +141,11 @@ const Dashboard: React.FC = () => {
               />
               <MessageCircle className="w-5 h-5 text-brand-primary" />
             </div>
-            <h2 className="text-lg font-semibold text-brand-primary">
+            <h2 className="text-lg font-semibold text-brand-primary truncate">
               {t('dashboard.chatCard.title')}
             </h2>
           </div>
-          <ArrowRight className="w-5 h-5 text-brand-primary" />
+          <ArrowRight className="w-5 h-5 text-brand-primary flex-shrink-0 ml-2" />
         </div>
         <p className="text-gray-600 leading-relaxed">
           {t('dashboard.chatCard.description')}

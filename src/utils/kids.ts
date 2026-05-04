@@ -148,11 +148,11 @@ export const saveExpectingBaby = async (dueDate: string, expectedName?: string) 
 // Date validation utilities
 export const validateDueDate = (date: Date): { isValid: boolean; error?: string } => {
   const today = new Date()
-  const minDate = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000)) // At least 1 week from now
+  const minDate = new Date(today.getTime() + (1 * 24 * 60 * 60 * 1000)) // At least tomorrow
   const maxDate = new Date(today.getTime() + (45 * 7 * 24 * 60 * 60 * 1000)) // Max 45 weeks from now
 
   if (date < minDate) {
-    return { isValid: false, error: 'Due date must be at least one week from today' }
+    return { isValid: false, error: 'Due date must be at least tomorrow' }
   }
 
   if (date > maxDate) {
