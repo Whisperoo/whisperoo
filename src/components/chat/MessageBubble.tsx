@@ -5,6 +5,9 @@ import ExpertSuggestionCard from './ExpertSuggestionCard';
 import ComplianceFeedbackDialog from './ComplianceFeedbackDialog';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { Globe } from 'lucide-react';
 
 interface ExpertSuggestion {
   id: string;
@@ -59,6 +62,34 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
   
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [feedbackState, setFeedbackState] = useState<'none' | 'up' | 'down'>('none');
+  const { updateProfile } = useAuth();
+  const { i18n } = useTranslation();
+
+  // Detect language switch marker
+  const langMatch = message.content.match(/\[SWITCH_LANGUAGE:([a-z]{2})\]/);
+  const detectedLangCode = langMatch ? langMatch[1] : null;
+  const cleanContent = message.content.replace(/\[SWITCH_LANGUAGE:[a-z]{2}\]/g, '').trim();
+
+  // Handle language change
+  const handleLanguageChange = async (lang: string) => {
+    try {
+      await updateProfile({ language_preference: lang as 'en' | 'es' | 'vi' });
+      await i18n.changeLanguage(lang);
+      toast({
+        title: "Language Updated",
+        description: `Your language preference has been set to ${lang === 'en' ? 'English' : lang === 'es' ? 'Spanish' : 'Vietnamese'}.`,
+      });
+    } catch (err) {
+      console.error('Error updating language:', err);
+    }
+  };
+
+  // Run auto-update once if marker is detected
+  React.useEffect(() => {
+    if (detectedLangCode && i18n.language !== detectedLangCode) {
+      handleLanguageChange(detectedLangCode);
+    }
+  }, [detectedLangCode]);
 
   const handleThumbsUp = async () => {
     if (feedbackState === 'up') return; // Already submitted
@@ -133,11 +164,40 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
             {/* Message Text */}
             <div className="text-sm leading-relaxed">
               {isUser ? (
-                <div className="whitespace-pre-wrap">{message.content}</div>
+                <div className="whitespace-pre-wrap">{cleanContent}</div>
               ) : (
-                <MarkdownText content={message.content} />
+                <MarkdownText content={cleanContent} />
               )}
             </div>
+
+            {/* Language Selector Buttons (if switch detected) */}
+            {detectedLangCode && !isUser && (
+              <div className="mt-4 p-3 bg-white/50 rounded-lg border border-brand-primary/20">
+                <div className="text-[10px] uppercase tracking-wider text-brand-dark/60 font-semibold mb-2 flex items-center gap-1">
+                  <Globe className="w-3 h-3" />
+                  Select Language / Seleccionar Idioma
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { code: 'en', label: '🇬🇧 English' },
+                    { code: 'es', label: '🇪🇸 Español' },
+                    { code: 'vi', label: '🇻🇳 Tiếng Việt' }
+                  ].map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => handleLanguageChange(lang.code)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        i18n.language === lang.code
+                          ? 'bg-brand-primary text-white shadow-md scale-105'
+                          : 'bg-white text-brand-dark hover:bg-brand-primary/10 border border-brand-primary/10'
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Timestamp & Feedback */}
             <div className={`flex items-center justify-between text-xs mt-2 ${isUser ? 'text-white/70' : 'text-gray-500'}`}>
