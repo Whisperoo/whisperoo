@@ -41,7 +41,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <main
-      className={`w-full overflow-x-hidden ${isMobile ? "px-4 py-6" : "max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}
+      className={`w-full max-w-full overflow-x-hidden box-border ${isMobile ? "px-4 py-6" : "max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}
     >
       {/* Welcome Section */}
       <div className="mb-6">

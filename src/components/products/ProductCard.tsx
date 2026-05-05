@@ -510,7 +510,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </Link>
 
           {/* Description */}
-          <p className="font-normal text-[14px] leading-[19.6px] text-[#111111] font-['Plus_Jakarta_Sans'] max-w-[21rem] line-clamp-3 break-words">
+          <p className="font-normal text-[14px] leading-[19.6px] text-[#111111] font-['Plus_Jakarta_Sans'] w-full line-clamp-3 break-words">
             {displayDescription}
           </p>
         </div>
