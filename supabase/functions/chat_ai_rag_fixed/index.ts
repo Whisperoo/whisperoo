@@ -6,6 +6,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
+// Helper to detect language from message content
+function detectLanguage(message: string): string | null {
+  const m = message.toLowerCase();
+  
+  // Spanish keywords
+  const esKeywords = ['hola', 'bebe', 'niño', 'niña', 'embarazo', 'parto', 'leche', 'pecho', 'sueño', 'llanto'];
+  if (esKeywords.some(kw => m.includes(kw))) return 'es';
+  
+  // Vietnamese keywords
+  const viKeywords = ['xin chào', 'bé', 'em bé', 'mang thai', 'sinh con', 'sữa', 'ngủ', 'khóc'];
+  if (viKeywords.some(kw => m.includes(kw))) return 'vi';
+  
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -166,6 +181,17 @@ serve(async (req) => {
 
     if (messageError) throw messageError;
 
+    // Update user interests based on detected category — makes recommendations dynamic
+    if (messageCategory && messageCategory !== 'General Parenting') {
+      const updatedTopics = Array.from(new Set([...userTopics, messageCategory]));
+      if (updatedTopics.length !== userTopics.length) {
+        await supabase
+          .from('profiles')
+          .update({ topics_of_interest: updatedTopics })
+          .eq('id', user.id);
+      }
+    }
+
     let aiResponse = "";
     let matchedExperts = [];
 
@@ -176,10 +202,7 @@ serve(async (req) => {
       // Get enhanced chat context
       const context = await getEnhancedChatContext(supabase, user.id, childId, currentSessionId);
 
-      // ── Expert matching: semantics-first, max 3, NO fallback to all experts ──
-      // We no longer dump all experts into the prompt. Only send those whose
-      // embeddings match the user's specific query. This prevents the AI from
-      // recommending every expert regardless of relevance.
+      // ── Expert matching: semantics-first, max 3, handles colloquials ──
       matchedExperts = await findMatchingExpertsRAGFirst(supabase, message, userTenantId, expertBoostIds);
 
       // RAG-FIRST Compliance Training Match
@@ -191,6 +214,12 @@ serve(async (req) => {
         { topics: userTopics, expectingStatus: userExpectingStatus, parentingStyles: userParentingStyles, personalContext: userPersonalContext },
         userLanguage
       );
+
+      // Handle language sync marker if user spoke in a different language
+      const detectedLanguage = detectLanguage(messageLower);
+      if (detectedLanguage && detectedLanguage !== userLanguage) {
+        aiResponse += `\n\n[SWITCH_LANGUAGE:${detectedLanguage}]`;
+      }
     }
 
     // Store AI response

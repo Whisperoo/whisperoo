@@ -140,7 +140,7 @@ export const UserResources: React.FC = () => {
   const displayPurchases = purchases.slice(0, 3);
 
   return (
-    <div className="bg-white rounded-xl shadow-card p-6 mb-6 border border-gray-200 hover:shadow-elevated transition-shadow duration-300">
+    <div className="bg-white rounded-xl shadow-card p-4 sm:p-6 mb-6 border border-gray-200 hover:shadow-elevated transition-shadow duration-300 overflow-hidden">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-brand-primary">Your Resources</h2>
         <button

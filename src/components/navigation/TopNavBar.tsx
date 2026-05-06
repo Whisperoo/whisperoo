@@ -23,19 +23,19 @@ const TopNavBar: React.FC = () => {
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left side - Logo and Mobile Menu */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1 overflow-hidden">
             {isMobile && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setMobileNavOpen(!isMobileNavOpen)}
-                className="p-2"
+                className="p-2 flex-shrink-0"
               >
                 <Menu className="h-5 w-5" />
               </Button>
             )}
             
-            <div className="flex items-center min-w-0 flex-1">
+            <div className="flex items-center min-w-0 flex-1 overflow-hidden">
               <div 
                 className="flex items-center space-x-1.5 sm:space-x-2 cursor-pointer flex-shrink-0" 
                 onClick={() => navigate('/dashboard')}
@@ -45,18 +45,18 @@ const TopNavBar: React.FC = () => {
                   alt="Whisperoo" 
                   className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
                 />
-                <span className="text-base sm:text-xl font-bold text-brand-primary font-['Plus_Jakarta_Sans'] truncate max-w-[100px] xs:max-w-none">
+                <span className="text-base sm:text-xl font-bold text-brand-primary font-['Plus_Jakarta_Sans'] truncate max-w-[90px] xs:max-w-none">
                   Whisperoo
                 </span>
               </div>
 
               {isHospitalUser && config?.branding?.logo_url && (
-                <div className="flex items-center min-w-0 flex-shrink ml-2 sm:ml-0">
+                <div className="flex items-center min-w-0 flex-shrink ml-2 sm:ml-0 overflow-hidden">
                   <div className="h-6 w-px bg-gray-200 mx-2 sm:mx-4 flex-shrink-0" />
                   <img 
                     src={config.branding.logo_url} 
                     alt="Hospital Logo" 
-                    className="h-7 sm:h-10 object-contain min-w-0 max-w-[80px] sm:max-w-none" 
+                    className="h-7 sm:h-10 object-contain min-w-0 max-w-[60px] sm:max-w-none" 
                   />
                 </div>
               )}
@@ -65,7 +65,7 @@ const TopNavBar: React.FC = () => {
 
 
           {/* Right side - Actions and Profile */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
 
 
             {/* User Avatar Display */}

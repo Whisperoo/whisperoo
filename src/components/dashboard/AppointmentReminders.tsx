@@ -308,11 +308,11 @@ export const AppointmentReminders: React.FC = () => {
                   </p>
                 )}
 
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md max-w-full truncate">
                     {t('appointments.labels.for', { name: kid.expected_name || kid.first_name || t('appointments.labels.baby') })}
                   </span>
-                  <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">
+                  <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md max-w-full truncate">
                     {t(`stages.${template.stage}`, { defaultValue: template.stage_label })}
                   </span>
                 </div>

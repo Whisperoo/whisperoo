@@ -41,21 +41,21 @@ const Dashboard: React.FC = () => {
 
   return (
     <main
-      className={`w-full max-w-full overflow-x-hidden box-border ${isMobile ? "px-4 py-6" : "max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}
+      className={`w-full max-w-full overflow-x-hidden box-border ${isMobile ? "px-3 sm:px-4 py-4 sm:py-6" : "max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}`}
     >
       {/* Welcome Section */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-brand-primary mb-2">
+      <div className="mb-6 overflow-hidden">
+        <h1 className="text-2xl font-bold text-brand-primary mb-2 break-words">
           {t('dashboard.welcome.greeting', { firstName })}
         </h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 break-words">
           {t('dashboard.welcome.subtitle')}
         </p>
       </div>
 
       {/* Hospital Banner (Tenant Scope) — SOW 3.4 */}
       {isHospitalUser && config && tenant && (
-        <div className="bg-brand-primary/5 rounded-xl p-5 mb-6 border border-brand-primary/20 flex flex-col sm:flex-row items-center sm:items-start gap-4 transition-all" style={{borderColor: config.branding?.primary_color}}>
+        <div className="bg-brand-primary/5 rounded-xl p-4 sm:p-5 mb-6 border border-brand-primary/20 flex flex-col sm:flex-row items-center sm:items-start gap-4 transition-all overflow-hidden" style={{borderColor: config.branding?.primary_color}}>
           {config.branding?.logo_url ? (
             <img src={config.branding.logo_url} alt="Hospital Logo" className="w-16 h-16 object-contain bg-white rounded-md p-1 shadow-sm" />
           ) : (

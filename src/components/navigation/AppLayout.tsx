@@ -29,7 +29,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden relative">
       {/* Top Navigation Bar */}
       <TopNavBar />
       
