@@ -6,17 +6,17 @@ const OnboardingTopics: React.FC = () => {
   const { t } = useTranslation();
 
   const topicOptions = [
-    t('onboarding.topics.babyFeeding'),
-    t('onboarding.topics.pelvicFloor'),
-    t('onboarding.topics.sleepCoaching'),
-    t('onboarding.topics.nervousSystem'),
-    t('onboarding.topics.nutrition'),
-    t('onboarding.topics.pediatricDentistry'),
-    t('onboarding.topics.lifestyleCoaching'),
-    t('onboarding.topics.fitnessYoga'),
-    t('onboarding.topics.backToWork'),
-    t('onboarding.topics.postpartumTips'),
-    t('onboarding.topics.prenatalTips'),
+    { label: t('onboarding.topics.babyFeeding'), value: 'Baby Feeding' },
+    { label: t('onboarding.topics.pelvicFloor'), value: 'Pelvic Floor' },
+    { label: t('onboarding.topics.sleepCoaching'), value: 'Sleep Coaching' },
+    { label: t('onboarding.topics.nervousSystem'), value: 'Nervous System Regulation' },
+    { label: t('onboarding.topics.nutrition'), value: 'Nutrition' },
+    { label: t('onboarding.topics.pediatricDentistry'), value: 'Pediatric Dentistry' },
+    { label: t('onboarding.topics.lifestyleCoaching'), value: 'Lifestyle Coaching' },
+    { label: t('onboarding.topics.fitnessYoga'), value: 'Fitness/yoga' },
+    { label: t('onboarding.topics.backToWork'), value: 'Back to Work' },
+    { label: t('onboarding.topics.postpartumTips'), value: 'Postpartum Tips' },
+    { label: t('onboarding.topics.prenatalTips'), value: 'Prenatal Tips' },
   ];
 
   return (

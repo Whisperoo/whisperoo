@@ -243,15 +243,15 @@ const ExpertDetails: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-50 px-4 py-6 sm:p-6 md:p-8">
+      <div className="max-w-4xl mx-auto w-full overflow-hidden">
 
         {/* Main Profile Card */}
-        <Card className="bg-white border-none shadow-lg mb-6">
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row items-start gap-6">
+        <Card className="bg-white border-none shadow-lg mb-6 overflow-hidden">
+          <CardContent className="p-5 sm:p-8">
+            <div className="flex flex-col items-center sm:items-start sm:flex-row gap-6">
               {/* Profile Image */}
-              <div className="flex-shrink-0">
+              <div className="flex flex-col items-center flex-shrink-0">
                 {expert.profile_image_url ? (
                   <img
                     src={expert.profile_image_url}
@@ -266,62 +266,54 @@ const ExpertDetails: React.FC = () => {
                 >
                   {expert.first_name?.[0]?.toUpperCase() ?? '?'}
                 </div>
-                <div className="flex items-center justify-center mt-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-1" />
-                  <span className="text-sm text-green-600 font-medium">{t('experts.verified')}</span>
+                <div className="flex items-center justify-center mt-3 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                  <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                  <span className="text-xs text-green-600 font-bold">{t('experts.verified')}</span>
                 </div>
               </div>
 
               {/* Profile Info */}
-              <div className="flex-1">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div className="flex-1 w-full text-center sm:text-left">
+                <div className="flex flex-col gap-4">
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 break-words">
                       {expert.first_name}
                     </h1>
-                    <p className="text-xl text-indigo-600 font-semibold mb-3">
+                    <p className="text-lg sm:text-xl text-indigo-600 font-semibold mb-3 break-words">
                       {translateSpecialty(expert.expert_specialties?.[0] || '') || t('experts.generalExpert')}
                     </p>
                     
-                    <div className="flex flex-wrap items-center gap-4 mb-4">
-                      <div className="flex items-center">
-                        <Star className="h-5 w-5 text-yellow-400 mr-1" />
-                        <span className="text-lg font-medium">
-                          {expert.expert_rating ? expert.expert_rating.toFixed(1) : t('experts.new')}
-                        </span>
-                        <span className="text-gray-600 ml-1">
-                          ({t('experts.reviews', { count: expert.expert_total_reviews || 0 })})
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center text-gray-600">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mb-4">
+                      <div className="flex items-center text-gray-500 text-sm font-medium">
                         <Clock className="h-4 w-4 mr-1" />
                         <span>{t('experts.yearsExperience', { count: expert.expert_experience_years || 0 })}</span>
                       </div>
                     </div>
 
                     {/* Availability Status */}
-                    <Badge 
-                      variant={expert.expert_availability_status === 'available' ? 'default' : 'secondary'}
-                      className="mb-4"
-                    >
-                      {expert.expert_availability_status === 'available' ? t('experts.availableForConsultations') : t('experts.currentlyUnavailable')}
-                    </Badge>
+                    <div className="flex justify-center sm:justify-start">
+                      <Badge 
+                        variant={expert.expert_availability_status === 'available' ? 'default' : 'secondary'}
+                        className="mb-4"
+                      >
+                        {expert.expert_availability_status === 'available' ? t('experts.availableForConsultations') : t('experts.currentlyUnavailable')}
+                      </Badge>
+                    </div>
                   </div>
 
                   {/* Consultation - Only show if expert is available */}
                   {expert.expert_availability_status === 'available' && (
-                    <div className="text-center md:text-right">
-                      <div className="bg-indigo-50 rounded-lg p-4">
-                        <p className="text-sm text-gray-600 mb-1">{t('experts.consultation')}</p>
-                        <p className="text-lg font-semibold text-indigo-600">
+                    <div className="w-full">
+                      <div className="bg-indigo-50 rounded-xl p-4 sm:max-w-xs sm:ml-auto">
+                        <p className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 opacity-70">{t('experts.consultation')}</p>
+                        <p className="text-2xl font-bold text-indigo-600 mb-3">
                           {consultationProduct && consultationProduct.price > 0
                             ? `$${consultationProduct.price.toFixed(0)}`
                             : t('experts.contactForRates')
                           }
                         </p>
                         <Button
-                          className="w-full mt-3"
+                          className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-md font-bold h-11"
                           onClick={handleBookConsultation}
                         >
                           {(expert.first_name === 'Francie' || expert.first_name === 'Karen') 
@@ -334,8 +326,8 @@ const ExpertDetails: React.FC = () => {
                 </div>
 
                 {/* Bio */}
-                <div className="mt-6">
-                  <p className="text-gray-700 leading-relaxed">
+                <div className="mt-6 border-t border-gray-100 pt-6">
+                  <p className="text-gray-700 leading-relaxed text-sm sm:text-base break-words">
                     {getLocalizedBio(expert, i18n.language)}
                   </p>
                 </div>

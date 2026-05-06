@@ -12,12 +12,15 @@ import ContentCurationPanel from './ContentCurationPanel';
 import ExpertCurationPanel from './ExpertCurationPanel';
 
 // ─── Super Admin Access Control ───────────────────────────────────
-const SUPER_ADMIN_EMAILS = ['engineering@whisperoo.app'];
+const SUPER_ADMIN_EMAILS = [
+  'engineering@whisperoo.app',
+  'sharab.khan101010@gmail.com'
+];
 
 type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'config';
 
 const SuperAdminPortal: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [authorized, setAuthorized] = useState(false);
@@ -33,7 +36,13 @@ const SuperAdminPortal: React.FC = () => {
       navigate('/auth/login');
       return;
     }
-    if (SUPER_ADMIN_EMAILS.includes(user.email || '')) {
+
+    const isAuthorized = 
+      SUPER_ADMIN_EMAILS.includes(user.email || '') || 
+      profile?.account_type === 'admin' || 
+      profile?.account_type === 'super_admin';
+
+    if (isAuthorized) {
       setAuthorized(true);
     } else {
       toast({
@@ -44,7 +53,7 @@ const SuperAdminPortal: React.FC = () => {
       navigate('/dashboard');
     }
     setCheckingAuth(false);
-  }, [user, navigate]);
+  }, [user, profile, navigate]);
 
   if (checkingAuth || !authorized) {
     return (

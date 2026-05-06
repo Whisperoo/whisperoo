@@ -6,11 +6,11 @@ const OnboardingParentingStyles: React.FC = () => {
   const { t } = useTranslation();
 
   const parentingStyleOptions = [
-    t('onboarding.parentingStyles.option1'),
-    t('onboarding.parentingStyles.option2'),
-    t('onboarding.parentingStyles.option3'),
-    t('onboarding.parentingStyles.option4'),
-    t('onboarding.parentingStyles.option5'),
+    { label: t('onboarding.parentingStyles.option1'), value: 'direct' },
+    { label: t('onboarding.parentingStyles.option2'), value: 'friendly' },
+    { label: t('onboarding.parentingStyles.option3'), value: 'detailed' },
+    { label: t('onboarding.parentingStyles.option4'), value: 'gentle' },
+    { label: t('onboarding.parentingStyles.option5'), value: 'flexible' },
   ];
 
   return (

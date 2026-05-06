@@ -7,13 +7,18 @@ import { ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
+interface MultiSelectOption {
+  label: string;
+  value: string;
+}
+
 interface MultiSelectQuestionProps {
   stepIndex: number;
   totalSteps: number;
   id: 'parenting_styles' | 'topics_of_interest';
   question: string;
   subtitle?: string;
-  options: string[];
+  options: MultiSelectOption[];
   nextRoute: string;
   skipRoute: string;
   backRoute: string;
@@ -33,28 +38,28 @@ const MultiSelectQuestion: React.FC<MultiSelectQuestionProps> = ({
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { profile, updateProfile } = useAuth();
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   // Load existing selections from profile
   useEffect(() => {
     if (profile && profile[id]) {
-      setSelectedOptions(profile[id]);
+      setSelectedValues(profile[id]);
     }
   }, [profile, id]);
 
-  const handleOptionToggle = (option: string) => {
-    setSelectedOptions(prev => {
-      if (prev.includes(option)) {
-        return prev.filter(item => item !== option);
+  const handleOptionToggle = (value: string) => {
+    setSelectedValues(prev => {
+      if (prev.includes(value)) {
+        return prev.filter(item => item !== value);
       } else {
-        return [...prev, option];
+        return [...prev, value];
       }
     });
   };
 
   const handleNext = async () => {
-    if (selectedOptions.length === 0) {
+    if (selectedValues.length === 0) {
       toast({
         title: t('onboarding.multiSelect.selectionRequired'),
         description: t('onboarding.multiSelect.selectionRequiredDesc'),
@@ -66,7 +71,7 @@ const MultiSelectQuestion: React.FC<MultiSelectQuestionProps> = ({
     // Save the selections when user clicks Next
     setIsSaving(true);
     try {
-      const updates = { [id]: selectedOptions };
+      const updates = { [id]: selectedValues };
       const result = await updateProfile(updates);
       
       if (result.error) {
@@ -126,25 +131,25 @@ const MultiSelectQuestion: React.FC<MultiSelectQuestionProps> = ({
         <div className="space-y-4">
           {options.map((option) => (
             <button
-              key={option}
-              onClick={() => handleOptionToggle(option)}
+              key={option.value}
+              onClick={() => handleOptionToggle(option.value)}
               className={`w-full p-4 text-left rounded-2xl border-2 transition-all duration-150 ease-in ${
-                selectedOptions.includes(option)
+                selectedValues.includes(option.value)
                   ? 'border-action-primary bg-indigo-50 text-action-primary'
                   : 'border-slate-200 bg-white text-gray-700 hover:border-slate-300'
               }`}
               role="checkbox"
-              aria-checked={selectedOptions.includes(option)}
-              aria-label={`Select ${option}`}
+              aria-checked={selectedValues.includes(option.value)}
+              aria-label={`Select ${option.label}`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-medium">{option}</span>
+                <span className="font-medium">{option.label}</span>
                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                  selectedOptions.includes(option)
+                  selectedValues.includes(option.value)
                     ? 'border-action-primary bg-action-primary'
                     : 'border-slate-300'
                 }`}>
-                  {selectedOptions.includes(option) && (
+                  {selectedValues.includes(option.value) && (
                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
@@ -156,7 +161,7 @@ const MultiSelectQuestion: React.FC<MultiSelectQuestionProps> = ({
         </div>
 
         {/* Next Button */}
-        {selectedOptions.length > 0 && (
+        {selectedValues.length > 0 && (
           <div className="flex justify-end">
             <Button
               onClick={handleNext}

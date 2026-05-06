@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, Filter, Building2 } from "lucide-react";
+import { ArrowLeft, Search, Filter, Building2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -147,82 +147,80 @@ const ExpertProfiles: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 px-4 py-6 sm:p-6 md:p-8">
+      <div className="max-w-6xl mx-auto w-full overflow-hidden">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
             {t('experts.title')}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-sm sm:text-base text-gray-500 mt-2 max-w-2xl">
             {t('experts.subtitle')}
           </p>
         </div>
 
         {/* Search and Filter */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder={t('experts.searchPlaceholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white"
-            />
+        <div className="flex flex-col gap-3 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder={t('experts.searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-11 bg-white border-gray-200 h-12 rounded-xl text-sm focus:ring-brand-primary"
+              />
+            </div>
+            <select
+              value={selectedSpecialty}
+              onChange={(e) => setSelectedSpecialty(e.target.value)}
+              className="px-4 w-full sm:w-64 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary h-12 shadow-sm appearance-none cursor-pointer"
+            >
+              <option value="">{t('experts.allSpecialties')}</option>
+              {specialties
+                .filter((specialty) => specialty && specialty.trim())
+                .map((specialty) => (
+                  <option key={specialty} value={specialty}>
+                    {translateSpecialty(specialty)}
+                  </option>
+                ))}
+            </select>
           </div>
-          <select
-            value={selectedSpecialty}
-            onChange={(e) => setSelectedSpecialty(e.target.value)}
-            className="px-4 w-full md:w-fit py-2 bg-white border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="">{t('experts.allSpecialties')}</option>
-            {specialties
-              .filter((specialty) => specialty && specialty.trim())
-              .map((specialty) => (
-                <option key={specialty} value={specialty}>
-                  {translateSpecialty(specialty)}
-                </option>
-              ))}
-          </select>
+
           {/* SOW 3.5: Hospital filter toggle — only visible to hospital users */}
           {isHospitalUser && (expertBoostIds.length > 0 || tenant) && (
             <button
               onClick={() => setHospitalOnly(!hospitalOnly)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-all duration-200 whitespace-nowrap ${
+              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border transition-all duration-200 shadow-sm h-12 ${
                 hospitalOnly
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                  : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
+                  ? 'bg-brand-primary text-white border-brand-primary'
+                  : 'bg-white text-brand-primary border-indigo-100 hover:border-brand-primary/20'
               }`}
             >
-              <Building2 className="w-4 h-4" />
+              <Building2 className={`w-4 h-4 ${hospitalOnly ? 'text-white' : 'text-brand-primary'}`} />
               {hospitalOnly ? t('experts.hospitalOnly') : t('experts.hospitalPartners')}
             </button>
           )}
         </div>
 
         {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
+        <div className="mb-4 sm:mb-6 flex items-center justify-between border-b border-gray-100 pb-3">
+          <p className="text-xs sm:text-sm font-semibold text-gray-500">
             {displayExperts.length === 1 
               ? t('experts.expertFound', { count: 1 })
               : t('experts.expertsFound', { count: displayExperts.length })
             }
-            {isHospitalUser && expertBoostIds.length > 0 && !hospitalOnly && (
-              <span className="text-indigo-600 ml-1">
-                {t('experts.hospitalPartnersFirst')}
-              </span>
-            )}
-            {hospitalOnly && (
-              <span className="text-indigo-600 ml-1">
-                {t('experts.showingHospitalOnly')}
-              </span>
-            )}
           </p>
+          {hospitalOnly && (
+            <span className="text-[10px] sm:text-xs font-bold text-brand-primary uppercase tracking-wider">
+              {t('experts.showingHospitalOnly')}
+            </span>
+          )}
         </div>
 
         {/* Expert Cards Grid */}
         {displayExperts.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 px-4">
             <div className="text-gray-500 mb-4">
               <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg">{t('experts.noExpertsFound')}</p>
@@ -232,64 +230,59 @@ const ExpertProfiles: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {displayExperts.map((expert) => (
               <Card
                 key={expert.id}
-                className={`cursor-pointer hover:shadow-lg transition-shadow duration-200 bg-white border-none ${
+                className={`cursor-pointer hover:shadow-lg transition-shadow duration-200 bg-white border-none overflow-hidden ${
                   isExpertBoosted(expert) ? 'ring-2 ring-indigo-200' : ''
                 }`}
                 onClick={() => handleExpertClick(expert.id)}
               >
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   {/* Hospital Partner Badge */}
                   {isExpertBoosted(expert) && (
-                    <div className="flex items-center gap-1.5 mb-3 text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full w-fit">
+                    <div className="flex items-center gap-1.5 mb-4 text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full w-fit">
                       <Building2 className="w-3 h-3" />
                       {t('experts.recommendedBy', { name: config?.branding?.display_name || tenant?.name || 'Hospital' })}
                     </div>
                   )}
-                  <div className="flex items-start gap-4">
-                    {expert.profile_image_url ? (
-                      <img
-                        src={expert.profile_image_url}
-                        alt={expert.first_name}
-                        className="w-16 h-16 rounded-full object-cover flex-shrink-0"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; (e.currentTarget.nextElementSibling as HTMLElement)?.style.setProperty('display', 'flex'); }}
-                      />
-                    ) : null}
-                    <div
-                      className="w-16 h-16 rounded-full flex-shrink-0 bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl"
-                      style={{ display: expert.profile_image_url ? 'none' : 'flex' }}
-                    >
-                      {expert.first_name?.[0]?.toUpperCase() ?? '?'}
+                  <div className="flex flex-row items-start gap-3 sm:gap-4">
+                    <div className="flex-shrink-0">
+                      {expert.profile_image_url ? (
+                        <img
+                          src={expert.profile_image_url}
+                          alt={expert.first_name}
+                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shadow-sm"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; (e.currentTarget.nextElementSibling as HTMLElement)?.style.setProperty('display', 'flex'); }}
+                        />
+                      ) : null}
+                      <div
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex-shrink-0 bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl"
+                        style={{ display: expert.profile_image_url ? 'none' : 'flex' }}
+                      >
+                        {expert.first_name?.[0]?.toUpperCase() ?? '?'}
+                      </div>
                     </div>
+                    
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg text-gray-900 truncate">
+                      <h3 className="font-bold text-base sm:text-lg text-gray-900 leading-tight mb-1 break-words">
                         {expert.first_name}
                       </h3>
-                      <p className="text-indigo-600 font-medium text-sm">
+                      <p className="text-indigo-600 font-semibold text-xs sm:text-sm mb-1 break-words">
                         {translateSpecialty(expert.expert_specialties?.[0] || '') || t('experts.generalExpert')}
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center">
-                          <span className="text-yellow-400">★</span>
-                          <span className="text-sm text-gray-600 ml-1">
-                            {expert.expert_rating
-                              ? expert.expert_rating.toFixed(1)
-                              : t('experts.new')}{" "}
-                            ({t('experts.reviews', { count: expert.expert_total_reviews || 0 })})
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-gray-600 text-sm mt-2 line-clamp-2">
+                      {/* Ratings and review counts are disabled in production */}
+                      
+                      <p className="text-gray-600 text-xs leading-relaxed line-clamp-3 mb-3 break-words">
                         {getLocalizedBio(expert, i18n.language)}
                       </p>
-                      <div className="flex items-center justify-between mt-3">
-                        <span className="text-sm text-gray-500">
+                      
+                      <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
+                        <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
                           {t('experts.yearsExperience', { count: expert.expert_experience_years || 0 })}
                         </span>
-                        <span className="text-sm font-medium text-indigo-600">
+                        <span className="text-[11px] sm:text-sm font-bold text-indigo-600 flex items-center gap-1">
                           {t('experts.bookConsultation')}
                         </span>
                       </div>

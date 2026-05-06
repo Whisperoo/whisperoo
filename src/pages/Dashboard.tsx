@@ -5,7 +5,6 @@ import { useTenant } from "@/contexts/TenantContext";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, MessageCircle, Phone, Building2, Mail } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { UserResources } from "@/components/dashboard/UserResources";
 // import AIMomCallModule from "@/components/dashboard/AIMomCallModule"; // Hidden for now
 import CareChecklist from "@/components/dashboard/CareChecklist";
 import PostDeliveryPrompt from "@/components/dashboard/PostDeliveryPrompt";
@@ -23,6 +22,8 @@ const Dashboard: React.FC = () => {
   const isMobile = useIsMobile();
   
   const [expectingKids, setExpectingKids] = useState<any[]>([]);
+  const [hasConsultationBooking, setHasConsultationBooking] = useState(false);
+  const [consultationPurchases, setConsultationPurchases] = useState<any[]>([]);
 
   const fetchKids = async () => {
     if (!user) return;
@@ -38,6 +39,28 @@ const Dashboard: React.FC = () => {
     fetchKids();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile?.expecting_status]);
+
+  // Check whether user has any consultation purchases (booked 1:1)
+  useEffect(() => {
+    const checkConsultationBookings = async () => {
+      if (!user) return setHasConsultationBooking(false);
+      try {
+        const { data } = await supabase
+          .from('purchases')
+          .select('id, product:products(*)')
+          .eq('user_id', user.id)
+          .eq('status', 'completed');
+        const purchases = data || [];
+        setConsultationPurchases(purchases);
+        const hasConsult = purchases.some((p: any) => p.product?.product_type === 'consultation');
+        setHasConsultationBooking(!!hasConsult);
+      } catch (err) {
+        console.error('Error checking consultation bookings:', err);
+        setHasConsultationBooking(false);
+      }
+    };
+    checkConsultationBookings();
+  }, [user]);
 
   return (
     <main
@@ -57,42 +80,42 @@ const Dashboard: React.FC = () => {
       {isHospitalUser && config && tenant && (
         <div className="bg-brand-primary/5 rounded-xl p-4 sm:p-5 mb-6 border border-brand-primary/20 flex flex-col sm:flex-row items-center sm:items-start gap-4 transition-all overflow-hidden" style={{borderColor: config.branding?.primary_color}}>
           {config.branding?.logo_url ? (
-            <img src={config.branding.logo_url} alt="Hospital Logo" className="w-16 h-16 object-contain bg-white rounded-md p-1 shadow-sm" />
+            <img src={config.branding.logo_url} alt="Hospital Logo" className="w-16 h-16 object-contain bg-white rounded-md p-1 shadow-sm flex-shrink-0" />
           ) : (
-             <div className="w-16 h-16 bg-white rounded-md p-1 shadow-sm flex items-center justify-center font-bold text-2xl text-brand-primary border border-gray-100">
+             <div className="w-16 h-16 bg-white rounded-md p-1 shadow-sm flex items-center justify-center font-bold text-2xl text-brand-primary border border-gray-100 flex-shrink-0">
                {tenant.name.charAt(0)}
              </div>
           )}
-          <div className="text-center sm:text-left flex-1 min-w-0 w-full">
-            <h2 className="text-lg font-bold text-brand-dark mb-1 break-words" style={{color: config.branding?.primary_color}}>
+          <div className="text-center sm:text-left flex-1 min-w-0 w-full overflow-hidden">
+            <h2 className="text-lg font-bold text-brand-dark mb-1 break-words leading-tight" style={{color: config.branding?.primary_color}}>
               {config.branding?.display_name || tenant.name}
             </h2>
             {/* Show user's department if captured */}
             {(profile as any)?.acquisition_department && (
-              <p className="text-xs font-semibold text-indigo-600 mb-2">
+              <p className="text-xs font-semibold text-indigo-600 mb-2 break-words">
                 {t('dashboard.hospitalBanner.department', { department: ((profile as any).acquisition_department as string).toUpperCase() })}
               </p>
             )}
-            <p className="text-sm text-gray-700 mb-3">
+            <p className="text-sm text-gray-700 mb-3 break-words">
               {t('dashboard.hospitalBanner.supportMessage')}
             </p>
             {config.departments && config.departments.length > 0 && (
-              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+              <div className="flex flex-wrap gap-2 justify-center sm:justify-start w-full overflow-hidden">
                 {config.departments.map((dept, idx) => {
                   // Highlight the user's own department
                   const isUserDept = (profile as any)?.acquisition_department &&
                     dept.name.toLowerCase().includes(((profile as any).acquisition_department as string).toLowerCase());
                   return dept.phone ? (
-                    <a key={idx} href={`tel:${dept.phone.replace(/[^0-9]/g, '')}`} className={`inline-flex items-center text-xs font-semibold px-2.5 py-1.5 border shadow-sm rounded-md hover:bg-gray-50 transition group ${
+                    <a key={idx} href={`tel:${dept.phone.replace(/[^0-9]/g, '')}`} className={`inline-flex items-center text-xs font-semibold px-2.5 py-1.5 border shadow-sm rounded-md hover:bg-gray-50 transition group max-w-full ${
                       isUserDept 
                         ? 'bg-indigo-50 border-indigo-300 text-indigo-700' 
                         : 'bg-white border-gray-200 text-brand-dark'
                     }`}>
-                      <Phone className="w-3 h-3 mr-1.5 text-gray-400 group-hover:text-brand-primary" />
-                      {dept.name}: {dept.phone}
+                      <Phone className="w-3 h-3 mr-1.5 text-gray-400 group-hover:text-brand-primary flex-shrink-0" />
+                      <span className="truncate">{dept.name}: {dept.phone}</span>
                     </a>
                   ) : (
-                    <span key={idx} className="inline-flex items-center text-xs font-semibold px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
+                    <span key={idx} className="inline-flex items-center text-xs font-semibold px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-gray-600 truncate max-w-full">
                       {dept.name}
                     </span>
                   );
@@ -126,7 +149,30 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* 24/7 Support Card - Featured */}
+      {/* Upcoming Appointments — show a compact booked consultation card if present */}
+      {consultationPurchases && consultationPurchases.length > 0 && (
+        <div
+          onClick={() => navigate('/my-purchases')}
+          className="bg-white rounded-xl shadow-card p-4 mb-6 border border-gray-200 cursor-pointer hover:shadow-md transition-all duration-200"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Building2 className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-gray-900 truncate">Upcoming Appointment</h3>
+                <p className="text-xs text-gray-600 truncate">
+                  {consultationPurchases[0].product?.title || '1:1 Consultation booked'}
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-indigo-500" />
+          </div>
+        </div>
+      )}
+
+      {/* 24/7 Support Card - Featured (Start Chat Genie) */}
       <div
         onClick={() => navigate("/chat")}
         className="bg-white rounded-xl shadow-card p-6 mb-6 border border-gray-200 cursor-pointer hover:shadow-elevated transition-all duration-200 hover:border-brand-primary"
@@ -152,9 +198,14 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
-      {/* Post-Delivery Prompt (Shows if pregnant) */}
+      {/* Recommended For You (should appear after Chat) */}
+      <div className="w-full max-w-full overflow-hidden box-border mt-0">
+        <RecommendedProducts />
+      </div>
+
+      {/* Post-Delivery Prompt (Has your baby arrived?) */}
       {expectingKids.length > 0 && (
-        <div className="w-full max-w-full overflow-hidden box-border mb-6">
+        <div className="w-full max-w-full overflow-hidden box-border mt-6">
           <PostDeliveryPrompt 
             expectingKids={expectingKids} 
             onBirthRecorded={fetchKids} 
@@ -162,25 +213,14 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Appointment Reminders — Checklist style widgets */}
-      <div className="w-full max-w-full overflow-hidden box-border">
+      {/* Important Appointments */}
+      <div className="w-full max-w-full overflow-hidden box-border mt-6">
         <AppointmentReminders />
       </div>
 
-      {/* Care Checklist — SOW 4.1 */}
-      <div className="w-full max-w-full overflow-hidden box-border mt-0">
-        <CareChecklist />
-      </div>
-
-      {/* AI Mom Call Module - Wrap with overflow control */}
-      {/* <div className="w-full max-w-full overflow-hidden box-border">
-        <AIMomCallModule />
-      </div> */}
-
-      {/* Dynamic User Resources - Wrap with overflow control */}
+      {/* Care Checklist (collapsed by default) */}
       <div className="w-full max-w-full overflow-hidden box-border mt-6">
-        <RecommendedProducts />
-        <UserResources />
+        <CareChecklist />
       </div>
 
       {/* Explore Card */}
@@ -213,18 +253,18 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         <a
-          href="mailto:support@whisperoo.app?subject=Support%20Request"
+          href={`mailto:${config?.branding?.contact_email || 'support@whisperoo.app'}?subject=Support%20Request`}
           className="flex items-center justify-center w-full bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 shadow-sm mb-3"
         >
           {t('dashboard.contactCard.button')}
         </a>
         <p className="text-center text-sm text-gray-500">
-          {t('dashboard.contactCard.orEmail')}{" "}
+          {t('dashboard.contactCard.orEmail')} {" "}
           <a
-            href="mailto:support@whisperoo.app"
+            href={`mailto:${config?.branding?.contact_email || 'support@whisperoo.app'}`}
             className="font-semibold text-brand-primary underline underline-offset-2 hover:opacity-80 transition-opacity"
           >
-            support@whisperoo.app
+            {config?.branding?.contact_email || 'support@whisperoo.app'}
           </a>
         </p>
       </div>

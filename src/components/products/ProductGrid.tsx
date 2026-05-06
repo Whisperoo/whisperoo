@@ -237,9 +237,38 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
   // Phase 5: Filter out products disabled for this hospital tenant
   const disabledProductIds = config?.disabled_product_ids ?? [];
-  const displayProducts = disabledProductIds.length > 0
-    ? sortedProducts.filter((p) => !disabledProductIds.includes(p.id))
+  // Apply client-side tag filtering as a robust fallback for the pill buttons
+  const labelMap: Record<string, string> = {
+    'baby-feeding': t('onboarding.topics.babyFeeding', 'Baby Feeding'),
+    'pelvic-floor': t('onboarding.topics.pelvicFloor', 'Pelvic Floor'),
+    'sleep-coaching': t('onboarding.topics.sleepCoaching', 'Sleep Coaching'),
+    'nervous-system': t('onboarding.topics.nervousSystem', 'Nervous System'),
+    'nutrition': t('onboarding.topics.nutrition', 'Nutrition'),
+    'pediatric-dentistry': t('onboarding.topics.pediatricDentistry', 'Pediatric Dentistry'),
+    'lifestyle-coaching': t('onboarding.topics.lifestyleCoaching', 'Lifestyle'),
+    'fitness-yoga': t('onboarding.topics.fitnessYoga', 'Fitness & Yoga'),
+    'back-to-work': t('onboarding.topics.backToWork', 'Back to Work'),
+    'postpartum-tips': t('onboarding.topics.postpartumTips', 'Postpartum'),
+    'prenatal-tips': t('onboarding.topics.prenatalTips', 'Prenatal'),
+  };
+
+  const afterTagFilter = activeTags && activeTags.length > 0
+    ? sortedProducts.filter((p: any) => {
+        const productTags: string[] = (p.tags ?? []).map((s: string) => s.toLowerCase());
+        return activeTags.some((slug) => {
+          const label = (labelMap[slug] || slug).toLowerCase();
+          return (
+            productTags.includes(slug.toLowerCase()) ||
+            (p.title && p.title.toLowerCase().includes(label)) ||
+            (p.description && p.description.toLowerCase().includes(label))
+          );
+        });
+      })
     : sortedProducts;
+
+  const displayProducts = disabledProductIds.length > 0
+    ? afterTagFilter.filter((p) => !disabledProductIds.includes(p.id))
+    : afterTagFilter;
 
   const totalResults = data?.total || 0;
   // console.log(displayProducts, "from grid");
@@ -255,6 +284,10 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       : [...activeTags, slug];
     setActiveTags(next);
     handleFilterChange('tags', next.length > 0 ? next : undefined);
+    // Ensure we immediately refetch with the new tag filters so the UI updates predictably
+    // and log current state for QA debugging.
+    console.debug('Tag toggle:', { nextTags: next });
+    refetch();
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -529,6 +562,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                     onClick={() => {
                       setActiveTags([]);
                       handleFilterChange('tags', undefined);
+                      console.debug('Cleared tags');
+                      refetch();
                     }}
                     className="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-600 underline transition-colors"
                   >

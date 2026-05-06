@@ -101,10 +101,8 @@ const SideNavBar: React.FC<SideNavBarProps> = ({ isMobileOverlay = false }) => {
 
   return (
     <div className={cn(
-      "bg-white border-r border-gray-200 flex flex-col",
-      isMobileOverlay 
-        ? "fixed top-0 left-0 h-full w-64 z-50 shadow-xl" 
-        : "fixed top-16 left-0 h-[calc(100vh-64px)] transition-all duration-300",
+      "bg-white flex flex-col h-full transition-all duration-300",
+      isMobileOverlay && "fixed top-0 left-0 w-64 z-50 shadow-xl",
       sidebarCollapsed && !isMobileOverlay ? "w-20" : "w-64"
     )}>
       {/* Mobile Header */}

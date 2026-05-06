@@ -7,6 +7,7 @@ import TopNavBar from './TopNavBar';
 import SideNavBar from './SideNavBar';
 import BottomNavBar from './BottomNavBar';
 import Breadcrumbs from './Breadcrumbs';
+import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -29,25 +30,26 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden relative">
+    <div className="h-screen w-full flex flex-col bg-gray-50 overflow-hidden">
       {/* Top Navigation Bar */}
       <TopNavBar />
       
-      <div className="flex">
-        {/* Desktop Side Navigation */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Desktop Side Navigation Wrapper */}
         {!isMobile && (
-          <SideNavBar />
+          <aside className={cn(
+            "flex-shrink-0 border-r border-gray-200 bg-white transition-all duration-300",
+            sidebarCollapsed ? "w-20" : "w-64"
+          )}>
+            <SideNavBar />
+          </aside>
         )}
         
         {/* Main Content Area */}
-        <main className={`flex-1 transition-all duration-300 ${
-          !isMobile && !sidebarCollapsed ? 'ml-64' : ''
-        } ${
-          !isMobile && sidebarCollapsed ? 'ml-20' : ''
-        }`}>
+        <main className="flex-1 overflow-y-auto min-w-0 bg-gray-50 flex flex-col">
           {/* Breadcrumbs */}
           {showBreadcrumbs && !isMobile && (
-            <div className="bg-white border-b border-gray-200">
+            <div className="bg-white border-b border-gray-200 w-full flex-shrink-0">
               <div className="px-4 sm:px-6 lg:px-8">
                 <Breadcrumbs />
               </div>
@@ -55,7 +57,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({
           )}
           
           {/* Page Content */}
-          <div className={`${isMobile ? 'pb-20' : ''} min-h-[calc(100vh-64px)]`}>
+          <div className={cn(
+            "flex-1 w-full",
+            isMobile ? "pb-24" : "pb-8"
+          )}>
             {children}
           </div>
         </main>

@@ -102,12 +102,9 @@ serve(async (req) => {
         t.includes('breastfeed') || t.includes('nursing') ||
         t.includes('latch') || t.includes('milk supply') ||
         t.includes('pump') || t.includes('weaning') ||
-        t.includes('formula') || t.includes('bottle feed')
-      ) return 'Breastfeeding Support';
-
-      if (
-        t.includes('lactation') || t.includes('lactation consultant')
-      ) return 'Lactation Consultation';
+        t.includes('formula') || t.includes('bottle feed') ||
+        t.includes('lactation')
+      ) return 'Baby Feeding';
 
       if (
         t.includes('depress') || t.includes('anxiet') ||
@@ -115,26 +112,40 @@ serve(async (req) => {
         t.includes('mental health') || t.includes('overwhelmed') ||
         t.includes('postpartum depression') || t.includes('ppd') ||
         t.includes('self-harm') || t.includes('harm') ||
-        t.includes('suicide') || t.includes('want to die')
-      ) return 'Mental Health';
+        t.includes('suicide') || t.includes('nervous system') ||
+        t.includes('stress') || t.includes('regulation')
+      ) return 'Nervous System Regulation';
 
       if (
-        t.includes('postpartum') || t.includes('recovery') ||
         t.includes('pelvic floor') || t.includes('perineal') ||
         t.includes('c-section') || t.includes('bleeding') ||
         t.includes('lochia') || t.includes('after birth') ||
-        t.includes('6 week') || t.includes('six week')
-      ) return 'Postpartum Recovery';
+        t.includes('recovery') || t.includes('vaginal pressure')
+      ) return 'Pelvic Floor';
 
       if (
         t.includes('sleep') || t.includes('bedtime') ||
         t.includes('nap') || t.includes('night waking') ||
-        t.includes('sids') || t.includes('safe sleep') ||
-        t.includes('swaddle') || t.includes('colic') ||
-        t.includes('milestone') || t.includes('crawl') ||
-        t.includes('walk') || t.includes('teethe') ||
-        t.includes('solid') || t.includes('first food')
-      ) return 'Infant Care';
+        t.includes('sleep training') || t.includes('regression')
+      ) return 'Sleep Coaching';
+
+      if (
+        t.includes('yoga') || t.includes('fitness') ||
+        t.includes('exercise') || t.includes('stretch') ||
+        t.includes('workout')
+      ) return 'Fitness/yoga';
+
+      if (
+        t.includes('teeth') || t.includes('dental') ||
+        t.includes('cavity') || t.includes('brushing') ||
+        t.includes('dentist')
+      ) return 'Pediatric Dentistry';
+
+      if (
+        t.includes('work') || t.includes('career') ||
+        t.includes('job') || t.includes('childcare') ||
+        t.includes('daycare') || t.includes('nanny')
+      ) return 'Back to Work';
 
       return 'General Parenting';
     };
@@ -202,15 +213,12 @@ serve(async (req) => {
       // Get enhanced chat context
       const context = await getEnhancedChatContext(supabase, user.id, childId, currentSessionId);
 
-      // ── Expert matching: semantics-first, max 3, handles colloquials ──
-      matchedExperts = await findMatchingExpertsRAGFirst(supabase, message, userTenantId, expertBoostIds);
+      // ── Product/Resource matching: semantic + keyword ──
+      const matchedProducts = await findMatchingProductsRAG(supabase, message, userTopics);
 
-      // RAG-FIRST Compliance Training Match
-      const complianceContext = await getComplianceTrainingContext(supabase, message);
-
-      // Generate AI response — now includes user's onboarding interests
+      // Generate AI response — now includes user's onboarding interests and products
       aiResponse = await generateEnhancedAIResponse(
-        message, context, matchedExperts, intent, complianceContext,
+        message, context, matchedExperts, matchedProducts, intent, complianceContext,
         { topics: userTopics, expectingStatus: userExpectingStatus, parentingStyles: userParentingStyles, personalContext: userPersonalContext },
         userLanguage
       );
@@ -549,6 +557,74 @@ async function findMatchingExpertsByKeywords(supabase, message) {
 }
 
 
+// Find relevant products/resources using semantic and keyword search
+async function findMatchingProductsRAG(supabase, message, userTopics = []) {
+  try {
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) return [];
+
+    // 1. Semantic Search for Products
+    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${openaiApiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'text-embedding-3-small', input: message, encoding_format: 'float' })
+    });
+
+    let semanticProducts = [];
+    if (embeddingResponse.ok) {
+      const embeddingData = await embeddingResponse.json();
+      const queryEmbedding = embeddingData.data[0].embedding;
+
+      const { data: matches, error } = await supabase.rpc('match_products_v2', {
+        query_embedding: queryEmbedding,
+        match_threshold: 0.2,
+        match_count: 5
+      });
+      if (!error && matches) semanticProducts = matches;
+    }
+
+    // 2. Keyword Fallback (searching title, tags, description)
+    const { data: allProducts } = await supabase
+      .from('products')
+      .select('id, title, description, tags, price, product_type')
+      .eq('is_active', true)
+      .limit(50);
+
+    const messageLower = message.toLowerCase();
+    const keywordProducts = (allProducts || []).filter(p => {
+      const title = (p.title || '').toLowerCase();
+      const desc = (p.description || '').toLowerCase();
+      const tags = (p.tags || []).map(t => t.toLowerCase());
+      return title.includes(messageLower) || 
+             desc.includes(messageLower) || 
+             tags.some(t => messageLower.includes(t)) ||
+             userTopics.some(topic => title.includes(topic.toLowerCase()));
+    });
+
+    // Merge and deduplicate
+    const seen = new Set();
+    const results = [];
+    
+    [...semanticProducts, ...keywordProducts].forEach(p => {
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        results.push({
+          id: p.id,
+          title: p.title,
+          type: p.product_type,
+          price: p.price,
+          description: p.description?.substring(0, 100) + '...'
+        });
+      }
+    });
+
+    return results.slice(0, 3);
+  } catch (err) {
+    console.error('Error finding products:', err);
+    return [];
+  }
+}
+
 // Get ALL available experts for general browsing
 async function getAllAvailableExperts(supabase) {
   try {
@@ -709,9 +785,9 @@ async function getEnhancedChatContext(supabase, userId, childId, sessionId) {
   };
 }
 
-// Enhanced AI response generation with user interest context
+// Enhanced AI response generation with user interest and product context
 async function generateEnhancedAIResponse(
-  message, context, matchedExperts, intent = 'general', complianceContext = '',
+  message, context, matchedExperts, matchedProducts = [], intent = 'general', complianceContext = '',
   userInterests: { topics: string[]; expectingStatus: string; parentingStyles: string[]; personalContext: string } = { topics: [], expectingStatus: '', parentingStyles: [], personalContext: '' },
   userLanguage: string = 'en'
 ) {
@@ -801,6 +877,15 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
     systemPrompt += `\n\nEXPERT RECOMMENDATION RULE: Only mention an expert if their specialty is directly and specifically relevant to the user's current message. If the query can be answered with general advice, do NOT suggest experts. Never suggest all experts — only the most relevant 1-2.`;
   } else {
     systemPrompt += `\n\nNo experts closely matched this query — do NOT fabricate or suggest any expert names. Answer the question with general parenting guidance.`;
+  }
+
+  // Add platform resources/products
+  if (matchedProducts.length > 0) {
+    systemPrompt += `\n\nRELEVANT PLATFORM RESOURCES (Products/Guides):`;
+    matchedProducts.forEach(product => {
+      systemPrompt += `\n- ${product.title} (${product.type === 'video' ? 'Video Guide' : product.type === 'consultation' ? 'Consultation' : 'Resource'}) - ${product.price === 0 ? 'Free' : '$' + (product.price / 100).toFixed(2)}`;
+    });
+    systemPrompt += `\n\nRESOURCE RECOMMENDATION RULE: If any of these resources are a perfect match for the user's question, mention them naturally in your response as a "helpful resource available in Whispéroo".`;
   }
 
   // Add session history from previous conversations

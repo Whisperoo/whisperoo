@@ -122,10 +122,7 @@ const CareChecklist: React.FC = () => {
 
       setKidChecklists(checklists);
 
-      // Auto-expand the first kid
-      if (checklists.length > 0 && expandedKids.size === 0) {
-        setExpandedKids(new Set([checklists[0].kid.id]));
-      }
+      // Keep checklist collapsed by default (do not auto-expand)
     } catch (err) {
       console.error('Error fetching care checklists:', err);
     } finally {
@@ -270,10 +267,10 @@ const CareChecklist: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+              <div className="flex items-center gap-2 flex-shrink-0 ml-auto sm:ml-3">
                 {/* Progress indicator */}
-                <div className="flex items-center gap-2">
-                  <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="hidden sm:flex items-center gap-2">
+                  <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500 ease-out"
                       style={{
@@ -284,21 +281,27 @@ const CareChecklist: React.FC = () => {
                       }}
                     />
                   </div>
-                  <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">
+                  <span className="text-[10px] font-semibold text-gray-500">
+                    {completedCount}/{totalCount}
+                  </span>
+                </div>
+                {/* Mobile version: just the count */}
+                <div className="sm:hidden flex items-center bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">
+                  <span className="text-[10px] font-bold text-brand-primary">
                     {completedCount}/{totalCount}
                   </span>
                 </div>
                 {isExpanded ? (
-                  <ChevronUp className="w-4 h-4 text-gray-400" />
+                  <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 ) : (
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                  <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 )}
               </div>
             </button>
 
             {/* Expandable checklist items */}
             {isExpanded && (
-              <div className="border-t border-gray-100 px-5 py-3 space-y-1">
+              <div className="border-t border-gray-100 px-3 sm:px-5 py-3 space-y-1">
                 {templates.map((template) => {
                   const isCompleted = progress.get(template.id)?.completed || false;
                   const isToggling = togglingItems.has(`${kid.id}-${template.id}`);
@@ -307,7 +310,7 @@ const CareChecklist: React.FC = () => {
                   return (
                     <div
                       key={template.id}
-                      className={`group flex items-start gap-3 py-3 px-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                      className={`group flex items-start gap-2.5 py-3 px-2 sm:px-3 rounded-lg transition-all duration-200 cursor-pointer ${
                         isCompleted
                           ? 'bg-gray-50/50'
                           : 'hover:bg-brand-light/30'
@@ -329,10 +332,18 @@ const CareChecklist: React.FC = () => {
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-start gap-2 mb-0.5">
-                          <span className="text-xs mt-0.5" aria-hidden="true">{categoryMeta.icon}</span>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-xs" aria-hidden="true">{categoryMeta.icon}</span>
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-wider`}
+                              style={{ color: categoryMeta.color }}
+                            >
+                              {t(`careChecklist.categories.${template.category}`, { defaultValue: categoryMeta.label })}
+                            </span>
+                          </div>
                           <span
-                            className={`text-sm font-medium transition-all duration-200 flex-1 min-w-0 break-words ${
+                            className={`text-sm font-medium transition-all duration-200 break-words leading-snug ${
                               isCompleted ? 'text-gray-400 line-through' : 'text-gray-800'
                             }`}
                           >
@@ -345,7 +356,7 @@ const CareChecklist: React.FC = () => {
                         </div>
 
                         {(template.description || template.description_es || template.description_vi) && !isCompleted && (
-                          <p className="text-xs text-gray-500 leading-relaxed mt-0.5 pr-2">
+                          <p className="text-xs text-gray-500 leading-relaxed mt-1 break-words">
                             {currentLang === 'es' && template.description_es
                               ? template.description_es
                               : currentLang === 'vi' && template.description_vi
@@ -359,24 +370,13 @@ const CareChecklist: React.FC = () => {
                           <a
                             href={`tel:${template.hospital_phone.replace(/[^0-9]/g, '')}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1.5 mt-1.5 text-xs font-medium text-brand-primary hover:text-brand-dark transition-colors"
+                            className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-brand-primary hover:text-brand-dark transition-colors bg-brand-light/20 px-2 py-1 rounded-md"
                           >
                             <Phone className="w-3 h-3" />
-                            {t('careChecklist.schedule', { defaultValue: 'Schedule' })}: {template.hospital_phone}
+                            <span className="truncate">{t('careChecklist.schedule', { defaultValue: 'Schedule' })}: {template.hospital_phone}</span>
                           </a>
                         )}
                       </div>
-
-                      {/* Category badge */}
-                      <span
-                        className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full mt-0.5"
-                        style={{
-                          color: categoryMeta.color,
-                          backgroundColor: `${categoryMeta.color}12`
-                        }}
-                      >
-                        {t(`careChecklist.categories.${template.category}`, { defaultValue: categoryMeta.label })}
-                      </span>
                     </div>
                   );
                 })}

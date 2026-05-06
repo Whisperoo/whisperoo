@@ -176,30 +176,32 @@ export const ExpertProductsSection: React.FC<ExpertProductsSectionProps> = ({
               {products.map((product) => (
                 <div
                   key={product.id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  className="border border-gray-100 rounded-xl p-4 sm:p-5 hover:shadow-md transition-shadow bg-white"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start gap-3 sm:gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm border border-indigo-100/50">
                           {product.product_type === 'video' ? (
-                            <Video className="h-6 w-6 text-blue-600" />
+                            <Video className="h-6 w-6 text-indigo-600" />
                           ) : (
-                            <FileText className="h-6 w-6 text-blue-600" />
+                            <FileText className="h-6 w-6 text-indigo-600" />
                           )}
                         </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg">{product.title}</h3>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-base sm:text-lg text-gray-900 leading-tight mb-1 break-words">
+                            {product.title}
+                          </h3>
                           {product.description && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            <p className="text-xs sm:text-sm text-gray-500 mt-1 line-clamp-2 break-words">
                               {product.description}
                             </p>
                           )}
-                          <div className="flex flex-wrap items-center gap-2 mt-2">
-                            <Badge variant={product.product_type === 'video' ? 'secondary' : 'default'}>
+                          <div className="flex flex-wrap items-center gap-2 mt-3">
+                            <Badge variant={product.product_type === 'video' ? 'secondary' : 'default'} className="text-[10px] sm:text-xs">
                               {product.product_type}
                             </Badge>
-                            <Badge variant={product.is_active ? 'outline' : 'destructive'}>
+                            <Badge variant={product.is_active ? 'outline' : 'destructive'} className="text-[10px] sm:text-xs">
                               {product.is_active ? (
                                 <>
                                   <Eye className="h-3 w-3 mr-1" />
@@ -212,33 +214,28 @@ export const ExpertProductsSection: React.FC<ExpertProductsSectionProps> = ({
                                 </>
                               )}
                             </Badge>
-                            <div className="flex items-center text-sm text-muted-foreground">
+                            <div className="flex items-center text-[11px] sm:text-sm font-bold text-indigo-600">
                               <DollarSign className="h-3 w-3" />
                               {formatCurrency(product.price)}
                             </div>
                             {product.files && product.files.length > 0 ? (
-                              <Badge variant="outline" className="text-green-600">
+                              <Badge variant="outline" className="text-green-600 text-[10px] sm:text-xs bg-green-50 border-green-100">
                                 {product.files.length} file{product.files.length > 1 ? 's' : ''}
                               </Badge>
                             ) : product.file_url ? (
-                              <Badge variant="outline" className="text-green-600">
+                              <Badge variant="outline" className="text-green-600 text-[10px] sm:text-xs bg-green-50 border-green-100">
                                 1 file
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-yellow-600">
+                              <Badge variant="outline" className="text-yellow-600 text-[10px] sm:text-xs bg-yellow-50 border-yellow-100">
                                 No files
-                              </Badge>
-                            )}
-                            {product.has_multiple_files && (
-                              <Badge variant="secondary">
-                                Multi-file
                               </Badge>
                             )}
                           </div>
                           {product.categories && product.categories.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
+                            <div className="flex flex-wrap gap-1.5 mt-3">
                               {product.categories.map((cat: any) => (
-                                <Badge key={cat.category?.id || cat.id} variant="secondary" className="text-xs">
+                                <Badge key={cat.category?.id || cat.id} variant="secondary" className="text-[10px] sm:text-xs bg-gray-50 text-gray-600 font-medium border-none">
                                   {cat.category?.name || cat.name}
                                 </Badge>
                               ))}
@@ -247,21 +244,24 @@ export const ExpertProductsSection: React.FC<ExpertProductsSectionProps> = ({
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2 ml-4">
+                    <div className="flex items-center gap-2 sm:flex-col sm:gap-2 border-t sm:border-t-0 pt-3 sm:pt-0">
                       <Button
                         variant="outline"
                         size="sm"
+                        className="flex-1 sm:flex-none border-gray-200 hover:bg-gray-50 h-10 w-full sm:w-10 px-0"
                         onClick={() => handleEdit(product)}
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4 text-gray-600" />
+                        <span className="ml-2 sm:hidden font-bold">Edit</span>
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
+                        className="flex-1 sm:flex-none border-red-100 hover:bg-red-50 h-10 w-full sm:w-10 px-0 text-red-600"
                         onClick={() => handleDelete(product.id)}
-                        className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
+                        <span className="ml-2 sm:hidden font-bold">Delete</span>
                       </Button>
                     </div>
                   </div>
