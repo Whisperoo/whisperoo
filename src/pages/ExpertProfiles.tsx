@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, Filter, Building2, Star } from "lucide-react";
+import { ArrowLeft, Search, Filter, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -91,11 +91,6 @@ const ExpertProfiles: React.FC = () => {
       })
     : filteredExperts;
 
-  // SOW 3.5: Apply hospital-only filter if toggled
-  const displayExperts = hospitalOnly
-    ? sortedExperts.filter(expert => isExpertBoosted(expert))
-    : sortedExperts;
-
   const isExpertBoosted = (expert: ExpertProfile) =>
     isHospitalUser && (
       expertBoostIds.includes(expert.id) ||
@@ -119,6 +114,13 @@ const ExpertProfiles: React.FC = () => {
 
     return t(`experts.specialties.${key}`, specialty);
   };
+
+  // SOW 3.5: Apply hospital-only filter if toggled
+  const displayExperts = hospitalOnly
+    ? sortedExperts.filter(expert => isExpertBoosted(expert))
+    : sortedExperts;
+
+
 
   const handleExpertClick = (expertId: string) => {
     navigate(`/experts/${expertId}`);
