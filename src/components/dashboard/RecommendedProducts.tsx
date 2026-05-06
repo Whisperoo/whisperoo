@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/products/ProductCard";
 import { productService, ProductWithDetails } from "@/services/products";
 import { usePersonalizedSort } from "@/hooks/usePersonalizedSort";
+import { useAuth } from '@/contexts/AuthContext';
 
 export const RecommendedProducts: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { sortPersonalized } = usePersonalizedSort();
+  const { profile } = useAuth();
   
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,12 @@ export const RecommendedProducts: React.FC = () => {
         const { products: fetched } = await productService.getProducts({}, 1, 20);
         // Apply AI/RAG-based personalized sorting
         const sorted = sortPersonalized(fetched);
+        // Debug: show user's selected topics and the top product slugs for QA
+        try {
+          console.debug('RecommendedProducts: topics_of_interest=', profile?.topics_of_interest, 'topIds=', sorted.slice(0,3).map(p => p.id));
+        } catch (e) {
+          // ignore
+        }
         // Take top 3 for dashboard
         setProducts(sorted.slice(0, 3));
       } catch (error) {

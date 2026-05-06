@@ -22,8 +22,8 @@ const Dashboard: React.FC = () => {
   const isMobile = useIsMobile();
   
   const [expectingKids, setExpectingKids] = useState<any[]>([]);
-  const [hasConsultationBooking, setHasConsultationBooking] = useState(false);
-  const [consultationPurchases, setConsultationPurchases] = useState<any[]>([]);
+  const [hasConsultationAppointment, setHasConsultationAppointment] = useState(false);
+  const [consultationAppointments, setConsultationAppointments] = useState<any[]>([]);
 
   const fetchKids = async () => {
     if (!user) return;
@@ -40,26 +40,26 @@ const Dashboard: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile?.expecting_status]);
 
-  // Check whether user has any consultation purchases (booked 1:1)
+  // Check whether user has any consultation appointments
   useEffect(() => {
-    const checkConsultationBookings = async () => {
-      if (!user) return setHasConsultationBooking(false);
+    const checkConsultationAppointments = async () => {
+      if (!user) return setHasConsultationAppointment(false);
       try {
         const { data } = await supabase
-          .from('purchases')
-          .select('id, product:products(*)')
+          .from('user_purchases')
+          .select('id, products(*)')
           .eq('user_id', user.id)
-          .eq('status', 'completed');
-        const purchases = data || [];
-        setConsultationPurchases(purchases);
-        const hasConsult = purchases.some((p: any) => p.product?.product_type === 'consultation');
-        setHasConsultationBooking(!!hasConsult);
+          .eq('consultation_completed', false);
+        const appointments = data || [];
+        setConsultationAppointments(appointments);
+        const hasConsult = appointments.some((p: any) => p.products?.product_type === 'consultation');
+        setHasConsultationAppointment(!!hasConsult);
       } catch (err) {
-        console.error('Error checking consultation bookings:', err);
-        setHasConsultationBooking(false);
+        console.error('Error checking consultation appointments:', err);
+        setHasConsultationAppointment(false);
       }
     };
-    checkConsultationBookings();
+    checkConsultationAppointments();
   }, [user]);
 
   return (
@@ -149,8 +149,8 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Upcoming Appointments — show a compact booked consultation card if present */}
-      {consultationPurchases && consultationPurchases.length > 0 && (
+      {/* Upcoming Appointments */}
+      {consultationAppointments && consultationAppointments.length > 0 && (
         <div
           onClick={() => navigate('/my-purchases')}
           className="bg-white rounded-xl shadow-card p-4 mb-6 border border-gray-200 cursor-pointer hover:shadow-md transition-all duration-200"
@@ -163,7 +163,7 @@ const Dashboard: React.FC = () => {
               <div className="min-w-0">
                 <h3 className="text-sm font-bold text-gray-900 truncate">Upcoming Appointment</h3>
                 <p className="text-xs text-gray-600 truncate">
-                  {consultationPurchases[0].product?.title || '1:1 Consultation booked'}
+                  {consultationAppointments[0].products?.title || '1:1 Consultation booked'}
                 </p>
               </div>
             </div>
@@ -180,11 +180,6 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-4 w-full">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
             <div className="flex items-center space-x-2 flex-shrink-0">
-              <img
-                src="/stork-avatar.png"
-                alt="Whisperoo"
-                className="w-8 h-8 object-contain"
-              />
               <MessageCircle className="w-5 h-5 text-brand-primary" />
             </div>
             <h2 className="text-lg font-semibold text-brand-primary truncate">

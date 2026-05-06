@@ -215,10 +215,11 @@ const OnboardingKids: React.FC = () => {
                       selected={dueDate}
                       onSelect={handleDateSelect}
                       disabled={(date) => {
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0); // start of today
-                        const maxDate = new Date(today.getTime() + (45 * 7 * 24 * 60 * 60 * 1000)); // 45 weeks from now
-                        return date < today || date > maxDate;
+                        const minDate = new Date();
+                        minDate.setDate(minDate.getDate() - 14);
+                        minDate.setHours(0, 0, 0, 0);
+                        const maxDate = new Date(new Date().getTime() + (45 * 7 * 24 * 60 * 60 * 1000));
+                        return date < minDate || date > maxDate;
                       }}
                       initialFocus
                     />

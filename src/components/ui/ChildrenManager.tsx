@@ -301,6 +301,16 @@ const ChildrenManager: React.FC<ChildrenManagerProps> = ({ onDataChange }) => {
                         onChange={(e) =>
                           updateChild(index, { due_date: e.target.value })
                         }
+                        min={() => {
+                          const d = new Date();
+                          d.setDate(d.getDate() - 14);
+                          return d.toISOString().split('T')[0];
+                        }}
+                        max={() => {
+                          const d = new Date();
+                          d.setDate(d.getDate() + (45 * 7));
+                          return d.toISOString().split('T')[0];
+                        }}
                       />
                       {child.due_date && (
                         <p className="text-xs text-gray-600 mt-1">

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, Filter, Building2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, Filter, Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/lib/supabase";
 import { useTenant } from "@/contexts/TenantContext";
 import { useTranslation } from "react-i18next";
@@ -34,7 +34,7 @@ const ExpertProfiles: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
-  const [hospitalOnly, setHospitalOnly] = useState(false);
+  const [activeTab, setActiveTab] = useState<'whisperoo' | 'hospital'>('whisperoo');
 
   useEffect(() => {
     fetchExperts();
@@ -115,12 +115,13 @@ const ExpertProfiles: React.FC = () => {
     return t(`experts.specialties.${key}`, specialty);
   };
 
-  // SOW 3.5: Apply hospital-only filter if toggled
-  const displayExperts = hospitalOnly
+  // Tab-based display: whisperoo = all experts, hospital = boosted/affiliated only
+  const whisperooExperts = sortedExperts;
+  const hospitalExperts = isHospitalUser
     ? sortedExperts.filter(expert => isExpertBoosted(expert))
-    : sortedExperts;
+    : [];
 
-
+  const displayExperts = activeTab === 'hospital' ? hospitalExperts : whisperooExperts;
 
   const handleExpertClick = (expertId: string) => {
     navigate(`/experts/${expertId}`);
@@ -161,141 +162,197 @@ const ExpertProfiles: React.FC = () => {
           </p>
         </div>
 
-        {/* Search and Filter */}
-        <div className="flex flex-col gap-3 mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder={t('experts.searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-11 bg-white border-gray-200 h-12 rounded-xl text-sm focus:ring-brand-primary"
-              />
-            </div>
-            <select
-              value={selectedSpecialty}
-              onChange={(e) => setSelectedSpecialty(e.target.value)}
-              className="px-4 w-full sm:w-64 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary h-12 shadow-sm appearance-none cursor-pointer"
-            >
-              <option value="">{t('experts.allSpecialties')}</option>
-              {specialties
-                .filter((specialty) => specialty && specialty.trim())
-                .map((specialty) => (
-                  <option key={specialty} value={specialty}>
-                    {translateSpecialty(specialty)}
-                  </option>
-                ))}
-            </select>
+        {/* Search and Specialty Filter */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder={t('experts.searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-11 bg-white border-gray-200 h-12 rounded-xl text-sm focus:ring-brand-primary"
+            />
           </div>
+          <select
+            value={selectedSpecialty}
+            onChange={(e) => setSelectedSpecialty(e.target.value)}
+            className="px-4 w-full sm:w-64 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary h-12 shadow-sm appearance-none cursor-pointer"
+          >
+            <option value="">{t('experts.allSpecialties')}</option>
+            {specialties
+              .filter((specialty) => specialty && specialty.trim())
+              .map((specialty) => (
+                <option key={specialty} value={specialty}>
+                  {translateSpecialty(specialty)}
+                </option>
+              ))}
+          </select>
+        </div>
 
-          {/* SOW 3.5: Hospital filter toggle — only visible to hospital users */}
-          {isHospitalUser && (expertBoostIds.length > 0 || tenant) && (
-            <button
-              onClick={() => setHospitalOnly(!hospitalOnly)}
-              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border transition-all duration-200 shadow-sm h-12 ${
-                hospitalOnly
-                  ? 'bg-brand-primary text-white border-brand-primary'
-                  : 'bg-white text-brand-primary border-indigo-100 hover:border-brand-primary/20'
-              }`}
+        {/* Tabs: Whisperoo Experts / Hospital Experts */}
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as 'whisperoo' | 'hospital')}
+          className="w-full"
+        >
+          <TabsList className="w-full sm:w-auto mb-2 bg-gray-100 rounded-xl p-1">
+            <TabsTrigger
+              value="whisperoo"
+              className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
             >
-              <Building2 className={`w-4 h-4 ${hospitalOnly ? 'text-white' : 'text-brand-primary'}`} />
-              {hospitalOnly ? t('experts.hospitalOnly') : t('experts.hospitalPartners')}
-            </button>
-          )}
-        </div>
+              {t('experts.tabWhisperoo')}
+            </TabsTrigger>
+            {isHospitalUser && (expertBoostIds.length > 0 || tenant) && (
+              <TabsTrigger
+                value="hospital"
+                className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
+              >
+                <Building2 className="w-3.5 h-3.5 mr-1.5 inline-block" />
+                {t('experts.tabHospital')}
+              </TabsTrigger>
+            )}
+          </TabsList>
 
-        {/* Results Count */}
-        <div className="mb-4 sm:mb-6 flex items-center justify-between border-b border-gray-100 pb-3">
-          <p className="text-xs sm:text-sm font-semibold text-gray-500">
-            {displayExperts.length === 1 
-              ? t('experts.expertFound', { count: 1 })
-              : t('experts.expertsFound', { count: displayExperts.length })
-            }
-          </p>
-          {hospitalOnly && (
-            <span className="text-[10px] sm:text-xs font-bold text-brand-primary uppercase tracking-wider">
-              {t('experts.showingHospitalOnly')}
-            </span>
-          )}
-        </div>
+          {/* Whisperoo Experts Tab */}
+          <TabsContent value="whisperoo" className="mt-0">
+            {/* Disclaimer */}
+            <p className="text-xs text-brand-primary/80 font-medium mb-4 leading-relaxed">
+              {t('experts.whisperooDisclaimer')}
+            </p>
 
-        {/* Expert Cards Grid */}
-        {displayExperts.length === 0 ? (
-          <div className="text-center py-12 px-4">
-            <div className="text-gray-500 mb-4">
-              <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">{t('experts.noExpertsFound')}</p>
-              <p className="text-sm">
-                {t('experts.tryAdjusting')}
+            {/* Results Count */}
+            <div className="mb-4 flex items-center border-b border-gray-100 pb-3">
+              <p className="text-xs sm:text-sm font-semibold text-gray-500">
+                {whisperooExperts.length === 1
+                  ? t('experts.expertFound', { count: 1 })
+                  : t('experts.expertsFound', { count: whisperooExperts.length })}
               </p>
             </div>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {displayExperts.map((expert) => (
-              <Card
-                key={expert.id}
-                className={`cursor-pointer hover:shadow-lg transition-shadow duration-200 bg-white border-none overflow-hidden ${
-                  isExpertBoosted(expert) ? 'ring-2 ring-indigo-200' : ''
-                }`}
-                onClick={() => handleExpertClick(expert.id)}
-              >
-                <CardContent className="p-4 sm:p-6">
-                  {/* Hospital Partner Badge */}
-                  {isExpertBoosted(expert) && (
-                    <div className="flex items-center gap-1.5 mb-4 text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full w-fit">
-                      <Building2 className="w-3 h-3" />
-                      {t('experts.recommendedBy', { name: config?.branding?.display_name || tenant?.name || 'Hospital' })}
-                    </div>
-                  )}
-                  <div className="flex flex-row items-start gap-3 sm:gap-4">
-                    <div className="flex-shrink-0">
-                      {expert.profile_image_url ? (
-                        <img
-                          src={expert.profile_image_url}
-                          alt={expert.first_name}
-                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shadow-sm"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; (e.currentTarget.nextElementSibling as HTMLElement)?.style.setProperty('display', 'flex'); }}
-                        />
-                      ) : null}
-                      <div
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex-shrink-0 bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl"
-                        style={{ display: expert.profile_image_url ? 'none' : 'flex' }}
-                      >
-                        {expert.first_name?.[0]?.toUpperCase() ?? '?'}
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-base sm:text-lg text-gray-900 leading-tight mb-1 break-words">
-                        {expert.first_name}
-                      </h3>
-                      <p className="text-indigo-600 font-semibold text-xs sm:text-sm mb-1 break-words">
-                        {translateSpecialty(expert.expert_specialties?.[0] || '') || t('experts.generalExpert')}
-                      </p>
-                      {/* Ratings and review counts are disabled in production */}
-                      
-                      <p className="text-gray-600 text-xs leading-relaxed line-clamp-3 mb-3 break-words">
-                        {getLocalizedBio(expert, i18n.language)}
-                      </p>
-                      
-                      <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
-                        <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
-                          {t('experts.yearsExperience', { count: expert.expert_experience_years || 0 })}
-                        </span>
-                        <span className="text-[11px] sm:text-sm font-bold text-indigo-600 flex items-center gap-1">
-                          {t('experts.bookConsultation')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+
+            <ExpertGrid
+              experts={whisperooExperts}
+              isExpertBoosted={isExpertBoosted}
+              handleExpertClick={handleExpertClick}
+              translateSpecialty={translateSpecialty}
+              i18n={i18n}
+              t={t}
+            />
+          </TabsContent>
+
+          {/* Hospital Experts Tab */}
+          {isHospitalUser && (expertBoostIds.length > 0 || tenant) && (
+            <TabsContent value="hospital" className="mt-0">
+              {/* Results Count */}
+              <div className="mb-4 flex items-center border-b border-gray-100 pb-3">
+                <p className="text-xs sm:text-sm font-semibold text-gray-500">
+                  {hospitalExperts.length === 1
+                    ? t('experts.expertFound', { count: 1 })
+                    : t('experts.expertsFound', { count: hospitalExperts.length })}
+                </p>
+                <span className="ml-auto text-[10px] sm:text-xs font-bold text-brand-primary uppercase tracking-wider">
+                  {t('experts.showingHospitalOnly')}
+                </span>
+              </div>
+
+              <ExpertGrid
+                experts={hospitalExperts}
+                isExpertBoosted={isExpertBoosted}
+                handleExpertClick={handleExpertClick}
+                translateSpecialty={translateSpecialty}
+                i18n={i18n}
+                t={t}
+              />
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
+    </div>
+  );
+};
+
+// ── Shared expert card grid ────────────────────────────────────────────────────
+interface ExpertGridProps {
+  experts: any[];
+  isExpertBoosted: (e: any) => boolean;
+  handleExpertClick: (id: string) => void;
+  translateSpecialty: (s: string) => string;
+  i18n: any;
+  t: any;
+}
+
+const ExpertGrid: React.FC<ExpertGridProps> = ({
+  experts,
+  isExpertBoosted,
+  handleExpertClick,
+  translateSpecialty,
+  i18n,
+  t,
+}) => {
+  if (experts.length === 0) {
+    return (
+      <div className="text-center py-12 px-4">
+        <div className="text-gray-500 mb-4">
+          <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-lg">{t('experts.noExpertsFound')}</p>
+          <p className="text-sm">{t('experts.tryAdjusting')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {experts.map((expert) => (
+        <Card
+          key={expert.id}
+          className={`cursor-pointer hover:shadow-lg transition-shadow duration-200 bg-white border-none overflow-hidden ${
+            isExpertBoosted(expert) ? 'ring-2 ring-indigo-200' : ''
+          }`}
+          onClick={() => handleExpertClick(expert.id)}
+        >
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-row items-start gap-3 sm:gap-4">
+              <div className="flex-shrink-0">
+                {expert.profile_image_url ? (
+                  <img
+                    src={expert.profile_image_url}
+                    alt={expert.first_name}
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shadow-sm"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; (e.currentTarget.nextElementSibling as HTMLElement)?.style.setProperty('display', 'flex'); }}
+                  />
+                ) : null}
+                <div
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex-shrink-0 bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl"
+                  style={{ display: expert.profile_image_url ? 'none' : 'flex' }}
+                >
+                  {expert.first_name?.[0]?.toUpperCase() ?? '?'}
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-base sm:text-lg text-gray-900 leading-tight mb-1 break-words">
+                  {expert.first_name}
+                </h3>
+                <p className="text-indigo-600 font-semibold text-xs sm:text-sm mb-1 break-words">
+                  {translateSpecialty(expert.expert_specialties?.[0] || '') || t('experts.generalExpert')}
+                </p>
+                <p className="text-gray-600 text-xs leading-relaxed line-clamp-3 mb-3 break-words">
+                  {getLocalizedBio(expert, i18n.language)}
+                </p>
+
+                <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
+                  <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
+                    {t('experts.yearsExperience', { count: expert.expert_experience_years || 0 })}
+                  </span>
+                  <span className="text-[11px] sm:text-sm font-bold text-indigo-600 flex items-center gap-1">
+                    {t('experts.bookConsultation')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };

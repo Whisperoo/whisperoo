@@ -100,6 +100,14 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
     setSaving(true);
     setError(null);
 
+    const finalSpecialties = form.expert_specialties.length > 0 
+      ? form.expert_specialties 
+      : (newSpecialty ? [newSpecialty] : []);
+    
+    const finalCredentials = form.expert_credentials.length > 0
+      ? form.expert_credentials
+      : (newCredential ? [newCredential] : []);
+
     try {
       if (isNew) {
         // Must use server-side function because profiles.id is FK to auth.users
@@ -108,8 +116,8 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           p_email: form.email.trim() || null,
           p_profile_image_url: form.profile_image_url.trim() || null,
           p_expert_bio: form.expert_bio.trim() || null,
-          p_expert_specialties: form.expert_specialties,
-          p_expert_credentials: form.expert_credentials,
+          p_expert_specialties: finalSpecialties,
+          p_expert_credentials: finalCredentials,
           p_expert_experience_years: form.expert_experience_years,
           p_expert_consultation_rate: form.expert_consultation_rate,
           p_expert_availability_status: form.expert_availability_status,
@@ -123,8 +131,8 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
             first_name: form.first_name.trim(),
             profile_image_url: form.profile_image_url.trim() || null,
             expert_bio: form.expert_bio.trim(),
-            expert_specialties: form.expert_specialties,
-            expert_credentials: form.expert_credentials,
+            expert_specialties: finalSpecialties,
+            expert_credentials: finalCredentials,
             expert_experience_years: form.expert_experience_years,
             expert_consultation_rate: form.expert_consultation_rate,
             expert_availability_status: form.expert_availability_status,
@@ -245,11 +253,16 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
               </div>
               <div className="flex gap-2">
                 <select
-                  value={newSpecialty}
-                  onChange={(e) => setNewSpecialty(e.target.value)}
-                  className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value=""
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val) {
+                      addChip(form.expert_specialties, val, (v) => setForm({ ...form, expert_specialties: v }));
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary h-10"
                 >
-                  <option value="">Select or type below...</option>
+                  <option value="">{t('admin.experts.selectSpecialty', 'Select a specialty...')}</option>
                   {COMMON_SPECIALTIES.filter((s) => !form.expert_specialties.includes(s)).map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
@@ -290,11 +303,16 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
               </div>
               <div className="flex gap-2">
                 <select
-                  value={newCredential}
-                  onChange={(e) => setNewCredential(e.target.value)}
-                  className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value=""
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val) {
+                      addChip(form.expert_credentials, val, (v) => setForm({ ...form, expert_credentials: v }));
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary h-10"
                 >
-                  <option value="">Select or type below...</option>
+                  <option value="">{t('admin.experts.selectCredential', 'Select a credential...')}</option>
                   {COMMON_CREDENTIALS.filter((c) => !form.expert_credentials.includes(c)).map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}

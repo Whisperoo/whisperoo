@@ -254,7 +254,30 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
   const afterTagFilter = activeTags && activeTags.length > 0
     ? sortedProducts.filter((p: any) => {
-        const productTags: string[] = (p.tags ?? []).map((s: string) => s.toLowerCase());
+        const productTags: string[] = (p.tags ?? [])
+          .map((s: string) =>
+            String(s || '')
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/(^-|-$)+/g, ''),
+          )
+          .map((t) => {
+            // alias mapping — keep in sync with usePersonalizedSort canonicalization
+            const ALIASES: Record<string, string> = {
+              'fitness': 'fitness-yoga',
+              'fitness&yoga': 'fitness-yoga',
+              'breastfeeding': 'baby-feeding',
+              'breast-feeding': 'baby-feeding',
+              'lactation': 'baby-feeding',
+              'postnatal': 'postpartum-tips',
+              'post-natal': 'postpartum-tips',
+              'postpartum': 'postpartum-tips',
+              'pelvicfloor': 'pelvic-floor',
+            };
+            return ALIASES[t] || t;
+          })
+          .filter(Boolean as any);
         return activeTags.some((slug) => {
           const label = (labelMap[slug] || slug).toLowerCase();
           return (

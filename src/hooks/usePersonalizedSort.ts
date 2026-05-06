@@ -65,6 +65,41 @@ const LEGACY_TOPIC_MAP: Record<string, string> = {
 const PRENATAL_SLUGS  = new Set(['prenatal-tips', 'prenatal', 'pregnancy', 'expecting', 'labor-prep']);
 const POSTPARTUM_SLUGS = new Set(['postpartum-tips', 'postpartum', 'newborn', 'infant', 'recovery', 'postnatal']);
 
+// Known alias mappings: map common synonyms and non-slug tag forms to canonical tag slugs
+const CANONICAL_ALIAS_MAP: Record<string, string> = {
+  // Fitness aliases
+  'fitness': 'fitness-yoga',
+  'fitness-yoga': 'fitness-yoga',
+  'fitness&yoga': 'fitness-yoga',
+
+  // Baby feeding aliases
+  'breastfeeding': 'baby-feeding',
+  'breast-feeding': 'baby-feeding',
+  'lactation': 'baby-feeding',
+
+  // Postpartum aliases
+  'postnatal': 'postpartum-tips',
+  'post-natal': 'postpartum-tips',
+  'postpartum': 'postpartum-tips',
+
+  // Pelvic floor
+  'pelvicfloor': 'pelvic-floor',
+  'pelvic-floor': 'pelvic-floor',
+
+  // Prenatal
+  'prenatal': 'prenatal-tips',
+  'prenatal-tips': 'prenatal-tips',
+};
+
+function canonicalizeSlug(s: string) {
+  const normalized = String(s || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+  return CANONICAL_ALIAS_MAP[normalized] || normalized;
+}
+
 /**
  * Returns a function that re-orders a product list by personalised relevance.
  * Scoring factors (highest first):
@@ -88,12 +123,18 @@ export function usePersonalizedSort() {
         .map((c: any) => (c.category?.slug ?? '') as string)
         .filter(Boolean);
 
-      const productTags: string[] = ((product as any).tags ?? []);
+      const productTags: string[] = ((product as any).tags ?? [])
+        .map((s: string) => canonicalizeSlug(String(s || '')))
+        .filter(Boolean as any);
       
       const expertSpecialties: string[] = (product.expert?.expert_specialties ?? [])
         .map((s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '-'));
 
-      const allSlugs = new Set([...categorySlugs, ...productTags, ...expertSpecialties]);
+      const allSlugs = new Set([
+        ...categorySlugs.map((s: string) => canonicalizeSlug(String(s).toLowerCase())),
+        ...productTags.map((s: string) => canonicalizeSlug(s)),
+        ...expertSpecialties.map((s: string) => canonicalizeSlug(s)),
+      ]);
       
       // Fallback: If no tags/slugs match, we'll scan the title and description for keywords
       const titleLower = (product.title ?? '').toLowerCase();

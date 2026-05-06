@@ -84,12 +84,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
     }
   };
 
-  // Run auto-update once if marker is detected
-  React.useEffect(() => {
-    if (detectedLangCode && i18n.language !== detectedLangCode) {
-      handleLanguageChange(detectedLangCode);
-    }
-  }, [detectedLangCode]);
+  // NOTE: We intentionally do NOT auto-switch language when the AI detects a language marker.
+  // Language preference is governed by the user's profile setting (saved to DB via updateProfile).
+  // The user can switch language by clicking a button below — which persists to their profile.
 
   const handleThumbsUp = async () => {
     if (feedbackState === 'up') return; // Already submitted

@@ -263,7 +263,7 @@ export const PurchaseSuccessPage: React.FC = () => {
             size="lg"
           >
             <Download className="h-5 w-5" />
-            {product.product_type === 'consultation' ? t('purchaseSuccess.viewBookings') : t('purchaseSuccess.viewPurchases')}
+            {product.product_type === 'consultation' ? t('purchaseSuccess.viewAppointments') : t('purchaseSuccess.viewPurchases')}
           </Button>
 
           <Button variant="outline" onClick={() => navigate(product.product_type === 'consultation' ? '/experts' : '/products')} className="flex-1 gap-2 h-12" size="lg">
