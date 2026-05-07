@@ -104,7 +104,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                       <Badge variant="outline" className="capitalize">
                         {product.product_type}
                       </Badge>
-                      {product.expert && (
+                      {product.expert?.first_name && (
                         <span className="text-sm text-gray-500">
                           by {product.expert.first_name}
                         </span>

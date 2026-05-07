@@ -251,7 +251,7 @@ export const ProductPreviewModal: React.FC<ProductPreviewModalProps> = ({
                 Preview {product.product_type} - {product.title}
               </DialogDescription>
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                {product.expert && (
+                {product.expert?.first_name && (
                   <span>by {product.expert.first_name}</span>
                 )}
                 <Badge variant="outline" className="capitalize text-xs">

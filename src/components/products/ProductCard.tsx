@@ -58,6 +58,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
 
+  const expert = product.expert ?? null;
+
   const isFreeProduct = product.price === 0;
   const hasContent = !!(product.primary_file_url || product.file_url);
 
@@ -522,21 +524,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {/* Avatar */}
             <Avatar className="w-9 h-9 rounded-full flex-shrink-0">
               <AvatarImage
-                src={product.expert.profile_image_url}
-                alt={product.expert.first_name}
+                src={expert?.profile_image_url || undefined}
+                alt={expert?.first_name || "Expert"}
               />
               <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-sm">
-                {product.expert.first_name?.[0] || "E"}
+                {expert?.first_name?.[0] || "E"}
               </AvatarFallback>
             </Avatar>
 
             {/* Expert Info */}
             <div className="flex flex-col flex-1 min-w-0">
               <p className="font-semibold text-[14px] text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
-                {product.expert.first_name || "Expert"}
+                {expert?.first_name || "Expert"}
               </p>
               <div className="mt-1">
-                {product.expert.tenant_id ? (
+                {expert?.tenant_id ? (
                   <span className="inline-block px-1.5 py-0.5 bg-pink-100 text-pink-700 text-[10px] font-semibold rounded">
                     {t('experts.tabHospital', 'Hospital Expert')}
                   </span>
@@ -547,7 +549,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 )}
               </div>
               <p className="mt-1 font-medium text-[9px] text-fuchsia-600 leading-tight">
-                {product.expert.tenant_id 
+                {expert?.tenant_id 
                   ? t('experts.hospitalDisclaimer', 'This expert is affiliated with a hospital partner.') 
                   : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
               </p>
