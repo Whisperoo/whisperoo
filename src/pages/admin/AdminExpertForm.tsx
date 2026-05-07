@@ -4,10 +4,10 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
 const COMMON_SPECIALTIES = [
-  'Child Development', 'Parenting Strategies', 'Sleep Training', 'Nutrition',
-  'Behavioral Issues', 'Newborn Care', 'Breastfeeding', 'Potty Training',
-  'Educational Development', 'Special Needs', 'Mental Health', 'Family Dynamics',
-  'Discipline Strategies', 'Lactation Support', 'Postpartum Care', 'Prenatal Education',
+  'Lactation', 'Baby Feeding', 'Pelvic Floor', 'Sleep Coaching',
+  'Nervous System Regulation', 'Nutrition', 'Pediatric Dentistry',
+  'Lifestyle Coaching', 'Fitness/yoga', 'Back to Work',
+  'Postpartum Tips', 'Prenatal Tips'
 ];
 
 const COMMON_CREDENTIALS = [
@@ -38,6 +38,7 @@ interface ExpertFormData {
   expert_consultation_rate: number;
   expert_availability_status: string;
   expert_rating: number;
+  tenant_id: string | null;
 }
 
 const EMPTY_FORM: ExpertFormData = {
@@ -51,6 +52,7 @@ const EMPTY_FORM: ExpertFormData = {
   expert_consultation_rate: 0,
   expert_availability_status: 'available',
   expert_rating: 5.0,
+  tenant_id: null,
 };
 
 const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, onSaved }) => {
@@ -61,6 +63,15 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
   const [error, setError] = useState<string | null>(null);
   const [newSpecialty, setNewSpecialty] = useState('');
   const [newCredential, setNewCredential] = useState('');
+  const [tenants, setTenants] = useState<any[]>([]);
+
+  // Load tenants
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('tenants').select('id, name').order('name');
+      if (data) setTenants(data);
+    })();
+  }, []);
 
   // Load existing expert data
   useEffect(() => {
@@ -86,6 +97,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           expert_consultation_rate: data.expert_consultation_rate || 0,
           expert_availability_status: data.expert_availability_status || 'available',
           expert_rating: data.expert_rating || 5.0,
+          tenant_id: data.tenant_id || null,
         });
       }
       setLoading(false);
@@ -122,6 +134,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           p_expert_consultation_rate: form.expert_consultation_rate,
           p_expert_availability_status: form.expert_availability_status,
           p_expert_rating: form.expert_rating,
+          p_tenant_id: form.tenant_id,
         });
         if (rpcErr) throw rpcErr;
       } else {
@@ -137,6 +150,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
             expert_consultation_rate: form.expert_consultation_rate,
             expert_availability_status: form.expert_availability_status,
             expert_rating: form.expert_rating,
+            tenant_id: form.tenant_id,
           })
           .eq('id', expertId);
         if (updateErr) throw updateErr;
@@ -207,6 +221,21 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
                   className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400"
                 />
               </div>
+            </div>
+
+            {/* Tenant Affiliation */}
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Affiliation (Tenant)</label>
+              <select
+                value={form.tenant_id || ''}
+                onChange={(e) => setForm({ ...form, tenant_id: e.target.value || null })}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Whisperoo General Expert (No Hospital)</option>
+                {tenants.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
             </div>
 
             {/* Profile Image URL */}

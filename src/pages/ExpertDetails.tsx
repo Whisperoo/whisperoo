@@ -276,6 +276,15 @@ const ExpertDetails: React.FC = () => {
               <div className="flex-1 w-full text-center sm:text-left">
                 <div className="flex flex-col gap-4">
                   <div>
+                    {expert.tenant_id ? (
+                      <span className="inline-block px-2 py-1 bg-pink-100 text-pink-700 text-xs font-semibold rounded mb-2">
+                        {t('experts.tabHospital', 'Hospital Expert')}
+                      </span>
+                    ) : (
+                      <span className="inline-block px-2 py-1 bg-fuchsia-100 text-fuchsia-700 text-xs font-semibold rounded mb-2">
+                        {t('experts.tabWhisperoo', 'Whisperoo Expert')}
+                      </span>
+                    )}
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 break-words">
                       {expert.first_name}
                     </h1>
@@ -323,6 +332,15 @@ const ExpertDetails: React.FC = () => {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Disclaimer */}
+                <div className="mt-4 border-2 border-fuchsia-500 p-3 rounded-md max-w-lg">
+                  <p className="text-fuchsia-600 text-sm font-medium">
+                    {expert.tenant_id 
+                      ? t('experts.hospitalDisclaimer', 'This expert is affiliated with a hospital partner.') 
+                      : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
+                  </p>
                 </div>
 
                 {/* Bio */}

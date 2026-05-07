@@ -535,8 +535,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <p className="font-semibold text-[14px] text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
                 {product.expert.first_name || "Expert"}
               </p>
-              <p className="font-normal text-[12px] text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
-                {product.expert?.expert_specialties?.[0] || "Expert"}
+              <div className="mt-1">
+                {product.expert.tenant_id ? (
+                  <span className="inline-block px-1.5 py-0.5 bg-pink-100 text-pink-700 text-[10px] font-semibold rounded">
+                    {t('experts.tabHospital', 'Hospital Expert')}
+                  </span>
+                ) : (
+                  <span className="inline-block px-1.5 py-0.5 bg-fuchsia-100 text-fuchsia-700 text-[10px] font-semibold rounded">
+                    {t('experts.tabWhisperoo', 'Whisperoo Expert')}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 font-medium text-[9px] text-fuchsia-600 leading-tight">
+                {product.expert.tenant_id 
+                  ? t('experts.hospitalDisclaimer', 'This expert is affiliated with a hospital partner.') 
+                  : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
               </p>
             </div>
           </div>

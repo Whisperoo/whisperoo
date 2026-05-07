@@ -459,8 +459,24 @@ export const ProductDetailPage: React.FC = () => {
                     </Avatar>
                     <div>
                       <p className="font-medium">{product.expert.first_name}</p>
-                      <p className="text-sm text-muted-foreground">{t('products.expert')}</p>
+                      {product.expert.tenant_id ? (
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-pink-100 text-pink-700 text-xs font-semibold rounded">
+                          {t('experts.tabHospital', 'Hospital Expert')}
+                        </span>
+                      ) : (
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-fuchsia-100 text-fuchsia-700 text-xs font-semibold rounded">
+                          {t('experts.tabWhisperoo', 'Whisperoo Expert')}
+                        </span>
+                      )}
                     </div>
+                  </div>
+                )}
+
+                {product.expert && (
+                  <div className="mb-4 text-xs font-medium text-fuchsia-600">
+                    {product.expert.tenant_id 
+                      ? t('experts.hospitalDisclaimer', 'This expert is affiliated with a hospital partner.') 
+                      : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
                   </div>
                 )}
 
@@ -557,34 +573,7 @@ export const ProductDetailPage: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Additional Info */}
-            {product.product_type !== "consultation" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('products.whatYoullGet')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>{t('products.instantAccess')}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>{t('products.lifetimeAccess')}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>{t('products.expertCreated')}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>{t('products.mobileFriendly')}</span>
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
+            {/* What You'll Get box removed as per requirements */}
           </div>
         </div>
 

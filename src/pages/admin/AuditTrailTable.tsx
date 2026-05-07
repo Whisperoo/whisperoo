@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Search, Download, RefreshCw, Shield, AlertTriangle, Calendar } from 'lucide-react';
+import { Search, Download, RefreshCw, Shield, AlertTriangle, Calendar, X, MessageSquare, Bot } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useTranslation } from 'react-i18next';
 
 interface AuditRow {
@@ -28,7 +29,36 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
   const [escalationOnly, setEscalationOnly] = useState(false);
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState<string | null>(null);
+  const [selectedRow, setSelectedRow]       = useState<AuditRow | null>(null);
+  const [conversation, setConversation]     = useState<any[]>([]);
+  const [loadingConv, setLoadingConv]       = useState(false);
   const { t } = useTranslation();
+
+  const openConversation = async (row: AuditRow) => {
+    setSelectedRow(row);
+    setLoadingConv(true);
+    setConversation([]);
+    
+    // Find session_id from message_id
+    const { data: msgData } = await supabase
+      .from('messages')
+      .select('session_id')
+      .eq('id', row.message_id)
+      .single();
+      
+    if (msgData?.session_id) {
+      const { data: convData } = await supabase
+        .from('messages')
+        .select('role, content, created_at, is_flagged_for_review')
+        .eq('session_id', msgData.session_id)
+        .order('created_at', { ascending: true });
+        
+      if (convData) {
+        setConversation(convData);
+      }
+    }
+    setLoadingConv(false);
+  };
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -228,7 +258,11 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.map((row, i) => (
-                <tr key={row.message_id} className="hover:bg-gray-50/50 transition-colors">
+                <tr 
+                  key={row.message_id} 
+                  className="hover:bg-blue-50/50 transition-colors cursor-pointer"
+                  onClick={() => openConversation(row)}
+                >
                   <td className="px-4 py-3 font-mono text-gray-500 whitespace-nowrap">
                     {formatId(row, i)}
                   </td>
@@ -294,6 +328,72 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
           </div>
         </div>
       )}
+
+      {/* Conversation Dialog */}
+      <Dialog open={!!selectedRow} onOpenChange={(open) => !open && setSelectedRow(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-lg">
+                <MessageSquare className="w-5 h-5 text-blue-600" />
+                Conversation Details
+              </DialogTitle>
+            </div>
+            {selectedRow && (
+              <DialogDescription className="mt-2 space-y-1">
+                <div className="flex items-center gap-4 text-xs font-mono text-gray-500">
+                  <span>ID: {selectedRow.message_id.slice(0, 8)}...</span>
+                  <span>User: {selectedRow.user_id?.slice(0, 8)}...</span>
+                  <span>Category: {selectedRow.category}</span>
+                </div>
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
+            {loadingConv ? (
+              <div className="flex items-center justify-center py-12 text-gray-400">
+                <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                Loading full conversation...
+              </div>
+            ) : conversation.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 text-sm">
+                No messages found for this session.
+              </div>
+            ) : (
+              conversation.map((msg, idx) => (
+                <div 
+                  key={idx} 
+                  className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {msg.role === 'assistant' && (
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
+                      <Bot className="w-4 h-4 text-blue-600" />
+                    </div>
+                  )}
+                  <div 
+                    className={`relative max-w-[80%] rounded-2xl px-5 py-3.5 text-sm ${
+                      msg.role === 'user' 
+                        ? 'bg-blue-600 text-white rounded-tr-sm' 
+                        : 'bg-gray-100 text-gray-800 rounded-tl-sm'
+                    } ${msg.is_flagged_for_review ? 'ring-2 ring-red-400 ring-offset-2' : ''}`}
+                  >
+                    {msg.is_flagged_for_review && (
+                      <div className="absolute -top-2.5 -right-2.5 bg-red-100 text-red-600 p-1 rounded-full shadow-sm border border-red-200">
+                        <AlertTriangle className="w-3 h-3" />
+                      </div>
+                    )}
+                    <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+                    <div className={`text-[10px] mt-2 text-right opacity-70 ${msg.role === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
+                      {new Date(msg.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
