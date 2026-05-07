@@ -372,7 +372,21 @@ export const productService = {
 
     // Apply tag filter (GIN overlaps — matches products with ANY of selected tags)
     if (filters.tags && filters.tags.length > 0) {
-      query = query.overlaps('tags', filters.tags);
+      const SLUG_TO_LABEL: Record<string, string> = {
+        'baby-feeding': 'Baby Feeding',
+        'pelvic-floor': 'Pelvic Floor',
+        'sleep-coaching': 'Sleep Coaching',
+        'nervous-system': 'Nervous System Regulation',
+        'nutrition': 'Nutrition',
+        'pediatric-dentistry': 'Pediatric Dentistry',
+        'lifestyle-coaching': 'Lifestyle Coaching',
+        'fitness-yoga': 'Fitness/yoga',
+        'back-to-work': 'Back to Work',
+        'postpartum-tips': 'Postpartum Tips',
+        'prenatal-tips': 'Prenatal Tips',
+      };
+      const labelTags = filters.tags.map(slug => SLUG_TO_LABEL[slug] ?? slug);
+      query = query.overlaps('tags', labelTags);
     }
 
     // Apply pagination

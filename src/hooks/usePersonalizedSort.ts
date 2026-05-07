@@ -7,17 +7,17 @@ import { ProductWithDetails } from '@/services/products';
 // Maps each onboarding topic (stable keys) to the product category slugs, tag slugs,
 // and expert specialty keywords that are most relevant to that topic.
 const TOPIC_SLUG_MAP: Record<string, string[]> = {
-  'Baby Feeding':              ['baby-feeding', 'feeding', 'nutrition', 'breastfeeding', 'formula', 'lactation'],
-  'Pelvic Floor':              ['pelvic-floor', 'postpartum', 'womens-health', 'recovery', 'pelvic-floor-coaching'],
-  'Sleep Coaching':            ['sleep-coaching', 'sleep', 'routines', 'nap-transitions', 'bedtime'],
-  'Nervous System Regulation': ['nervous-system', 'mental-health', 'self-care', 'wellness', 'anxiety', 'stress-regulation'],
-  'Nutrition':                 ['nutrition', 'baby-feeding', 'feeding', 'wellness', 'dietitian', 'gut-health'],
-  'Pediatric Dentistry':       ['pediatric-dentistry', 'dental', 'pediatric', 'health', 'oral-health', 'teething'],
-  'Lifestyle Coaching':        ['lifestyle-coaching', 'lifestyle', 'coaching', 'wellness', 'productivity', 'organization'],
-  'Fitness/yoga':              ['fitness-yoga', 'fitness', 'yoga', 'postpartum', 'exercise', 'prenatal-yoga'],
-  'Back to Work':              ['back-to-work', 'career', 'lifestyle', 'childcare', 'work-life-balance'],
-  'Postpartum Tips':           ['postpartum-tips', 'postpartum', 'recovery', 'mental-health', 'newborn-care'],
-  'Prenatal Tips':             ['prenatal-tips', 'prenatal', 'pregnancy', 'expecting', 'labor-prep', 'birth-plan'],
+  'Baby Feeding':              ['Baby Feeding', 'baby-feeding', 'feeding', 'nutrition', 'breastfeeding', 'formula', 'lactation'],
+  'Pelvic Floor':              ['Pelvic Floor', 'pelvic-floor', 'postpartum', 'womens-health', 'recovery', 'pelvic-floor-coaching'],
+  'Sleep Coaching':            ['Sleep Coaching', 'sleep-coaching', 'sleep', 'routines', 'nap-transitions', 'bedtime'],
+  'Nervous System Regulation': ['Nervous System Regulation', 'nervous-system', 'mental-health', 'self-care', 'wellness', 'anxiety', 'stress-regulation'],
+  'Nutrition':                 ['Nutrition', 'nutrition', 'baby-feeding', 'feeding', 'wellness', 'dietitian', 'gut-health'],
+  'Pediatric Dentistry':       ['Pediatric Dentistry', 'pediatric-dentistry', 'dental', 'pediatric', 'health', 'oral-health', 'teething'],
+  'Lifestyle Coaching':        ['Lifestyle Coaching', 'lifestyle-coaching', 'lifestyle', 'coaching', 'wellness', 'productivity', 'organization'],
+  'Fitness/yoga':              ['Fitness/yoga', 'fitness-yoga', 'fitness', 'yoga', 'postpartum', 'exercise', 'prenatal-yoga'],
+  'Back to Work':              ['Back to Work', 'back-to-work', 'career', 'lifestyle', 'childcare', 'work-life-balance'],
+  'Postpartum Tips':           ['Postpartum Tips', 'postpartum-tips', 'postpartum', 'recovery', 'mental-health', 'newborn-care'],
+  'Prenatal Tips':             ['Prenatal Tips', 'prenatal-tips', 'prenatal', 'pregnancy', 'expecting', 'labor-prep', 'birth-plan'],
 };
 
 // Legacy mappings for users who onboarded before keys were implemented (translated strings)
@@ -123,7 +123,9 @@ export function usePersonalizedSort() {
         .map((c: any) => (c.category?.slug ?? '') as string)
         .filter(Boolean);
 
-      const productTags: string[] = ((product as any).tags ?? [])
+      const rawTags: string[] = ((product as any).tags ?? []).filter(Boolean);
+
+      const productTags: string[] = rawTags
         .map((s: string) => canonicalizeSlug(String(s || '')))
         .filter(Boolean as any);
       
@@ -131,6 +133,7 @@ export function usePersonalizedSort() {
         .map((s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '-'));
 
       const allSlugs = new Set([
+        ...rawTags, // Match exact labels too!
         ...categorySlugs.map((s: string) => canonicalizeSlug(String(s).toLowerCase())),
         ...productTags.map((s: string) => canonicalizeSlug(s)),
         ...expertSpecialties.map((s: string) => canonicalizeSlug(s)),

@@ -272,10 +272,12 @@ const ExpertDetails: React.FC = () => {
                 </div>
               </div>
 
-              {/* Profile Info */}
+              {/* Profile Info & Booking Box Container */}
               <div className="flex-1 w-full text-center sm:text-left">
-                <div className="flex flex-col gap-4">
-                  <div>
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-6 w-full">
+                  
+                  {/* Left Column: Info & Disclaimer */}
+                  <div className="flex-1 w-full">
                     {expert.tenant_id ? (
                       <span className="inline-block px-2 py-1 bg-pink-100 text-pink-700 text-xs font-semibold rounded mb-2">
                         {t('experts.tabHospital', 'Hospital Expert')}
@@ -300,22 +302,30 @@ const ExpertDetails: React.FC = () => {
                     </div>
 
                     {/* Availability Status */}
-                    <div className="flex justify-center sm:justify-start">
+                    <div className="flex justify-center sm:justify-start mb-4">
                       <Badge 
                         variant={expert.expert_availability_status === 'available' ? 'default' : 'secondary'}
-                        className="mb-4"
                       >
                         {expert.expert_availability_status === 'available' ? t('experts.availableForConsultations') : t('experts.currentlyUnavailable')}
                       </Badge>
                     </div>
+
+                    {/* Disclaimer */}
+                    <div className="mt-4 border border-fuchsia-500 bg-white p-3 rounded-md max-w-lg shadow-sm">
+                      <p className="text-fuchsia-600 text-sm font-medium">
+                        {expert.tenant_id 
+                          ? t('experts.hospitalDisclaimer', 'This expert is affiliated with a hospital partner.') 
+                          : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Consultation - Only show if expert is available */}
+                  {/* Right Column: Consultation Booking Box */}
                   {expert.expert_availability_status === 'available' && (
-                    <div className="w-full">
-                      <div className="bg-indigo-50 rounded-xl p-4 sm:max-w-xs sm:ml-auto">
+                    <div className="w-full sm:w-auto flex-shrink-0">
+                      <div className="bg-indigo-50 rounded-xl p-5 w-full sm:w-[280px]">
                         <p className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 opacity-70">{t('experts.consultation')}</p>
-                        <p className="text-2xl font-bold text-indigo-600 mb-3">
+                        <p className="text-2xl font-bold text-indigo-600 mb-4">
                           {consultationProduct && consultationProduct.price > 0
                             ? `$${consultationProduct.price.toFixed(0)}`
                             : t('experts.contactForRates')
@@ -332,15 +342,6 @@ const ExpertDetails: React.FC = () => {
                       </div>
                     </div>
                   )}
-                </div>
-
-                {/* Disclaimer */}
-                <div className="mt-4 border-2 border-fuchsia-500 p-3 rounded-md max-w-lg">
-                  <p className="text-fuchsia-600 text-sm font-medium">
-                    {expert.tenant_id 
-                      ? t('experts.hospitalDisclaimer', 'This expert is affiliated with a hospital partner.') 
-                      : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
-                  </p>
                 </div>
 
                 {/* Bio */}

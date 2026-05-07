@@ -31,7 +31,7 @@ interface ActiveTenant {
 const OnboardingHospitalCheck: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { profile, updateProfile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [activeTenants, setActiveTenants] = useState<ActiveTenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPatient, setIsPatient] = useState<string>('');
@@ -88,13 +88,16 @@ const OnboardingHospitalCheck: React.FC = () => {
     if (isPatient === 'yes' && selectedTenantId) {
       setIsSaving(true);
       try {
-        const { error } = await updateProfile({
-          tenant_id: selectedTenantId,
-          acquisition_source: 'organic_affiliate',
-          acquisition_department: selectedDept || null,
-        } as any);
+        // Use a SECURITY DEFINER RPC to bypass the RLS recursion on profiles
+        const { error } = await supabase.rpc('fn_link_user_to_hospital', {
+          p_tenant_id: selectedTenantId,
+          p_department: selectedDept || null,
+        });
 
         if (error) throw error;
+
+        // Refresh the local profile state after successful RPC
+        await refreshProfile();
 
         toast({
           title: t('onboarding.hospitalCheck.toast.hospitalLinked'),

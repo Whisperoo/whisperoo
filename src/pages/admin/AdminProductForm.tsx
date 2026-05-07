@@ -318,7 +318,35 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
 
             {/* Tags */}
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">Tags</label>
+              <label className="text-xs font-medium text-gray-600 mb-2 block">Tags (Quick Select)</label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {[
+                  'Baby Feeding', 'Pelvic Floor', 'Sleep Coaching', 'Nervous System Regulation',
+                  'Nutrition', 'Pediatric Dentistry', 'Lifestyle Coaching', 'Fitness/yoga',
+                  'Back to Work', 'Postpartum Tips', 'Prenatal Tips'
+                ].map(tag => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => {
+                      if (form.tags.includes(tag)) {
+                        removeTag(tag);
+                      } else {
+                        addTag(tag);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      form.tags.includes(tag) 
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-600 hover:text-indigo-600'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Custom Tags</label>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {form.tags.map((t) => (
                   <span key={t} className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium px-2 py-1 rounded-full">
@@ -330,13 +358,15 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
                 ))}
               </div>
               <input
-                placeholder="Type a tag and press Enter"
+                placeholder="Type a custom tag and press Enter"
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
-                    addTag((e.target as HTMLInputElement).value);
-                    (e.target as HTMLInputElement).value = '';
+                    if ((e.target as HTMLInputElement).value.trim()) {
+                      addTag((e.target as HTMLInputElement).value.trim());
+                      (e.target as HTMLInputElement).value = '';
+                    }
                   }
                 }}
               />

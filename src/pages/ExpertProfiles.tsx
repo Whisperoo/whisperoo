@@ -34,6 +34,7 @@ const ExpertProfiles: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
+  const [activeTags, setActiveTags] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'whisperoo' | 'hospital'>('whisperoo');
 
   useEffect(() => {
@@ -76,7 +77,21 @@ const ExpertProfiles: React.FC = () => {
     const matchesSpecialty =
       !selectedSpecialty ||
       (expert.expert_specialties || []).includes(selectedSpecialty);
-    return matchesSearch && matchesSpecialty;
+    
+    // Tag filter matching
+    const matchesTags = activeTags.length === 0 || activeTags.some(tag => {
+      // Create a normalized list of tags for this expert
+      const expertTags = [
+        ...(expert.expert_specialties || []),
+        expert.expert_bio || '',
+        expert.first_name || ''
+      ].map(s => s.toLowerCase());
+      
+      const normalizedSearchTag = tag.toLowerCase();
+      return expertTags.some(t => t.includes(normalizedSearchTag));
+    });
+
+    return matchesSearch && matchesSpecialty && matchesTags;
   });
 
   // SOW 3.1: Tenant-aware expert sorting — hospital experts first
@@ -188,6 +203,52 @@ const ExpertProfiles: React.FC = () => {
               ))}
           </select>
         </div>
+
+        {/* ── Content Label Filter Chips ── */}
+        {(() => {
+          const LABELS = [
+            { label: t('onboarding.topics.babyFeeding', 'Baby Feeding'),         slug: 'Baby Feeding' },
+            { label: t('onboarding.topics.pelvicFloor', 'Pelvic Floor'),          slug: 'Pelvic Floor' },
+            { label: t('onboarding.topics.sleepCoaching', 'Sleep Coaching'),        slug: 'Sleep Coaching' },
+            { label: t('onboarding.topics.nervousSystem', 'Nervous System'),        slug: 'Nervous System Regulation' },
+            { label: t('onboarding.topics.nutrition', 'Nutrition'),             slug: 'Nutrition' },
+            { label: t('onboarding.topics.pediatricDentistry', 'Pediatric Dentistry'),   slug: 'Pediatric Dentistry' },
+            { label: t('onboarding.topics.lifestyleCoaching', 'Lifestyle'),             slug: 'Lifestyle Coaching' },
+            { label: t('onboarding.topics.fitnessYoga', 'Fitness & Yoga'),        slug: 'Fitness/yoga' },
+            { label: t('onboarding.topics.backToWork', 'Back to Work'),          slug: 'Back to Work' },
+            { label: t('onboarding.topics.postpartumTips', 'Postpartum'),            slug: 'Postpartum Tips' },
+            { label: t('onboarding.topics.prenatalTips', 'Prenatal'),              slug: 'Prenatal Tips' },
+          ];
+          return (
+            <div className="flex flex-wrap gap-2 pt-1 pb-6">
+              {LABELS.map(({ label, slug }) => (
+                <button
+                  key={slug}
+                  onClick={() => {
+                    setActiveTags(prev => 
+                      prev.includes(slug) ? prev.filter(t => t !== slug) : [...prev, slug]
+                    );
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                    activeTags.includes(slug)
+                      ? 'bg-[#1C3263] text-white border-[#1C3263] shadow-sm'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-[#1C3263] hover:text-[#1C3263]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+              {activeTags.length > 0 && (
+                <button
+                  onClick={() => setActiveTags([])}
+                  className="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-600 underline transition-colors"
+                >
+                  {t('products.clearSearch', 'Clear labels')}
+                </button>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Tabs: Whisperoo Experts / Hospital Experts */}
         <Tabs
