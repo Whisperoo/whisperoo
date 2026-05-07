@@ -1,11 +1,12 @@
--- Migration: Add SECURITY DEFINER function to update profile bypassing RLS recursion
+-- Migration: Replace fn_update_own_profile with a dynamic, schema-safe version
 -- ============================================================
--- WHY THIS APPROACH:
--- The RLS policy on the profiles table causes "infinite recursion"
--- errors during profile UPDATE operations. Rather than fighting the
--- policy evaluation chain, we use a SECURITY DEFINER function which
--- executes with the privileges of the function owner (postgres),
--- completely bypassing RLS for updating a user's own profile.
+-- PROBLEM: The previous version hardcoded column names including
+-- 'last_name' which does not exist in the profiles table, causing 400 errors.
+--
+-- FIX: Use a dynamic approach that builds an UPDATE statement only
+-- from the JSONB keys that exist as actual profile columns. This is
+-- future-proof — if a column is added to profiles later, it will
+-- automatically be supported here without needing a new migration.
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.fn_update_own_profile(
@@ -18,38 +19,112 @@ SET search_path = public
 AS $$
 DECLARE
   v_uid uuid;
+  v_col text;
+  v_val text;
+  v_sql text := 'UPDATE public.profiles SET updated_at = NOW()';
+  v_has_set boolean := false;
+
+  -- Only columns that actually exist in the profiles table are allowed
+  v_allowed_columns text[] := ARRAY[
+    'first_name',
+    'role',
+    'user_role',
+    'custom_role',
+    'expecting_status',
+    'has_kids',
+    'kids_count',
+    'kids_ages',
+    'due_date',
+    'is_expecting',
+    'topics_of_interest',
+    'parenting_styles',
+    'language_preference',
+    'preferred_language',
+    'personal_context',
+    'profile_image_url',
+    'onboarding_completed',
+    'onboarded',
+    'tenant_id',
+    'acquisition_source',
+    'acquisition_department',
+    'account_type',
+    'expert_bio',
+    'expert_specialties',
+    'expert_experience_years',
+    'expert_consultation_rate',
+    'expert_availability_status',
+    'expert_verified',
+    'expert_rating',
+    'expert_total_reviews',
+    'expert_profile_visibility',
+    'expert_accepts_new_clients'
+  ];
 BEGIN
   v_uid := auth.uid();
-  
-  -- Only allow authenticated users to update themselves
+
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  -- Construct a dynamic update statement based on the provided JSONB keys
-  -- We only allow certain fields to be updated by this generic function
-  -- or we just use jsonb_populate_record
-  
-  UPDATE public.profiles
-  SET 
-    first_name = COALESCE((updates->>'first_name')::text, first_name),
-    last_name = COALESCE((updates->>'last_name')::text, last_name),
-    language_preference = COALESCE((updates->>'language_preference')::text, language_preference),
-    has_kids = COALESCE((updates->>'has_kids')::boolean, has_kids),
-    kids_count = COALESCE((updates->>'kids_count')::int, kids_count),
-    kids_ages = CASE WHEN updates ? 'kids_ages' THEN ARRAY(SELECT jsonb_array_elements_text(updates->'kids_ages')) ELSE kids_ages END,
-    expecting_status = COALESCE((updates->>'expecting_status')::text, expecting_status),
-    due_date = CASE WHEN updates ? 'due_date' THEN (updates->>'due_date')::date ELSE due_date END,
-    topics_of_interest = CASE WHEN updates ? 'topics_of_interest' THEN ARRAY(SELECT jsonb_array_elements_text(updates->'topics_of_interest')) ELSE topics_of_interest END,
-    parenting_styles = CASE WHEN updates ? 'parenting_styles' THEN ARRAY(SELECT jsonb_array_elements_text(updates->'parenting_styles')) ELSE parenting_styles END,
-    user_role = COALESCE((updates->>'user_role')::text, user_role),
-    onboarding_completed = COALESCE((updates->>'onboarding_completed')::boolean, onboarding_completed),
-    tenant_id = CASE WHEN updates ? 'tenant_id' THEN (updates->>'tenant_id')::uuid ELSE tenant_id END,
-    acquisition_source = COALESCE((updates->>'acquisition_source')::text, acquisition_source),
-    acquisition_department = COALESCE((updates->>'acquisition_department')::text, acquisition_department)
-  WHERE id = v_uid;
+  -- Build UPDATE SET clause dynamically from JSONB keys that are in the allowed list
+  FOR v_col IN SELECT jsonb_object_keys(updates)
+  LOOP
+    IF v_col = ANY(v_allowed_columns) THEN
+      v_sql := v_sql || format(', %I = ($1->>%L)::', v_col, v_col);
 
-  -- Raise if no row was updated (profile doesn't exist yet)
+      -- Cast to the right type based on column name
+      IF v_col IN ('has_kids', 'is_expecting', 'onboarding_completed', 'onboarded',
+                   'expert_verified', 'expert_profile_visibility', 'expert_accepts_new_clients') THEN
+        v_sql := v_sql || 'boolean';
+      ELSIF v_col IN ('kids_count', 'expert_experience_years') THEN
+        v_sql := v_sql || 'integer';
+      ELSIF v_col IN ('expert_consultation_rate', 'expert_rating', 'expert_total_reviews') THEN
+        v_sql := v_sql || 'numeric';
+      ELSIF v_col = 'due_date' THEN
+        v_sql := v_sql || 'date';
+      ELSIF v_col = 'tenant_id' THEN
+        v_sql := v_sql || 'uuid';
+      ELSE
+        v_sql := v_sql || 'text';
+      END IF;
+      v_has_set := true;
+    END IF;
+  END LOOP;
+
+  -- Handle array columns separately (they need array casting, not text cast)
+  IF updates ? 'topics_of_interest' THEN
+    v_sql := regexp_replace(v_sql,
+      ', topics_of_interest = \(\$1->>''topics_of_interest''\)::text', '', 'g');
+    v_sql := v_sql || $q$, topics_of_interest = ARRAY(SELECT jsonb_array_elements_text($1->'topics_of_interest'))$q$;
+    v_has_set := true;
+  END IF;
+
+  IF updates ? 'parenting_styles' THEN
+    v_sql := regexp_replace(v_sql,
+      ', parenting_styles = \(\$1->>''parenting_styles''\)::text', '', 'g');
+    v_sql := v_sql || $q$, parenting_styles = ARRAY(SELECT jsonb_array_elements_text($1->'parenting_styles'))$q$;
+    v_has_set := true;
+  END IF;
+
+  IF updates ? 'kids_ages' THEN
+    v_sql := regexp_replace(v_sql,
+      ', kids_ages = \(\$1->>''kids_ages''\)::text', '', 'g');
+    v_sql := v_sql || $q$, kids_ages = ARRAY(SELECT jsonb_array_elements_text($1->'kids_ages'))$q$;
+    v_has_set := true;
+  END IF;
+
+  IF updates ? 'expert_specialties' THEN
+    v_sql := regexp_replace(v_sql,
+      ', expert_specialties = \(\$1->>''expert_specialties''\)::text', '', 'g');
+    v_sql := v_sql || $q$, expert_specialties = ARRAY(SELECT jsonb_array_elements_text($1->'expert_specialties'))$q$;
+    v_has_set := true;
+  END IF;
+
+  v_sql := v_sql || ' WHERE id = $2';
+
+  -- Execute the dynamic SQL
+  EXECUTE v_sql USING updates, v_uid;
+
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Profile not found for user %', v_uid;
   END IF;

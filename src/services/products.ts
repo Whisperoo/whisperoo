@@ -385,8 +385,11 @@ export const productService = {
         'postpartum-tips': 'Postpartum Tips',
         'prenatal-tips': 'Prenatal Tips',
       };
-      const labelTags = filters.tags.map(slug => SLUG_TO_LABEL[slug] ?? slug);
-      query = query.overlaps('tags', labelTags);
+      const searchTags = filters.tags.flatMap(slug => {
+        const label = SLUG_TO_LABEL[slug];
+        return label ? [slug, label] : [slug];
+      });
+      query = query.overlaps('tags', searchTags);
     }
 
     // Apply pagination

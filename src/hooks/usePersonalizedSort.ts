@@ -8,15 +8,15 @@ import { ProductWithDetails } from '@/services/products';
 // and expert specialty keywords that are most relevant to that topic.
 const TOPIC_SLUG_MAP: Record<string, string[]> = {
   'Baby Feeding':              ['Baby Feeding', 'baby-feeding', 'feeding', 'nutrition', 'breastfeeding', 'formula', 'lactation'],
-  'Pelvic Floor':              ['Pelvic Floor', 'pelvic-floor', 'postpartum', 'womens-health', 'recovery', 'pelvic-floor-coaching'],
+  'Pelvic Floor':              ['Pelvic Floor', 'pelvic-floor', 'womens-health', 'pelvic-floor-coaching'],
   'Sleep Coaching':            ['Sleep Coaching', 'sleep-coaching', 'sleep', 'routines', 'nap-transitions', 'bedtime'],
-  'Nervous System Regulation': ['Nervous System Regulation', 'nervous-system', 'mental-health', 'self-care', 'wellness', 'anxiety', 'stress-regulation'],
-  'Nutrition':                 ['Nutrition', 'nutrition', 'baby-feeding', 'feeding', 'wellness', 'dietitian', 'gut-health'],
-  'Pediatric Dentistry':       ['Pediatric Dentistry', 'pediatric-dentistry', 'dental', 'pediatric', 'health', 'oral-health', 'teething'],
-  'Lifestyle Coaching':        ['Lifestyle Coaching', 'lifestyle-coaching', 'lifestyle', 'coaching', 'wellness', 'productivity', 'organization'],
-  'Fitness/yoga':              ['Fitness/yoga', 'fitness-yoga', 'fitness', 'yoga', 'postpartum', 'exercise', 'prenatal-yoga'],
-  'Back to Work':              ['Back to Work', 'back-to-work', 'career', 'lifestyle', 'childcare', 'work-life-balance'],
-  'Postpartum Tips':           ['Postpartum Tips', 'postpartum-tips', 'postpartum', 'recovery', 'mental-health', 'newborn-care'],
+  'Nervous System Regulation': ['Nervous System Regulation', 'nervous-system', 'mental-health', 'self-care', 'anxiety', 'stress-regulation'],
+  'Nutrition':                 ['Nutrition', 'nutrition', 'dietitian', 'gut-health'],
+  'Pediatric Dentistry':       ['Pediatric Dentistry', 'pediatric-dentistry', 'dental', 'pediatric', 'oral-health', 'teething'],
+  'Lifestyle Coaching':        ['Lifestyle Coaching', 'lifestyle-coaching', 'lifestyle', 'coaching', 'productivity', 'organization'],
+  'Fitness/yoga':              ['Fitness/yoga', 'fitness-yoga', 'fitness', 'yoga', 'exercise', 'prenatal-yoga'],
+  'Back to Work':              ['Back to Work', 'back-to-work', 'career', 'work-life-balance'],
+  'Postpartum Tips':           ['Postpartum Tips', 'postpartum-tips', 'postpartum', 'recovery', 'newborn-care'],
   'Prenatal Tips':             ['Prenatal Tips', 'prenatal-tips', 'prenatal', 'pregnancy', 'expecting', 'labor-prep', 'birth-plan'],
 };
 
@@ -114,6 +114,8 @@ export function usePersonalizedSort() {
   const { profile } = useAuth();
 
   const sortPersonalized = useCallback((products: ProductWithDetails[]): ProductWithDetails[] => {
+    const scoreMap = new Map<string, number>();
+
     function scoreProduct(product: ProductWithDetails, index: number): number {
       if (!profile) return -index; // preserve fetch order for guests
 
@@ -133,10 +135,10 @@ export function usePersonalizedSort() {
         .map((s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '-'));
 
       const allSlugs = new Set([
-        ...rawTags, // Match exact labels too!
-        ...categorySlugs.map((s: string) => canonicalizeSlug(String(s).toLowerCase())),
-        ...productTags.map((s: string) => canonicalizeSlug(s)),
-        ...expertSpecialties.map((s: string) => canonicalizeSlug(s)),
+        ...rawTags.map(t => String(t).toLowerCase()),
+        ...categorySlugs.map((s: string) => canonicalizeSlug(String(s).toLowerCase()).toLowerCase()),
+        ...productTags.map((s: string) => s.toLowerCase()),
+        ...expertSpecialties.map((s: string) => s.toLowerCase()),
       ]);
       
       // Fallback: If no tags/slugs match, we'll scan the title and description for keywords
@@ -156,10 +158,11 @@ export function usePersonalizedSort() {
         if (related) {
           let topicMatched = false;
           related.forEach((slug) => {
+            const normSlug = slug.toLowerCase();
             // Priority 1: Tag/Slug match
-            if (allSlugs.has(slug)) {
+            if (allSlugs.has(normSlug)) {
               topicMatched = true;
-              if (slug === related[0]) score += 5;
+              if (normSlug === related[0].toLowerCase()) score += 5;
               else score += 3;
             }
           });
@@ -191,13 +194,32 @@ export function usePersonalizedSort() {
       }
 
       // Small tie-breaker to prefer newest if scores are equal
-      return score * 1000 - index;
+      const finalScore = score * 1000 - index;
+      scoreMap.set(product.id, finalScore);
+      return finalScore;
     }
 
-    return [...products].sort(
-      (a, b) =>
-        scoreProduct(b, products.indexOf(b)) - scoreProduct(a, products.indexOf(a)),
-    );
+    products.forEach((p, i) => scoreProduct(p, i));
+
+    const sorted = [...products].sort((a, b) => {
+      const scoreA = scoreMap.get(a.id) ?? 0;
+      const scoreB = scoreMap.get(b.id) ?? 0;
+      return scoreB - scoreA;
+    }).map(product => {
+      const finalScore = scoreMap.get(product.id) ?? 0;
+      // Attach the personalized score so components can choose to filter by it
+      return { ...product, _score: finalScore };
+    });
+
+    // Debug log top 5 scores
+    if (sorted.length > 0) {
+      console.log('--- Recommendation Scores (Top 5) ---');
+      sorted.slice(0, 5).forEach(p => {
+        console.log(`Product: "${p.title}" | Score: ${(p as any)._score}`);
+      });
+    }
+
+    return sorted;
   }, [profile]);
 
   return { sortPersonalized };

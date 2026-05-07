@@ -1,11 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Download, Receipt, Calendar, CheckCircle, Clock } from "lucide-react";
+import { 
+  Download, Receipt, Calendar, CheckCircle, Clock, 
+  BookOpen, Loader2, AlertCircle, RefreshCw, Search 
+} from "lucide-react";
 import { ContentGrid } from "@/components/content/ContentGrid";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -195,12 +198,15 @@ export const MyPurchasesPage: React.FC = () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from("purchases")
-        .select(`id, product_id, amount, purchased_at, product:products (*)`)
+        .select(`id, product_id, amount, purchased_at, product:products (*, expert:profiles!products_expert_id_fkey (*))`)
         .eq("user_id", user.id)
         .eq("status", "completed")
         .order("purchased_at", { ascending: false });
       if (error) throw error;
-      return (data || []).filter((p) => p.product && p.product.is_active === true && p.product.product_type !== 'consultation');
+      return (data || []).filter((p: any) => {
+        const product = Array.isArray(p.product) ? p.product[0] : p.product;
+        return product && product.is_active === true && product.product_type !== 'consultation';
+      });
     },
     enabled: !!user,
   });

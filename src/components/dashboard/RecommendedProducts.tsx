@@ -31,7 +31,7 @@ export const RecommendedProducts: React.FC = () => {
         } catch (e) {
           // ignore
         }
-        // Take top 3 for dashboard
+        // Take top 3 for dashboard (fallback to newest if no matches)
         setProducts(sorted.slice(0, 3));
       } catch (error) {
         console.error("Failed to load recommended products", error);

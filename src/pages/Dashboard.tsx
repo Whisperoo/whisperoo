@@ -46,7 +46,7 @@ const Dashboard: React.FC = () => {
       if (!user) return setHasConsultationAppointment(false);
       try {
         const { data } = await supabase
-          .from('user_purchases')
+          .from('purchases')
           .select('id, products(*)')
           .eq('user_id', user.id)
           .eq('consultation_completed', false);
@@ -76,101 +76,8 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
-      {/* Hospital Banner (Tenant Scope) — SOW 3.4 */}
-      {isHospitalUser && config && tenant && (
-        <div className="bg-brand-primary/5 rounded-xl p-4 sm:p-5 mb-6 border border-brand-primary/20 flex flex-col sm:flex-row items-center sm:items-start gap-4 transition-all overflow-hidden" style={{borderColor: config.branding?.primary_color}}>
-          {config.branding?.logo_url ? (
-            <img src={config.branding.logo_url} alt="Hospital Logo" className="w-16 h-16 object-contain bg-white rounded-md p-1 shadow-sm flex-shrink-0" />
-          ) : (
-             <div className="w-16 h-16 bg-white rounded-md p-1 shadow-sm flex items-center justify-center font-bold text-2xl text-brand-primary border border-gray-100 flex-shrink-0">
-               {tenant.name.charAt(0)}
-             </div>
-          )}
-          <div className="text-center sm:text-left flex-1 min-w-0 w-full overflow-hidden">
-            <h2 className="text-lg font-bold text-brand-dark mb-1 break-words leading-tight" style={{color: config.branding?.primary_color}}>
-              {config.branding?.display_name || tenant.name}
-            </h2>
-            {/* Show user's department if captured */}
-            {(profile as any)?.acquisition_department && (
-              <p className="text-xs font-semibold text-indigo-600 mb-2 break-words">
-                {t('dashboard.hospitalBanner.department', { department: ((profile as any).acquisition_department as string).toUpperCase() })}
-              </p>
-            )}
-            <p className="text-sm text-gray-700 mb-3 break-words">
-              {t('dashboard.hospitalBanner.supportMessage')}
-            </p>
-            {config.departments && config.departments.length > 0 && (
-              <div className="flex flex-wrap gap-2 justify-center sm:justify-start w-full overflow-hidden">
-                {config.departments.map((dept, idx) => {
-                  // Highlight the user's own department
-                  const isUserDept = (profile as any)?.acquisition_department &&
-                    dept.name.toLowerCase().includes(((profile as any).acquisition_department as string).toLowerCase());
-                  return dept.phone ? (
-                    <a key={idx} href={`tel:${dept.phone.replace(/[^0-9]/g, '')}`} className={`inline-flex items-center text-xs font-semibold px-2.5 py-1.5 border shadow-sm rounded-md hover:bg-gray-50 transition group max-w-full ${
-                      isUserDept 
-                        ? 'bg-indigo-50 border-indigo-300 text-indigo-700' 
-                        : 'bg-white border-gray-200 text-brand-dark'
-                    }`}>
-                      <Phone className="w-3 h-3 mr-1.5 text-gray-400 group-hover:text-brand-primary flex-shrink-0" />
-                      <span className="truncate">{dept.name}: {dept.phone}</span>
-                    </a>
-                  ) : (
-                    <span key={idx} className="inline-flex items-center text-xs font-semibold px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-gray-600 truncate max-w-full">
-                      {dept.name}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* Hospital Experts Quick Link — SOW 3.4 */}
-      {isHospitalUser && tenant && (
-        <div
-          onClick={() => navigate("/experts")}
-          className="bg-indigo-50 rounded-xl p-4 mb-6 border border-indigo-200 cursor-pointer hover:bg-indigo-100 hover:border-indigo-300 transition-all duration-200 flex items-center justify-between"
-        >
-          <div className="flex items-center space-x-3 flex-1 min-w-0 pr-2">
-            <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Building2 className="w-5 h-5 text-indigo-600" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-bold text-indigo-900 truncate">
-                {t('dashboard.expertsLink.title')}
-              </h3>
-              <p className="text-xs text-indigo-600 truncate">
-                {t('dashboard.expertsLink.subtitle', { hospitalName: config?.branding?.display_name || tenant.name })}
-              </p>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-indigo-500" />
-        </div>
-      )}
 
-      {/* Upcoming Appointments */}
-      {consultationAppointments && consultationAppointments.length > 0 && (
-        <div
-          onClick={() => navigate('/my-purchases')}
-          className="bg-white rounded-xl shadow-card p-4 mb-6 border border-gray-200 cursor-pointer hover:shadow-md transition-all duration-200"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Building2 className="w-5 h-5 text-indigo-600" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-sm font-bold text-gray-900 truncate">Upcoming Appointment</h3>
-                <p className="text-xs text-gray-600 truncate">
-                  {consultationAppointments[0].products?.title || '1:1 Consultation booked'}
-                </p>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-indigo-500" />
-          </div>
-        </div>
-      )}
 
       {/* 24/7 Support Card - Featured (Start Chat Genie) */}
       <div
@@ -193,10 +100,8 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
-      {/* Recommended For You (should appear after Chat) */}
-      <div className="w-full max-w-full overflow-hidden box-border mt-0">
-        <RecommendedProducts />
-      </div>
+      <RecommendedProducts />
+
 
       {/* Post-Delivery Prompt (Has your baby arrived?) */}
       {expectingKids.length > 0 && (
@@ -248,7 +153,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         <a
-          href={`mailto:${config?.branding?.contact_email || 'support@whisperoo.app'}?subject=Support%20Request`}
+          href={`mailto:${(config as any)?.branding?.contact_email || 'support@whisperoo.app'}?subject=Support%20Request`}
           className="flex items-center justify-center w-full bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 shadow-sm mb-3"
         >
           {t('dashboard.contactCard.button')}
@@ -256,10 +161,10 @@ const Dashboard: React.FC = () => {
         <p className="text-center text-sm text-gray-500">
           {t('dashboard.contactCard.orEmail')} {" "}
           <a
-            href={`mailto:${config?.branding?.contact_email || 'support@whisperoo.app'}`}
+            href={`mailto:${(config as any)?.branding?.contact_email || 'support@whisperoo.app'}`}
             className="font-semibold text-brand-primary underline underline-offset-2 hover:opacity-80 transition-opacity"
           >
-            {config?.branding?.contact_email || 'support@whisperoo.app'}
+            {(config as any)?.branding?.contact_email || 'support@whisperoo.app'}
           </a>
         </p>
       </div>

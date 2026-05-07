@@ -204,7 +204,13 @@ serve(async (req) => {
     }
 
     let aiResponse = "";
-    let matchedExperts = [];
+    let matchedExperts: any[] = [];
+    let matchedProducts: any[] = [];
+    
+    // SOW 1.1: Compliance context for medical questions
+    const complianceContext = isMedicalQuestion ? 
+      "The user is asking a medical question. Provide guidance but emphasize that this is not medical advice and recommend consulting a professional." : 
+      "General parenting guidance.";
 
     if (isEscalation) {
       // 1.1 Override Generation with Escalation Response
@@ -213,8 +219,9 @@ serve(async (req) => {
       // Get enhanced chat context
       const context = await getEnhancedChatContext(supabase, user.id, childId, currentSessionId);
 
-      // ── Product/Resource matching: semantic + keyword ──
-      const matchedProducts = await findMatchingProductsRAG(supabase, message, userTopics);
+      // ── Expert/Resource matching: semantic + keyword ──
+      matchedExperts = await findMatchingExpertsRAGFirst(supabase, message, userTenantId, expertBoostIds);
+      matchedProducts = await findMatchingProductsRAG(supabase, message, userTopics);
 
       // Generate AI response — now includes user's onboarding interests and products
       aiResponse = await generateEnhancedAIResponse(
