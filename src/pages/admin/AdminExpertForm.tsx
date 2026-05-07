@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Loader2, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 const COMMON_SPECIALTIES = [
   'Lactation', 'Baby Feeding', 'Pelvic Floor', 'Sleep Coaching',
@@ -57,6 +58,7 @@ const EMPTY_FORM: ExpertFormData = {
 
 const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, onSaved }) => {
   const isNew = expertId === 'new';
+  const { t } = useTranslation();
   const [form, setForm] = useState<ExpertFormData>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!isNew);
@@ -159,7 +161,9 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
       onSaved();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to save');
+      const msg = err?.message || 'Failed to save';
+      setError(msg);
+      toast({ title: 'Error', description: msg, variant: 'destructive' });
     } finally {
       setSaving(false);
     }

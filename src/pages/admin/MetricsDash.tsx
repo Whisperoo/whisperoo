@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { RefreshCw, Users, Clock, Activity, LineChart, AlertTriangle, Sparkles, MessageSquare, ArrowUp } from 'lucide-react';
+import { RefreshCw, Users, Clock, Activity, AlertTriangle, Sparkles, MessageSquare, ArrowUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
 import KpiCard from './KpiCard';
 import EnrollmentTrendChart from './EnrollmentTrendChart';
-import SurveyCompletionChart from './SurveyCompletionChart';
 import EscalationTrendChart from './EscalationTrendChart';
 import FeatureUsagePie from './FeatureUsagePie';
 import ConcernThemesChart from './ConcernThemesChart';
@@ -22,9 +21,6 @@ interface DashboardData {
     free_resources_pct: number | null;
     resources_purchased_pct: number | null;
     expert_support_pct: number | null;
-    survey_completion_pct: number | null;
-    phreesia_risk_pct: number | null;
-    postpartum_visits_pct: number | null;
     dau: number | null;
     dau_delta: number | null;
     mau: number | null;
@@ -35,6 +31,7 @@ interface DashboardData {
     lactation_engagement: number | null;
     hospital_resource_eng: number | null;
     checklist_engagement: number | null;
+    appointment_checklist_engagement_pct?: number | null;
   };
   enrollment_trend: { month: string; count: number }[];
   escalation_trend: { month: string; rate: number }[];
@@ -80,6 +77,20 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         }
       );
       if (rpcError) throw rpcError;
+
+      // Appointment checklist engagement (%): reminder_* templates
+      const { data: apptPct, error: apptErr } = await supabase.rpc(
+        'fn_get_appointment_checklist_engagement_pct',
+        {
+          p_tenant_id: tenantId ?? null,
+          p_start_date: startDate || null,
+          p_end_date: endDate || null,
+        }
+      );
+      // Fail-soft: if KPI function isn't deployed yet, don't break the whole dashboard.
+      if (apptErr) {
+        console.warn('Appointment KPI unavailable:', apptErr);
+      }
       
       const { data: resourceData, error: resourceError } = await supabase.rpc(
         'fn_get_resource_utilization',
@@ -93,6 +104,10 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
       
       setData({
         ...(result as DashboardData),
+        kpis: {
+          ...((result as DashboardData).kpis ?? {}),
+          appointment_checklist_engagement_pct: apptErr ? null : (apptPct as number | null) ?? null,
+        },
         resource_utilization: resourceData || []
       });
     } catch (err: any) {
@@ -176,22 +191,13 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           value={k?.total_enrolled ?? null}
           delta={k?.total_enrolled_delta ?? undefined}
           tooltip={t('admin.metrics.tooltips.totalEnrolled')}
-          subMetrics={
-            k?.total_enrolled
-              ? [
-                  { label: t('admin.metrics.prenatalOptIn'), value: '1,623', delta: 9.0, hasInfo: true },
-                  { label: t('admin.metrics.dischargeOptIn'), value: '1,224', delta: 5.1, hasInfo: true },
-                ]
-              : undefined
-          }
         />
         <KpiCard
-          title={t('admin.metrics.surveyCompletion')}
-          subtitle={t('admin.metrics.surveySubtitle')}
-          value={k?.survey_completion_pct ?? null}
+          title="Appointment checklist engagement"
+          subtitle="Reminder checklist items"
+          value={k?.appointment_checklist_engagement_pct ?? null}
           valueSuffix="%"
-          scaffolded={true}
-          tooltip={t('admin.metrics.tooltips.surveyCompletion')}
+          tooltip="Percent of enrolled users who completed at least one appointment reminder checklist item in the selected date range."
         />
         <KpiCard
           title={t('admin.metrics.escalationSignals')}
@@ -203,8 +209,8 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         />
       </div>
 
-      {/* ── KPI Row 2: Resources / Expert / Phreesia ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {/* ── KPI Row 2: Resources / Expert ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KpiCard
           title={t('admin.metrics.freeResourcesSaved')}
           value={k?.free_resources_pct ?? null}
@@ -227,25 +233,10 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           delta={undefined}
           tooltip={t('admin.metrics.tooltips.expertSupport')}
         />
-        <KpiCard
-          title={t('admin.metrics.prenatalRisk')}
-          subtitle={t('admin.metrics.prenatalRiskSubtitle')}
-          value={k?.phreesia_risk_pct ?? null}
-          valueSuffix="%"
-          scaffolded={true}
-          tooltip={t('admin.metrics.tooltips.prenatalRisk')}
-        />
       </div>
 
       {/* ── KPI Row 3: Postpartum & Engagement ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <KpiCard
-          title={t('admin.metrics.postpartumVisits')}
-          value={k?.postpartum_visits_pct ?? null}
-          valueSuffix="%"
-          delta={undefined}
-          tooltip={t('admin.metrics.tooltips.postpartumVisits')}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KpiCard
           title="Lactation Support"
           subtitle="Consults & Resources"
@@ -272,22 +263,13 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         />
       </div>
 
-      {/* ── Charts Row 1: Enrollment + Survey ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-4 h-4 text-blue-500" />
-            <p className="text-sm font-semibold text-gray-700">{t('admin.metrics.enrollmentTrend')}</p>
-          </div>
-          <EnrollmentTrendChart data={data?.enrollment_trend ?? []} />
+      {/* ── Chart Row 1: Enrollment ── */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="w-4 h-4 text-blue-500" />
+          <p className="text-sm font-semibold text-gray-700">{t('admin.metrics.enrollmentTrend')}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <LineChart className="w-4 h-4 text-green-500" />
-            <p className="text-sm font-semibold text-gray-700">{t('admin.metrics.surveyCompletionRate')}</p>
-          </div>
-          <SurveyCompletionChart data={data?.checklist_trend ?? []} />
-        </div>
+        <EnrollmentTrendChart data={data?.enrollment_trend ?? []} />
       </div>
 
       {/* ── Chart Row 2: Escalation Trend ── */}

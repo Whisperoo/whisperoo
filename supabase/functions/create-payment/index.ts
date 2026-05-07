@@ -3,8 +3,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.11.0'
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2025-11-17.clover',
+const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY') || ''
+const stripe = new Stripe(stripeSecretKey, {
+  // Avoid non-standard / invalid apiVersion strings that can break intent creation.
+  // Let Stripe default if this ever becomes invalid.
+  apiVersion: '2024-06-20',
 })
 
 interface CreatePaymentIntentRequest {
@@ -26,6 +29,13 @@ Deno.serve(async (req) => {
   }
 
   try {
+    if (!stripeSecretKey) {
+      return new Response(
+        JSON.stringify({ error: 'Stripe is not configured (missing STRIPE_SECRET_KEY)' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
@@ -33,8 +43,8 @@ Deno.serve(async (req) => {
         {
           status: 401,
           headers: {
+            ...corsHeaders,
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
           }
         }
       )
@@ -53,8 +63,8 @@ Deno.serve(async (req) => {
         {
           status: 401,
           headers: {
+            ...corsHeaders,
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
           }
         }
       )
@@ -68,8 +78,8 @@ Deno.serve(async (req) => {
         {
           status: 400,
           headers: {
+            ...corsHeaders,
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
           }
         }
       )
@@ -88,8 +98,8 @@ Deno.serve(async (req) => {
         {
           status: 404,
           headers: {
+            ...corsHeaders,
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
           }
         }
       )
@@ -215,8 +225,8 @@ Deno.serve(async (req) => {
         {
           status: 500,
           headers: {
+            ...corsHeaders,
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
           }
         }
       )
@@ -238,8 +248,8 @@ Deno.serve(async (req) => {
       {
         status: 200,
         headers: {
+          ...corsHeaders,
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
         }
       }
     )
@@ -247,12 +257,12 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as any)?.message ?? 'Internal server error' }),
       {
         status: 500,
         headers: {
+          ...corsHeaders,
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
         }
       }
     )

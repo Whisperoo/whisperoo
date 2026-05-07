@@ -58,6 +58,11 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
       }
     } catch (err) {
       console.error('ExpertCurationPanel: fetch error', err);
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to load experts',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -84,6 +89,11 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
       setTenantConfig(updatedConfig);
     } catch (err) {
       console.error('ExpertCurationPanel: toggle error', err);
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to update featured experts',
+        variant: 'destructive',
+      });
     } finally {
       setTogglingId(null);
     }

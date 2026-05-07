@@ -16,6 +16,12 @@
 -- Step 1: Drop the original catch-all policy
 DROP POLICY IF EXISTS "self_profile" ON public.profiles;
 
+-- If this migration is re-run, ensure the replacement policies are recreated cleanly
+DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_delete_own" ON public.profiles;
+
 -- Step 2: User can read their own profile
 CREATE POLICY "profiles_select_own"
   ON public.profiles

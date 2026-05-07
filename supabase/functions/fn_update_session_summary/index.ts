@@ -108,15 +108,25 @@ Please create a concise summary (2-3 sentences) that captures:
 Keep it brief but informative for future conversation context.
 `;
 
+    const openaiKey = Deno.env.get('OPENAI_API_KEY') ?? '';
+    if (!openaiKey) {
+      // Fail-soft: summarization is helpful but should never break chat UX.
+      return new Response(
+        JSON.stringify({ success: false, summary: existingSummary, error: 'OPENAI_API_KEY not configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+      );
+    }
+
     // Call OpenAI API for summarization
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openaiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        // gpt-3.5-turbo is frequently retired/disabled; use the same modern model as chat.
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -134,17 +144,15 @@ Keep it brief but informative for future conversation context.
 
     if (!openaiResponse.ok) {
       console.error('OpenAI API error:', await openaiResponse.text());
+      // Fail-soft: return 200 so the client doesn't spam errors.
       return new Response(
-        JSON.stringify({ error: 'Failed to generate summary' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        JSON.stringify({ success: false, summary: existingSummary, error: 'Failed to generate summary' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
       );
     }
 
     const openaiResult = await openaiResponse.json();
-    const newSummary = openaiResult.choices[0]?.message?.content || '';
+    const newSummary = openaiResult?.choices?.[0]?.message?.content || '';
 
     // Update session with new summary
     const { error: updateError } = await supabaseClient
@@ -154,12 +162,10 @@ Keep it brief but informative for future conversation context.
 
     if (updateError) {
       console.error('Error updating session:', updateError);
+      // Fail-soft: don't break client flows.
       return new Response(
-        JSON.stringify({ error: 'Failed to update session summary' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        JSON.stringify({ success: false, summary: existingSummary, error: 'Failed to update session summary' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
       );
     }
 
@@ -176,12 +182,10 @@ Keep it brief but informative for future conversation context.
 
   } catch (error) {
     console.error('Function error:', error);
+    // Fail-soft: never bubble 500s to the client for summarization.
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ success: false, error: 'Internal server error' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
     );
   }
 });

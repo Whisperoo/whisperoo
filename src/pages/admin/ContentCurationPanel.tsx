@@ -66,6 +66,11 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
       }
     } catch (err) {
       console.error('ContentCurationPanel: fetch error', err);
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to load content',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -97,6 +102,11 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
       setTenantConfig(updatedConfig);
     } catch (err) {
       console.error('ContentCurationPanel: toggle error', err);
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to update hospital visibility',
+        variant: 'destructive',
+      });
     } finally {
       setTogglingId(null);
     }

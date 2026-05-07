@@ -135,3 +135,44 @@ All video loading and playback issues have been resolved by migrating to react-p
 - Monitor for any edge cases with specific video formats
 - Consider customizing react-player controls if needed (currently using built-in)
 - Package is production-ready and significantly simplified
+
+---
+
+# Bug Fix - Super Admin “Add Expert” Application Error
+
+## Plan (checklist)
+
+- [ ] **Confirm failure point**: trace Super Admin expert creation flow (`SuperAdminPortal` → `ExpertCurationPanel` → `AdminExpertForm`) and verify it calls `supabase.rpc('fn_admin_create_expert', ...)`.
+- [x] **Fix build-breaking issue**: ensure `src/types/database.types.ts` is present and non-empty (it was accidentally deleted, which can surface as a generic “Application error” screen).
+- [x] **Fix server-side permission logic**: update `public.fn_admin_create_expert` to authorize **all Super Admins/Admins** (not just a single hardcoded email), by checking caller’s `profiles.account_type` (or expanding the allowlist).
+- [x] **UX hardening**: surface RPC errors to the UI via toast in `AdminExpertForm` so admins see the real cause (e.g., “Access denied”) instead of a generic failure.
+- [ ] **Type sync**: regenerate `src/types/database.types.ts` after DB change so function signatures stay in sync.
+- [x] **Verify**: run `npm run build` and sanity-check expert create/edit path.
+- [x] **Fix AI summary 500s**: make `fn_update_session_summary` fail-soft + use a supported OpenAI model.
+- [x] **Fix Stripe payment failures**: harden `create-payment` Edge Function config and error handling.
+
+## Notes / Findings
+
+- The “create expert” button calls `fn_admin_create_expert` (RPC).
+- Current migration `20260507000001_admin_expert_tenant.sql` restricts the RPC to `engineering@whisperoo.app` only, which will block other super admins (e.g., `sharab...`) even though the UI allows them into the portal.
+
+## Review (this session)
+
+### Changes Summary
+
+- Restored `src/types/database.types.ts` (it had been emptied, which can trigger generic runtime “Application error” screens).
+- Added migration `20260507000008_fix_superadmin_permissions.sql` to:
+  - authorize `fn_admin_create_expert` for allowlisted emails **and** caller `profiles.account_type in ('admin','super_admin')`
+  - fix RLS policies for `tenants`, `products`, and `profiles` used by Super Admin tooling
+- Admin UI: added destructive toasts for failures in `AdminExpertForm`, `ContentCurationPanel`, and `ExpertCurationPanel` (so admins see the real error).
+- AI summary: updated `supabase/functions/fn_update_session_summary` to use `gpt-4o-mini` and **fail-soft** (returns 200 with `{ success:false }` instead of 500).
+- Stripe: updated `supabase/functions/create-payment` to use a valid Stripe API version and clearer config errors (e.g. missing `STRIPE_SECRET_KEY`).
+
+### Follow-ups / Deployment Notes
+
+- Apply DB migration: `supabase db push` (or deploy via your normal migration workflow).
+- Redeploy Edge Functions: `supabase functions deploy fn_update_session_summary create-payment`
+- Ensure secrets are set in Supabase:
+  - `OPENAI_API_KEY`
+  - `STRIPE_SECRET_KEY`
+- Type regeneration (optional but recommended after pushing migrations): `supabase gen types typescript --local > src/types/database.types.ts`

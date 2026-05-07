@@ -160,11 +160,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Update profile with MT fields if present
         if (tenantId || source || department) {
-          await supabase.from('profiles').update({
-            tenant_id: tenantId,
-            acquisition_source: source || 'organic',
-            acquisition_department: department || null
-          }).eq('id', data.user.id)
+          const payload: any = {}
+          if (tenantId !== undefined && tenantId !== null) payload.tenant_id = tenantId
+          if (source !== undefined && source !== null) payload.acquisition_source = source || 'organic'
+          if (department !== undefined && department !== null) payload.acquisition_department = department
+
+          if (Object.keys(payload).length > 0) {
+            await supabase.from('profiles').update(payload).eq('id', data.user.id)
+          }
         }
         const profile = await fetchProfile(data.user.id)
         if (!profile) {
