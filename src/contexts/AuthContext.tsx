@@ -224,10 +224,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id)
+      const { error } = await supabase.rpc('fn_update_own_profile', {
+        updates: updates
+      });
 
       if (error) {
         return { error: new Error(error.message) }
