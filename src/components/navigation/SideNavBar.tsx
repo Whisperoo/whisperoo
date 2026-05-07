@@ -50,7 +50,6 @@ const SideNavBar: React.FC<SideNavBarProps> = ({ isMobileOverlay = false }) => {
     accountNavItems,
     expertNavItems,
     secondaryNavItems,
-    navigationHistory,
     setMobileNavOpen,
     handleLogout
   } = useNavigation();
@@ -207,27 +206,6 @@ const SideNavBar: React.FC<SideNavBarProps> = ({ isMobileOverlay = false }) => {
           ))}
         </div>
 
-        {/* Recent Pages */}
-        {(!sidebarCollapsed || isMobileOverlay) && navigationHistory.length > 0 && (
-          <>
-            <div className="mx-4 border-t border-gray-200" />
-            <div className="p-4 space-y-2">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Recent
-              </h3>
-              {navigationHistory.slice(0, 3).map((item, index) => (
-                <Button
-                  key={`${item.path}-${index}`}
-                  variant="ghost"
-                  className="w-full justify-start text-left font-normal text-sm text-gray-600 hover:bg-gray-100"
-                  onClick={() => handleNavigation(item.path)}
-                >
-                  <span className="truncate">{item.title}</span>
-                </Button>
-              ))}
-            </div>
-          </>
-        )}
       </div>
 
       {/* Bottom Section - User Profile and Logout */}

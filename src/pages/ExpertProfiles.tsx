@@ -52,8 +52,9 @@ const ExpertProfiles: React.FC = () => {
         .eq("account_type", "expert")
         .eq("expert_verified", true)
         .neq("expert_availability_status", "unavailable")
-        .eq("expert_profile_visibility", true)
-        .eq("expert_accepts_new_clients", true)
+        // Treat NULL as enabled for legacy experts created before these flags existed
+        .not("expert_profile_visibility", "eq", false)
+        .not("expert_accepts_new_clients", "eq", false)
         .order("expert_rating", { ascending: false });
 
       if (error) throw error;

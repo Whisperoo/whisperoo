@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, MessageCircle, Phone, Building2, Mail } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 // import AIMomCallModule from "@/components/dashboard/AIMomCallModule"; // Hidden for now
-import CareChecklist from "@/components/dashboard/CareChecklist";
 import PostDeliveryPrompt from "@/components/dashboard/PostDeliveryPrompt";
 import AppointmentReminders from "@/components/dashboard/AppointmentReminders";
 import RecommendedProducts from "@/components/dashboard/RecommendedProducts";
@@ -116,11 +115,6 @@ const Dashboard: React.FC = () => {
       {/* Important Appointments */}
       <div className="w-full max-w-full overflow-hidden box-border mt-6">
         <AppointmentReminders />
-      </div>
-
-      {/* Care Checklist (collapsed by default) */}
-      <div className="w-full max-w-full overflow-hidden box-border mt-6">
-        <CareChecklist />
       </div>
 
       {/* Explore Card */}

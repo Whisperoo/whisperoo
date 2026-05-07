@@ -285,7 +285,9 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     const { error } = await signOut();
     if (error) {
       console.error('Error signing out:', error);
+      return;
     }
+    navigate('/auth/login');
   };
 
   // Close mobile nav when route changes

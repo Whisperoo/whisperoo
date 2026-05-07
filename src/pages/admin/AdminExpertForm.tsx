@@ -31,6 +31,7 @@ interface AdminExpertFormProps {
 interface ExpertFormData {
   first_name: string;
   email: string;
+  password: string;
   profile_image_url: string;
   expert_bio: string;
   expert_specialties: string[];
@@ -45,6 +46,7 @@ interface ExpertFormData {
 const EMPTY_FORM: ExpertFormData = {
   first_name: '',
   email: '',
+  password: '',
   profile_image_url: '',
   expert_bio: '',
   expert_specialties: [],
@@ -91,6 +93,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
         setForm({
           first_name: data.first_name || '',
           email: data.email || '',
+          password: '',
           profile_image_url: data.profile_image_url || '',
           expert_bio: data.expert_bio || '',
           expert_specialties: data.expert_specialties || [],
@@ -109,6 +112,14 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
   const handleSave = async () => {
     if (!form.first_name.trim()) {
       setError('Name is required');
+      return;
+    }
+    if (isNew && !form.email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    if (isNew && form.password.trim().length < 6) {
+      setError('Password must be at least 6 characters');
       return;
     }
     setSaving(true);
@@ -137,6 +148,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           p_expert_availability_status: form.expert_availability_status,
           p_expert_rating: form.expert_rating,
           p_tenant_id: form.tenant_id,
+          p_password: form.password.trim() || null,
         });
         if (rpcErr) throw rpcErr;
       } else {
@@ -216,7 +228,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Email {isNew && '(optional)'}</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Email {isNew ? '*' : ''}</label>
                 <input
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -226,6 +238,19 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
                 />
               </div>
             </div>
+
+            {isNew && (
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Password *</label>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  placeholder="Set expert login password"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
 
             {/* Tenant Affiliation */}
             <div>

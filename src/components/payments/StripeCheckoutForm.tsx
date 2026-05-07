@@ -7,6 +7,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, CreditCard, Shield } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface StripeCheckoutFormProps {
     amount: number;
@@ -135,7 +143,44 @@ export const StripeCheckoutForm: React.FC<StripeCheckoutFormProps> = ({
             </Button>
 
             <p className="text-xs text-center text-gray-500">
-                By completing this purchase, you agree to our Terms of Service and Privacy Policy
+                Non-refundable. By completing this purchase you agree to our{" "}
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <button type="button" className="underline underline-offset-2 hover:text-gray-700">Terms of Service</button>
+                    </DialogTrigger>
+                    <DialogContent className="max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle>Terms of Service</DialogTitle>
+                        </DialogHeader>
+                        <DialogDescription>
+                            <div className="space-y-4 text-sm text-gray-700">
+                                <p><strong>1. Acceptance of Terms</strong><br />By accessing or using Whisperoo, you agree to be bound by these Terms of Service.</p>
+                                <p><strong>2. Use of Service</strong><br />You agree to use Whisperoo only for lawful purposes and in accordance with these Terms.</p>
+                                <p><strong>3. Medical Disclaimer</strong><br />Whisperoo's AI support provides general educational information and is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+                                <p><strong>4. Refund Policy</strong><br />Purchases are non-refundable unless otherwise required by law.</p>
+                            </div>
+                        </DialogDescription>
+                    </DialogContent>
+                </Dialog>
+                {" "}and{" "}
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <button type="button" className="underline underline-offset-2 hover:text-gray-700">Privacy Policy</button>
+                    </DialogTrigger>
+                    <DialogContent className="max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle>Privacy Policy</DialogTitle>
+                        </DialogHeader>
+                        <DialogDescription>
+                            <div className="space-y-4 text-sm text-gray-700">
+                                <p><strong>1. Data Use</strong><br />Your privacy is important to us. We collect and process personal data only to provide and improve Whisperoo services.</p>
+                                <p><strong>2. Security</strong><br />We apply industry-standard safeguards to protect your information.</p>
+                                <p><strong>3. Limited Sharing</strong><br />We do not sell personal data. We only share data with service providers needed to operate the platform.</p>
+                                <p><strong>4. Your Controls</strong><br />You may request account/data updates or deletion as permitted by applicable law.</p>
+                            </div>
+                        </DialogDescription>
+                    </DialogContent>
+                </Dialog>
             </p>
         </form>
     );
