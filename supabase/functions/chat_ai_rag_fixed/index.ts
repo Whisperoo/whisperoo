@@ -417,8 +417,8 @@ async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = nul
     return (b.rating || 0) - (a.rating || 0);
   });
 
-  // Apply tenant prioritization
-  if (userTenantId && experts.length > 0) {
+  // Apply tenant prioritization (hospital/boosted experts first)
+  if (experts.length > 0) {
     experts = prioritizeByTenant(experts, userTenantId, expertBoostIds);
   }
 

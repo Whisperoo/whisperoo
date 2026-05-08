@@ -48,10 +48,18 @@ const ExpertDetails: React.FC = () => {
   const getBookingModel = (product: ProductWithDetails | null): 'direct' | 'inquiry' | 'hospital' => {
     if (!product) return 'direct';
     const configuredModel = (product as any).booking_model as string | null | undefined;
-    if (configuredModel === 'direct' || configuredModel === 'inquiry' || configuredModel === 'hospital') {
+    if (configuredModel === 'hospital' || configuredModel === 'inquiry') {
       return configuredModel;
     }
-    // Safe fallback for legacy products: if there is no payable amount, treat as inquiry.
+    // Safety guard: consultation with no payable amount should never enter Stripe flow,
+    // even if legacy data still says `booking_model = direct`.
+    if (product.product_type === 'consultation' && Number(product.price || 0) <= 0) {
+      return 'inquiry';
+    }
+    if (configuredModel === 'direct') {
+      return 'direct';
+    }
+    // Safe fallback for legacy products without booking_model.
     return product.price > 0 ? 'direct' : 'inquiry';
   };
 

@@ -761,13 +761,27 @@ export const productService = {
       .delete()
       .eq("id", productId);
 
-    if (error) throw error;
+    if (error) {
+      // FK constraint (e.g. consultation_bookings_product_id_fkey) means this product is part of
+      // historical records. In that case, we should "remove" it by archiving instead of hard delete.
+      const isForeignKeyViolation =
+        (error as any)?.code === "23503" ||
+        (typeof (error as any)?.message === "string" &&
+          (error as any).message.includes("violates foreign key constraint"));
+
+      if (isForeignKeyViolation) {
+        await this.deactivateProduct(productId);
+        return;
+      }
+
+      throw error;
+    }
   },
   // Deactivate product (soft hide)
   async deactivateProduct(productId: string): Promise<void> {
     const { error } = await supabase
       .from("products")
-      .update({ is_active: false })
+      .update({ is_active: false, status: "archived" as any })
       .eq("id", productId);
 
     if (error) throw error;

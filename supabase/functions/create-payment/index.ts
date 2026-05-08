@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
 
     const { data: product, error: productError } = await supabaseClient
       .from('products')
-      .select('id, expert_id, title, price, product_type, is_hospital_resource')
+      .select('id, expert_id, title, price, product_type, booking_model, is_hospital_resource')
       .eq('id', product_id)
       .eq('is_active', true)
       .single()
@@ -101,6 +101,27 @@ Deno.serve(async (req) => {
             ...corsHeaders,
             'Content-Type': 'application/json',
           }
+        }
+      )
+    }
+
+    if (
+      product.product_type === 'consultation' &&
+      (product.booking_model === 'inquiry' || product.booking_model === 'hospital')
+    ) {
+      return new Response(
+        JSON.stringify({
+          error:
+            product.booking_model === 'hospital'
+              ? 'This consultation is scheduled through the hospital and does not use Stripe checkout.'
+              : 'This consultation request does not require upfront payment.',
+        }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+          },
         }
       )
     }

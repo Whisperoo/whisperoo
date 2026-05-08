@@ -59,7 +59,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
 
   // Get doctor suggestions from metadata
   const expertSuggestions = message.metadata?.expert_suggestions || [];
-  const hasExpertSuggestions = !isUser && expertSuggestions.length > 0;
+  const sortedExpertSuggestions = [...expertSuggestions].sort((a, b) => {
+    const aHospital = Boolean(a.tenant_id);
+    const bHospital = Boolean(b.tenant_id);
+    if (aHospital === bHospital) return 0;
+    return bHospital ? 1 : -1;
+  });
+  const hasExpertSuggestions = !isUser && sortedExpertSuggestions.length > 0;
   
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [feedbackState, setFeedbackState] = useState<'none' | 'up' | 'down'>('none');
@@ -239,7 +245,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
               {t('chat.recommendedExperts', 'Recommended Experts')}:
             </div>
             <div className="flex flex-col space-y-3">
-              {expertSuggestions.map((expert) => (
+              {sortedExpertSuggestions.map((expert) => (
                 <ExpertSuggestionCard key={expert.id} expert={expert} />
               ))}
             </div>

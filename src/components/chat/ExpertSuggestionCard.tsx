@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslation } from 'react-i18next';
@@ -63,12 +62,6 @@ const ExpertSuggestionCard: React.FC<ExpertSuggestionCardProps> = ({ expert }) =
               <p className="text-action-primary font-medium text-xs">
                 {expert.specialty}
               </p>
-              <div className="flex items-center gap-1 mt-1">
-                <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                <span className="text-xs text-gray-600">
-                  {expert.rating.toFixed(1)} ({expert.total_reviews} reviews)
-                </span>
-              </div>
             </div>
           </div>
 

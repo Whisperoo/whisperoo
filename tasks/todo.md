@@ -12,6 +12,10 @@
 - [x] Accept nested function payload shape (`{ data: { ... } }`) in payment response normalization.
 - [x] Relax client-secret pre-validation to only require non-empty secret and let Stripe SDK validate exact format.
 - [x] Re-run linter diagnostics on updated payment files.
+- [x] Force consultation products with zero price to use inquiry flow even if legacy `booking_model` is `direct`.
+- [x] Add server guard in `create-payment` to reject inquiry/hospital consultation payment attempts with clear errors.
+- [x] Force consultation products with zero price to use inquiry flow even if legacy `booking_model` is `direct`.
+- [x] Add server guard in `create-payment` to reject inquiry/hospital consultation payment attempts with clear errors.
 
 ## Review
 
@@ -24,11 +28,24 @@
 
 ## Plan (checklist)
 
-- [ ] Add source tags in Chat Genie expert recommendation cards (`Whisperoo Expert` / `Hospital Expert`) based on suggestion metadata.
-- [ ] Fix Experts tab filtering so `Whisperoo Experts` excludes hospital-affiliated experts for hospital users, while `Hospital Experts` shows only hospital-affiliated/boosted experts.
-- [ ] Add hospital-specific explanatory verbiage under the `Hospital Experts` tab to mirror the Whisperoo tab experience.
-- [ ] Keep brand consistency (copy, colors, badge style) across updated UI elements.
-- [ ] Run lint checks for edited files and resolve any introduced issues.
+- [x] Add source tags in Chat Genie expert recommendation cards (`Whisperoo Expert` / `Hospital Expert`) based on suggestion metadata.
+- [x] Fix Experts tab filtering so `Whisperoo Experts` excludes hospital-affiliated experts for hospital users, while `Hospital Experts` shows only hospital-affiliated/boosted experts.
+- [x] Add hospital-specific explanatory verbiage under the `Hospital Experts` tab to mirror the Whisperoo tab experience.
+- [x] Keep brand consistency (copy, colors, badge style) across updated UI elements.
+- [x] Run lint checks for edited files and resolve any introduced issues.
+
+## Chat Recommendations Follow-up (checklist)
+
+- [x] Remove rating/reviews row from Chat Genie recommendation cards.
+- [x] Ensure hospital experts appear first in Chat Genie recommendation list whenever both hospital and Whisperoo experts are present.
+- [x] Validate lint on edited chat frontend and edge-function files.
+
+## Review (chat recommendations follow-up)
+
+- Removed star rating/review count UI from chat recommendation cards to keep the card concise and aligned with requested behavior.
+- Enforced hospital-first ordering in the chat UI render path using `tenant_id`-aware sorting before card rendering.
+- Strengthened backend ordering in `chat_ai_rag_fixed` so expert suggestions are always tenant-prioritized before being persisted/returned.
+- Ran linter diagnostics for all edited files; no new lint issues found.
 
 ## Review
 

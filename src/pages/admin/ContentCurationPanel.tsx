@@ -5,6 +5,7 @@ import { TenantConfig } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
 import AdminProductForm from './AdminProductForm';
 import { toast } from '@/hooks/use-toast';
+import { productService } from '@/services/products';
 
 interface ContentCurationPanelProps {
   tenantId: string | null;
@@ -19,6 +20,7 @@ interface Product {
   status: string;
   thumbnail_url: string | null;
   is_hospital_resource: boolean;
+  is_active: boolean;
 }
 
 const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId }) => {
@@ -29,6 +31,8 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [filterTab, setFilterTab] = useState<'all' | 'whisperoo' | 'hospital'>('all');
+  const [showArchived, setShowArchived] = useState(false);
   const { t } = useTranslation();
 
   const fetchData = useCallback(async () => {
@@ -48,6 +52,7 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
         status: p.status || 'published',
         thumbnail_url: p.thumbnail_url || null,
         is_hospital_resource: p.is_hospital_resource ?? false,
+        is_active: p.is_active ?? true,
       })));
 
       if (tenantId) {
@@ -116,9 +121,12 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
     if (!confirm('Are you sure you want to delete this product? This cannot be undone.')) return;
     setDeletingId(productId);
     try {
-      const { error } = await supabase.from('products').delete().eq('id', productId);
-      if (error) throw error;
+      await productService.deleteProductPermanently(productId);
       fetchData();
+      toast({
+        title: 'Removed',
+        description: 'This item was removed. If it had booking history, it was archived instead of deleted.',
+      });
     } catch (err: any) {
       toast({ title: 'Error', description: `Failed to delete: ${err.message}`, variant: 'destructive' });
     } finally {
@@ -150,6 +158,14 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
 
   const enabledCount = products.filter(p => !disabledIds.includes(p.id)).length;
 
+  const filteredByResource = products
+    .filter((p) => (showArchived ? true : p.is_active))
+    .filter(p => {
+    if (filterTab === 'whisperoo') return !p.is_hospital_resource;
+    if (filterTab === 'hospital') return p.is_hospital_resource;
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -170,21 +186,64 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
         </button>
       </div>
 
+      {/* Sub-tabs */}
+      <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+        <button
+          onClick={() => setFilterTab('all')}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+            filterTab === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          All Resources ({products.length})
+        </button>
+        <button
+          onClick={() => setFilterTab('whisperoo')}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+            filterTab === 'whisperoo' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Whisperoo Resources ({products.filter(p => !p.is_hospital_resource).length})
+        </button>
+        <button
+          onClick={() => setFilterTab('hospital')}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+            filterTab === 'hospital' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Hospital Resources ({products.filter(p => p.is_hospital_resource).length})
+        </button>
+      </div>
+
+      <div className="flex items-center justify-end">
+        <button
+          onClick={() => setShowArchived((v) => !v)}
+          className="text-xs font-semibold text-gray-600 hover:text-gray-900"
+        >
+          {showArchived ? 'Hide archived' : 'Show archived'}
+        </button>
+      </div>
+
       <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm overflow-hidden">
-        {products.length === 0 ? (
+        {filteredByResource.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-3">
             <PackageSearch className="w-10 h-10 opacity-30" />
-            <p className="text-sm">{t('admin.content.noProducts')}</p>
-            <button
-              onClick={() => setEditingProduct('new')}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Add your first resource →
-            </button>
+            <p className="text-sm">
+              {filterTab === 'all' 
+                ? t('admin.content.noProducts') 
+                : `No ${filterTab} resources found`}
+            </p>
+            {filterTab === 'all' && (
+              <button
+                onClick={() => setEditingProduct('new')}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Add your first resource →
+              </button>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {products.map((product) => {
+            {filteredByResource.map((product) => {
               const isDisabled = disabledIds.includes(product.id);
               const isToggling = togglingId === product.id;
               const isDeleting = deletingId === product.id;
