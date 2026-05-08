@@ -12,7 +12,7 @@ interface AuthContextType {
   profile: Profile | null
   session: Session | null
   loading: boolean
-  signUp: (email: string, password: string, firstName: string, tenantId?: string | null, source?: string | null, department?: string | null) => Promise<{ user: User | null; error: AuthError | null }>
+  signUp: (email: string, password: string, firstName: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null) => Promise<{ user: User | null; error: AuthError | null }>
   signIn: (email: string, password: string) => Promise<{ user: User | null; error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>
@@ -140,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe()
   }, [fetchProfile])
 
-  const signUp = async (email: string, password: string, firstName: string, tenantId?: string | null, source?: string | null, department?: string | null) => {
+  const signUp = async (email: string, password: string, firstName: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null) => {
     try {
       console.log('Signing up user')
       
@@ -167,17 +167,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Give the database trigger a moment to create the profile
         await new Promise(resolve => setTimeout(resolve, 200))
         
+        // Resolve QR token -> qr_code_id (fail-soft; token is optional)
+        const anonId = typeof window !== 'undefined'
+          ? (window.localStorage.getItem('whisperoo-qr-anon-id') || null)
+          : null
+        let qrCodeId: string | null = null
+        if (qrToken) {
+          try {
+            const { data: qrRow, error: qrErr } = await supabase
+              .from('qr_codes')
+              .select('id')
+              .eq('token', qrToken)
+              .eq('is_active', true)
+              .single()
+            if (!qrErr && qrRow?.id) qrCodeId = qrRow.id
+          } catch {
+            // ignore
+          }
+        }
+
         // Update profile with MT fields if present
-        if (tenantId || source || department) {
+        if (tenantId || source || department || qrCodeId || anonId) {
           const payload: any = {}
           if (tenantId !== undefined && tenantId !== null) payload.tenant_id = tenantId
           if (source !== undefined && source !== null) payload.acquisition_source = source || 'organic'
           if (department !== undefined && department !== null) payload.acquisition_department = department
 
+          if (qrCodeId) {
+            payload.signup_qr_code_id = qrCodeId
+            payload.signup_qr_at = new Date().toISOString()
+          }
+          if (anonId) payload.signup_qr_anon_id = anonId
+
           if (Object.keys(payload).length > 0) {
             await supabase.from('profiles').update(payload).eq('id', data.user.id)
           }
         }
+
+        // Best-effort: log signup_complete event (may fail if session not established yet)
+        if (qrCodeId) {
+          try {
+            await supabase.from('qr_events').insert({
+              qr_code_id: qrCodeId,
+              event_type: 'signup_complete',
+              anon_id: anonId,
+              user_id: data.user.id,
+              metadata: {
+                source: source || null,
+                department: department || null,
+              },
+            })
+          } catch {
+            // ignore
+          }
+        }
+
         const profile = await fetchProfile(data.user.id)
         if (!profile) {
           console.error('Profile not found after signup, retrying...')

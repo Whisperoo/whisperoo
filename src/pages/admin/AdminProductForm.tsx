@@ -57,6 +57,9 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [resourceFile, setResourceFile] = useState<File | null>(null);
+  const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -115,14 +118,53 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
     setSaving(true);
     setError(null);
 
+    const uploadPublic = async (bucket: 'resource-files' | 'resource-thumbnails', file: File, prefix: string) => {
+      setUploading(true);
+      try {
+        const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+        const fileName = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
+        const path = `${prefix}/${fileName}`;
+
+        const { error: upErr } = await supabase.storage.from(bucket).upload(path, file, {
+          upsert: true,
+          contentType: file.type || undefined,
+        });
+        if (upErr) throw upErr;
+        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+        return data.publicUrl || null;
+      } finally {
+        setUploading(false);
+      }
+    };
+
+    let nextFileUrl = form.file_url.trim() || null;
+    let nextThumbUrl = form.thumbnail_url.trim() || null;
+
+    // If uploads provided, upload and override URLs
+    try {
+      if (resourceFile) {
+        const prefix = `resources/${form.expert_id || 'unknown'}/${isNew ? 'new' : productId}`;
+        nextFileUrl = await uploadPublic('resource-files', resourceFile, prefix);
+      }
+      if (thumbFile) {
+        const prefix = `resources/${form.expert_id || 'unknown'}/${isNew ? 'new' : productId}`;
+        nextThumbUrl = await uploadPublic('resource-thumbnails', thumbFile, prefix);
+      }
+    } catch (e: any) {
+      setSaving(false);
+      setError(e?.message || 'Failed to upload file');
+      toast({ title: 'Upload failed', description: e?.message || 'Failed to upload file', variant: 'destructive' });
+      return;
+    }
+
     const payload = {
       title: form.title.trim(),
       description: form.description.trim(),
       product_type: form.product_type,
       price: form.is_free ? 0 : form.price,
       is_free: form.is_free,
-      file_url: form.file_url.trim() || null,
-      thumbnail_url: form.thumbnail_url.trim() || null,
+      file_url: nextFileUrl,
+      thumbnail_url: nextThumbUrl,
       expert_id: form.expert_id,
       status: form.status,
       tags: form.tags,
@@ -305,7 +347,12 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
             {/* URLs */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">File URL</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">File (upload or URL)</label>
+                <input
+                  type="file"
+                  onChange={(e) => setResourceFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm mb-2"
+                />
                 <input
                   value={form.file_url}
                   onChange={(e) => setForm({ ...form, file_url: e.target.value })}
@@ -314,7 +361,13 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Thumbnail URL</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Thumbnail (upload or URL)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setThumbFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm mb-2"
+                />
                 <input
                   value={form.thumbnail_url}
                   onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
@@ -458,10 +511,10 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
           </button>
           <button
             onClick={handleSave}
-            disabled={saving || loading}
+            disabled={saving || loading || uploading}
             className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {(saving || uploading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {isNew ? 'Create Content' : 'Save Changes'}
           </button>
         </div>

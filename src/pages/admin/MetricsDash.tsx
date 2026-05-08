@@ -46,6 +46,18 @@ interface DashboardData {
     total_saves: number;
     total_revenue: number;
   }[];
+  qr_metrics?: {
+    totals: { scans: number; signups: number };
+    by_qr: Array<{
+      qr_code_id: string;
+      token: string;
+      label: string | null;
+      department: string | null;
+      tenant_id: string;
+      scans: number;
+      signups: number;
+    }>;
+  };
 }
 
 const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
@@ -101,6 +113,19 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         }
       );
       if (resourceError) throw resourceError;
+
+      // QR attribution metrics (fail-soft if not deployed yet)
+      const { data: qrData, error: qrErr } = await supabase.rpc(
+        'fn_admin_qr_signup_metrics',
+        {
+          p_tenant_id: tenantId ?? null,
+          p_start_date: startDate || null,
+          p_end_date: endDate || null,
+        }
+      );
+      if (qrErr) {
+        console.warn('QR metrics unavailable:', qrErr);
+      }
       
       setData({
         ...(result as DashboardData),
@@ -108,7 +133,8 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           ...((result as DashboardData).kpis ?? {}),
           appointment_checklist_engagement_pct: apptErr ? null : (apptPct as number | null) ?? null,
         },
-        resource_utilization: resourceData || []
+        resource_utilization: resourceData || [],
+        qr_metrics: qrErr ? undefined : (qrData as any),
       });
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data');
@@ -408,6 +434,66 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           </table>
         </div>
       </div>
+
+      {/* ── QR Signup Attribution ── */}
+      {data?.qr_metrics && (
+        <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-[15px] font-semibold text-gray-900">QR Signup Attribution</h3>
+              <p className="text-xs text-gray-400">
+                Scans and completed signups attributed to immutable hospital QR tokens.
+              </p>
+            </div>
+            <div className="text-xs text-gray-500">
+              <span className="font-semibold text-gray-800">{data.qr_metrics.totals?.scans ?? 0}</span> scans ·{' '}
+              <span className="font-semibold text-gray-800">{data.qr_metrics.totals?.signups ?? 0}</span> signups
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50 text-gray-600 font-medium border-y border-gray-200">
+                <tr>
+                  <th className="px-4 py-3">Label</th>
+                  <th className="px-4 py-3">Department</th>
+                  <th className="px-4 py-3 text-right">Scans</th>
+                  <th className="px-4 py-3 text-right">Signups</th>
+                  <th className="px-4 py-3 text-right">Conversion</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {(data.qr_metrics.by_qr?.length ?? 0) > 0 ? (
+                  data.qr_metrics.by_qr.map((row) => {
+                    const scans = row.scans || 0;
+                    const signups = row.signups || 0;
+                    const conv = scans > 0 ? Math.round((signups / scans) * 1000) / 10 : 0;
+                    return (
+                      <tr key={row.qr_code_id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-gray-900">
+                          {row.label || row.token}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {row.department || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-600">{scans.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right text-gray-600">{signups.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right font-medium text-indigo-700">{conv}%</td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                      No QR activity found for this period.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
     </div>
   );

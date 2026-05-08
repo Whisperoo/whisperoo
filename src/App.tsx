@@ -27,6 +27,7 @@ import { ProductsPage } from "./pages/ProductsPage";
 import ProfilePage from "./pages/ProfilePage";
 import { PurchaseSuccessPage } from "./pages/PurchaseSuccessPage";
 import Splash from "./pages/Splash";
+import QrLanding from "./pages/QrLanding";
 import CreateAccount from "./pages/auth/CreateAccount";
 import Login from "./pages/auth/Login";
 import UpdatePassword from "./pages/auth/UpdatePassword";
@@ -56,6 +57,7 @@ const App = () => {
               <NavigationProvider>
                 <Routes>
                   <Route path="/" element={<Splash />} />
+                <Route path="/q/:token" element={<QrLanding />} />
                 <Route path="/auth/create" element={<CreateAccount />} />
                 <Route path="/auth/verify" element={<VerifyOTP />} />
                 <Route path="/auth/login" element={<Login />} />

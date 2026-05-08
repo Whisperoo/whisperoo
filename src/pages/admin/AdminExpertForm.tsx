@@ -66,6 +66,8 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
   const [newSpecialty, setNewSpecialty] = useState('');
   const [newCredential, setNewCredential] = useState('');
   const [tenants, setTenants] = useState<any[]>([]);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Load tenants
   useEffect(() => {
@@ -131,12 +133,35 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
       : (newCredential ? [newCredential] : []);
 
     try {
+      const uploadProfileImage = async (targetUserId: string): Promise<string | null> => {
+        if (!profileImageFile) return null;
+        setUploadingImage(true);
+        try {
+          const ext = (profileImageFile.name.split('.').pop() || 'jpg').toLowerCase();
+          const fileName = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
+          const path = `experts/${targetUserId}/${fileName}`;
+
+          const { error: upErr } = await supabase.storage
+            .from('expert-images')
+            .upload(path, profileImageFile, {
+              upsert: true,
+              contentType: profileImageFile.type || undefined,
+            });
+          if (upErr) throw upErr;
+
+          const { data } = supabase.storage.from('expert-images').getPublicUrl(path);
+          return data.publicUrl || null;
+        } finally {
+          setUploadingImage(false);
+        }
+      };
+
       if (isNew) {
         // Must use server-side function because profiles.id is FK to auth.users
         const { data: newId, error: rpcErr } = await supabase.rpc('fn_admin_create_expert', {
           p_first_name: form.first_name.trim(),
           p_email: form.email.trim() || null,
-          p_profile_image_url: form.profile_image_url.trim() || null,
+          p_profile_image_url: null,
           p_expert_bio: form.expert_bio.trim() || null,
           p_expert_specialties: finalSpecialties,
           p_expert_credentials: finalCredentials,
@@ -147,12 +172,27 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           p_password: form.password.trim() || null,
         });
         if (rpcErr) throw rpcErr;
+
+        const createdId = (newId as unknown as string) || null;
+        if (createdId) {
+          const uploadedUrl = await uploadProfileImage(createdId);
+          const finalUrl = uploadedUrl || form.profile_image_url.trim() || null;
+          if (finalUrl) {
+            const { error: updateErr } = await supabase
+              .from('profiles')
+              .update({ profile_image_url: finalUrl })
+              .eq('id', createdId);
+            if (updateErr) throw updateErr;
+          }
+        }
       } else {
+        const uploadedUrl = await uploadProfileImage(expertId as string);
+        const nextUrl = uploadedUrl ?? (form.profile_image_url.trim() || null);
         const { error: updateErr } = await supabase
           .from('profiles')
           .update({
             first_name: form.first_name.trim(),
-            profile_image_url: form.profile_image_url.trim() || null,
+            profile_image_url: nextUrl,
             expert_bio: form.expert_bio.trim(),
             expert_specialties: finalSpecialties,
             expert_credentials: finalCredentials,
@@ -264,11 +304,26 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
 
             {/* Profile Image URL */}
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">Profile Image URL</label>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Profile Image</label>
               <div className="flex items-center gap-3">
                 {form.profile_image_url && (
                   <img src={form.profile_image_url} alt="" className="w-10 h-10 rounded-full object-cover border border-gray-200" />
                 )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setProfileImageFile(file);
+                    if (file) {
+                      const tempUrl = URL.createObjectURL(file);
+                      setForm({ ...form, profile_image_url: tempUrl });
+                    }
+                  }}
+                  className="flex-1 text-sm"
+                />
+              </div>
+              <div className="mt-2">
                 <input
                   value={form.profile_image_url}
                   onChange={(e) => setForm({ ...form, profile_image_url: e.target.value })}
@@ -439,10 +494,10 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           </button>
           <button
             onClick={handleSave}
-            disabled={saving || loading}
+            disabled={saving || loading || uploadingImage}
             className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {(saving || uploadingImage) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {isNew ? 'Create Expert' : 'Save Changes'}
           </button>
         </div>

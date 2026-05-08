@@ -176,3 +176,189 @@ All video loading and playback issues have been resolved by migrating to react-p
   - `OPENAI_API_KEY`
   - `STRIPE_SECRET_KEY`
 - Type regeneration (optional but recommended after pushing migrations): `supabase gen types typescript --local > src/types/database.types.ts`
+
+---
+
+# Implementation Plan — Immutable Hospital QR + QR Attribution + Uploads (Experts/Resources)
+
+## Goal
+
+- Keep each hospital’s **printed QR code immutable** (never needs re-printing), while still allowing us to change what it does server-side if needed.
+- Provide **accurate superadmin reporting** for:
+  - QR scans (top-of-funnel)
+  - Completed signups attributed to that QR (bottom-of-funnel)
+  - Breakdowns by tenant and (optionally) department/location/campaign
+- Replace “paste a link” fields for **expert images** and **hospital resources (images/docs)** with **upload** flows backed by Supabase Storage + correct RLS.
+
+## Current State (confirmed)
+
+- Signup supports tenant attribution via URL params in `CreateAccount.tsx`:
+  - `?tenant=<slug>&source=<optional>&dept=<optional>`
+  - If `tenant` is present, it defaults `acquisition_source` to `'qr_hospital'` and passes `tenantInfo.id` + `dept` into `signUp(...)`.
+- `profiles` already has: `tenant_id`, `acquisition_source`, `acquisition_department`.
+- There is already a Supabase Storage bucket `profile-images` + RLS, but it is designed for **user uploading their own image**, not an admin uploading on behalf of experts.
+
+---
+
+## Phase 1 — Immutable QR URLs (Resolver Tokens) + Scan & Signup Attribution (DB only)
+
+### 1.1 Define immutable QR tokens (so printed QR never changes)
+
+- [ ] **Create table** `public.qr_codes` (or `public.tenant_qr_codes`) with:
+  - `id uuid primary key default gen_random_uuid()`
+  - `tenant_id uuid not null references public.tenants(id) on delete cascade`
+  - `token text not null unique` (immutable; used in the printed QR URL)
+  - `label text` (e.g., “OB Lobby Poster”, “ER Exit Sign”, “Nurse Station iPad”)
+  - `department text null` (optional default dept for attribution)
+  - `source text not null default 'qr_hospital'` (optional default acquisition source)
+  - `is_active boolean default true`
+  - `created_at timestamptz default now()`
+- [ ] **Add constraint**: token is immutable (enforced by policy or trigger to prevent updates to `token`).
+- [ ] **Seed**: one default QR token per tenant (or allow multiple if you want per-location posters).
+
+Printed QR URL shape (immutable):
+- `https://whisperoo.app/q/<token>`
+
+### 1.2 Track QR scans + join scans to eventual signups
+
+- [ ] **Create table** `public.qr_events` (append-only) with:
+  - `id uuid primary key default gen_random_uuid()`
+  - `qr_code_id uuid not null references public.qr_codes(id) on delete cascade`
+  - `event_type text not null` (enum-like: `'scan' | 'signup_start' | 'signup_complete'`)
+  - `occurred_at timestamptz default now()`
+  - `anon_id text null` (client-generated UUID stored in localStorage; survives pre-auth)
+  - `user_id uuid null references auth.users(id)` (set when signed in / after signup)
+  - `ip_hash text null` (optional; store salted hash only if needed)
+  - `user_agent text null` (optional; consider truncation)
+  - `metadata jsonb default '{}'::jsonb` (utm params, page, etc.)
+- [ ] **Add columns to** `public.profiles` for stable attribution:
+  - `signup_qr_code_id uuid null references public.qr_codes(id)`
+  - `signup_qr_anon_id text null`
+  - `signup_qr_at timestamptz null`
+
+Attribution model:
+- Scan creates `qr_events(event_type='scan', anon_id=...)`.
+- Signup completion writes:
+  - `profiles.signup_qr_code_id = <qr_code_id>`
+  - `profiles.acquisition_source = 'qr_hospital'` (or the QR’s configured source)
+  - `profiles.acquisition_department = <dept>` (prefer QR default dept unless user picked in UI)
+  - Create `qr_events(event_type='signup_complete', anon_id, user_id, qr_code_id)`
+
+### 1.3 RLS + security model (important for accuracy + audit)
+
+- [ ] Enable RLS on `qr_codes`, `qr_events`.
+- [ ] Policies:
+  - **Public**: allow INSERT into `qr_events` for `event_type='scan'` ONLY (no user_id), minimal columns.
+  - **Authenticated**: allow INSERT for `signup_start` and `signup_complete` ONLY for self (`user_id = auth.uid()`).
+  - **Admin/Superadmin**: allow SELECT for reporting. (Use `profiles.account_type in ('admin','super_admin')` pattern rather than hardcoded emails.)
+- [ ] If RLS makes client-write awkward, use a **SECURITY DEFINER RPC** for `log_qr_event(...)` that validates payload and inserts events safely.
+
+Deliverable: DB migrations only (no UI changes yet), but schema is ready.
+
+---
+
+## Phase 2 — App Flow: `/q/:token` resolver route + event logging
+
+### 2.1 Create the “QR landing” route (never changes printed QR)
+
+- [ ] Add a route in `src/App.tsx`: `/q/:token`
+- [ ] Add page `src/pages/QrLanding.tsx`:
+  - Looks up token → tenant + defaults (dept/source) via `qr_codes`
+  - Creates/reads `anon_id` from `localStorage`
+  - Logs `qr_events(scan)`
+  - Redirects to `/auth/create-account?tenant=<tenant.slug>&source=<source>&dept=<dept>&qr=<token>`
+
+Why this matters:
+- You can change tenant branding, onboarding behavior, or add new params later **without changing the printed QR**, because the printed URL stays `/q/<token>`.
+
+### 2.2 Ensure signup links back to the QR token
+
+- [ ] Update `CreateAccount.tsx` to also read `qr` param and pass it into `signUp(...)`.
+- [ ] Update `AuthContext.signUp(...)` (or the backend trigger/RPC it uses) to persist:
+  - `profiles.signup_qr_code_id` (resolved from token)
+  - `profiles.signup_qr_anon_id`
+  - `profiles.signup_qr_at`
+  - plus existing `tenant_id/acquisition_source/acquisition_department`
+- [ ] Log `qr_events(signup_complete)` after profile is created/updated (prefer server-side).
+
+### 2.3 Superadmin reporting (minimum viable)
+
+- [ ] Create a view or RPC like `fn_admin_qr_signup_metrics(p_tenant_id uuid default null, p_start date default null, p_end date default null)` returning:
+  - total scans
+  - total signups (unique users with `signup_qr_code_id`)
+  - scan→signup conversion rate
+  - breakdown by `qr_codes.label` and `department`
+- [ ] Add a new tab/panel in `src/pages/admin/` (inside `SuperAdminPortal`) showing these metrics.
+
+---
+
+## Phase 3 — Uploads: Expert images + Hospital resource media (Supabase Storage)
+
+### 3.1 Decide which assets live in Supabase Storage (recommended)
+
+- **Expert profile image**: Supabase Storage (public or signed URL).
+- **Hospital resource files** (PDFs, images, docs): Supabase Storage (often public-read to simplify; or private + signed URLs if you want).
+
+Note: product files currently use Cloudflare R2 via `src/services/storage.ts` (cloudflare-only). We’ll add Supabase support **only for these new expert/resource assets** to avoid risky changes to paid-product delivery.
+
+### 3.2 Storage buckets + RLS (Supabase)
+
+- [ ] Create buckets:
+  - `expert-images` (images only)
+  - `resource-files` (pdf/doc/png/jpg/etc)
+  - `resource-thumbnails` (optional)
+- [ ] RLS policies for `storage.objects`:
+  - **Public SELECT** for these buckets (if you want simple public URLs), OR keep private and create signed URLs in the app.
+  - **Admin/Superadmin INSERT/UPDATE/DELETE** for any object path in these buckets.
+  - Optional: tenant scoping by folder prefix `tenant/<tenant_id>/...` so you can enforce “tenant admins only manage their tenant’s assets”.
+
+### 3.3 Database fields for uploaded assets
+
+- [ ] Experts:
+  - Keep `profiles.profile_image_url` but change it to store **storage path** OR a generated public URL.
+  - Add `profiles.profile_image_path text null` (recommended) so you can rotate public URL behavior later without rewriting rows.
+- [ ] Resources:
+  - If hospital resources are represented via `products` (already has `is_hospital_resource`):
+    - Add `products.resource_file_path text null`
+    - Add `products.resource_thumbnail_path text null`
+    - OR use existing `product_files` table but add a `storage_provider` + `storage_path` for Supabase.
+
+### 3.4 Frontend UX changes (replacing “link fields”)
+
+- [ ] Update `src/pages/admin/AdminExpertForm.tsx`:
+  - Replace `Profile Image URL` input with:
+    - file picker (upload)
+    - preview
+    - progress indicator
+  - Upload flow:
+    - Upload to `expert-images` under path like `experts/<expertUserId>/<timestamp>.<ext>`
+    - Save `profile_image_path` (and/or URL) to `profiles`
+- [ ] Update hospital resource creation/edit UI (likely in `ContentCurationPanel` / product admin):
+  - Add “Upload file” + “Upload thumbnail” fields
+  - Save file paths in DB
+  - Use `ContentViewer` / resource viewer components to render based on storage URL (public) or signed URL.
+
+---
+
+## Phase 4 — Hardening + QA + Type Sync
+
+- [ ] **Backfill**: if any existing hospital QR signups only have `acquisition_source='qr_hospital'`, optionally backfill `signup_qr_code_id` as “unknown default tenant QR” where possible.
+- [ ] **Abuse prevention**:
+  - Rate limit `scan` inserts (client-side debounce + optional DB guard)
+  - Prevent duplicate “scan” spam by same `anon_id` within a short window (optional DB constraint using partial index + time bucket, or server-side logic).
+- [ ] **Regenerate Supabase types** after DB changes:
+  - `supabase gen types typescript --local > src/types/database.types.ts`
+- [ ] **UAT checklist**:
+  - Scan QR → lands on `/q/:token` → redirected to create account with tenant branding
+  - Signup completes → profile has correct `tenant_id`, `acquisition_*`, `signup_qr_code_id`
+  - Superadmin sees scan + signup totals per tenant and per QR label
+  - Expert image upload works and displays in expert directory/details
+  - Resource upload works and is viewable/downloadable by end users (tenant-scoped if configured)
+
+---
+
+## Notes / Decisions to lock before implementation
+
+- [ ] **Do we want 1 QR per tenant** or **many QRs per tenant** (recommended many, so you can track posters by location)?
+- [ ] **Are resource files public** (simple) or **private + signed URLs** (more control)?
+- [ ] **Should tenant admins be able to upload**, or only superadmins?

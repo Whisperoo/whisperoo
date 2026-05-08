@@ -38,6 +38,7 @@ const CreateAccount: React.FC = () => {
   const tenantSlug = searchParams.get('tenant');
   const querySource = searchParams.get('source');
   const queryDept = searchParams.get('dept');
+  const queryQr = searchParams.get('qr');
   const [tenantInfo, setTenantInfo] = useState<any>(null);
 
   useEffect(() => {
@@ -104,7 +105,15 @@ const CreateAccount: React.FC = () => {
     try {
       const acquisitionSource = querySource || (tenantSlug ? 'qr_hospital' : 'organic');
       const acquisitionDept = queryDept || null;
-      const { user, error } = await signUp(formData.email, formData.password, formData.firstName, tenantInfo?.id, acquisitionSource, acquisitionDept);
+      const { user, error } = await signUp(
+        formData.email,
+        formData.password,
+        formData.firstName,
+        tenantInfo?.id,
+        acquisitionSource,
+        acquisitionDept,
+        queryQr || null
+      );
       
       if (error) {
         console.error('Sign-up error:', error);
