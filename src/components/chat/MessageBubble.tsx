@@ -20,6 +20,7 @@ interface ExpertSuggestion {
   consultation_fee: number;
   experience_years?: number;
   location?: string;
+  tenant_id?: string | null;
 }
 
 interface Message {
@@ -63,7 +64,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [feedbackState, setFeedbackState] = useState<'none' | 'up' | 'down'>('none');
   const { updateProfile } = useAuth();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   // Detect language switch marker
   const langMatch = message.content.match(/\[SWITCH_LANGUAGE:([a-z]{2})\]/);
@@ -235,7 +236,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
         {hasExpertSuggestions && (
           <div className="w-full space-y-3 mr-12">
             <div className="text-sm font-medium text-brand-dark mb-2">
-              Recommended Whisperoo Experts:
+              {t('chat.recommendedExperts', 'Recommended Experts')}:
             </div>
             <div className="flex flex-col space-y-3">
               {expertSuggestions.map((expert) => (

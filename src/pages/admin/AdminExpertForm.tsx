@@ -68,6 +68,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
   const [tenants, setTenants] = useState<any[]>([]);
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUploadWarning, setImageUploadWarning] = useState<string | null>(null);
 
   // Load tenants
   useEffect(() => {
@@ -123,6 +124,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
     }
     setSaving(true);
     setError(null);
+    setImageUploadWarning(null);
 
     const finalSpecialties = form.expert_specialties.length > 0 
       ? form.expert_specialties 
@@ -133,6 +135,10 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
       : (newCredential ? [newCredential] : []);
 
     try {
+      // Note: do not pre-check `profiles.email` (HIPAA migration removed it).
+      // We rely on the RPC + auth.users unique email constraint for conflicts.
+      const normalizedEmail = isNew ? form.email.trim().toLowerCase() : form.email.trim();
+
       const uploadProfileImage = async (targetUserId: string): Promise<string | null> => {
         if (!profileImageFile) return null;
         setUploadingImage(true);
@@ -160,7 +166,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
         // Must use server-side function because profiles.id is FK to auth.users
         const { data: newId, error: rpcErr } = await supabase.rpc('fn_admin_create_expert', {
           p_first_name: form.first_name.trim(),
-          p_email: form.email.trim() || null,
+          p_email: normalizedEmail || null,
           p_profile_image_url: null,
           p_expert_bio: form.expert_bio.trim() || null,
           p_expert_specialties: finalSpecialties,
@@ -175,7 +181,16 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
 
         const createdId = (newId as unknown as string) || null;
         if (createdId) {
-          const uploadedUrl = await uploadProfileImage(createdId);
+          let uploadedUrl: string | null = null;
+          try {
+            uploadedUrl = await uploadProfileImage(createdId);
+          } catch (upErr: any) {
+            const warn =
+              upErr?.message ||
+              'Expert was created, but profile image upload failed. You can retry from Edit Expert.';
+            setImageUploadWarning(warn);
+          }
+
           const finalUrl = uploadedUrl || form.profile_image_url.trim() || null;
           if (finalUrl) {
             const { error: updateErr } = await supabase
@@ -186,7 +201,16 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           }
         }
       } else {
-        const uploadedUrl = await uploadProfileImage(expertId as string);
+        let uploadedUrl: string | null = null;
+        try {
+          uploadedUrl = await uploadProfileImage(expertId as string);
+        } catch (upErr: any) {
+          const warn =
+            upErr?.message ||
+            'Profile was updated, but image upload failed. You can retry image upload.';
+          setImageUploadWarning(warn);
+        }
+
         const nextUrl = uploadedUrl ?? (form.profile_image_url.trim() || null);
         const { error: updateErr } = await supabase
           .from('profiles')
@@ -208,7 +232,10 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
       onSaved();
       onClose();
     } catch (err: any) {
-      const msg = err?.message || 'Failed to save';
+      let msg = err?.message || 'Failed to save';
+      if (typeof msg === 'string' && msg.includes('users_email_partial_key')) {
+        msg = 'Email already exists. Use a different email, or edit the existing expert.';
+      }
       setError(msg);
       toast({ title: 'Error', description: msg, variant: 'destructive' });
     } finally {
@@ -248,6 +275,11 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
             {error && (
               <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                 {error}
+              </div>
+            )}
+            {imageUploadWarning && (
+              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                {imageUploadWarning}
               </div>
             )}
 

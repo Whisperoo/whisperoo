@@ -1,3 +1,30 @@
+# UI Consistency — Chat + Experts Tabs
+
+## Plan (checklist)
+
+- [ ] Add source tags in Chat Genie expert recommendation cards (`Whisperoo Expert` / `Hospital Expert`) based on suggestion metadata.
+- [ ] Fix Experts tab filtering so `Whisperoo Experts` excludes hospital-affiliated experts for hospital users, while `Hospital Experts` shows only hospital-affiliated/boosted experts.
+- [ ] Add hospital-specific explanatory verbiage under the `Hospital Experts` tab to mirror the Whisperoo tab experience.
+- [ ] Keep brand consistency (copy, colors, badge style) across updated UI elements.
+- [ ] Run lint checks for edited files and resolve any introduced issues.
+
+## Review
+
+- Added source tags on Chat Genie recommendation cards using `tenant_id` (`Whisperoo Expert` vs `Hospital Expert`) with brand-consistent badge styling.
+- Updated Experts tab filtering logic so hospital-affiliated experts no longer appear under `Whisperoo Experts` for hospital users.
+- Added dedicated hospital verbiage under the `Hospital Experts` tab and generalized recommendation heading to `Recommended Experts`.
+- Verified edited files with linter diagnostics and confirmed no new lint errors.
+
+# UI Consistency — Chat + Experts Tabs
+
+## Plan (checklist)
+
+- [ ] Add source tags in Chat Genie expert recommendation cards (`Whisperoo Expert` / `Hospital Expert`) based on suggestion metadata.
+- [ ] Fix Experts tab filtering so `Whisperoo Experts` excludes hospital-affiliated experts for hospital users, while `Hospital Experts` shows only hospital-affiliated/boosted experts.
+- [ ] Add hospital-specific explanatory verbiage under the `Hospital Experts` tab to mirror the Whisperoo tab experience.
+- [ ] Keep brand consistency (copy, colors, badge style) across updated UI elements.
+- [ ] Run lint checks for edited files and resolve any introduced issues.
+
 # Bug Fixes - Stripe & Video Player
 
 ## Issues Fixed
@@ -178,6 +205,36 @@ All video loading and playback issues have been resolved by migrating to react-p
 - Type regeneration (optional but recommended after pushing migrations): `supabase gen types typescript --local > src/types/database.types.ts`
 
 ---
+
+# Bug Fix — Expert created in `auth.users` but missing `profiles`
+
+## Plan (checklist)
+
+- [x] **Confirm DB mismatch**: verify current production schema has dropped `profiles.email` (HIPAA migration) while `fn_admin_create_expert` still tries to update it.
+- [x] **Make expert creation atomic**: replace `fn_admin_create_expert` to:
+  - explicitly `INSERT ... ON CONFLICT DO NOTHING` into `public.profiles` (no dependency on `on_auth_user_created` trigger)
+  - avoid touching `profiles.email` (email lives in `auth.users` post-HIPAA)
+  - raise a clear error if the `profiles` row still can’t be found after insert
+- [x] **Frontend hardening**: remove/adjust the pre-check that queries `profiles.email` in `AdminExpertForm.tsx` so it can’t misfire (and won’t break when the column is absent).
+- [ ] **Backfill one-off bad rows**: add a small SQL snippet to create missing `profiles` rows for any orphaned `auth.users` expert accounts created during this bug.
+- [ ] **Verify**: create an expert with a fresh email; confirm both `auth.users` and `profiles` rows exist and the admin panel lists the expert.
+
+## Review (follow-up fixes)
+
+- Added migration `supabase/migrations/20260508000004_fix_profiles_admin_policies_allowlist.sql` to align `profiles` admin RLS policies with the active superadmin allowlist (`engineering@whisperoo.app`, `sharab.khan101010@gmail.com`) so edit/archive/delete operations are not blocked by RLS.
+- Updated `src/pages/admin/ExpertCurationPanel.tsx` delete behavior:
+  - keep hard-delete attempt first
+  - if delete fails due to `consultation_bookings_expert_id_fkey` (`23503`), archive the expert instead (`expert_verified=false`, `expert_profile_visibility=false`, `expert_accepts_new_clients=false`, `expert_availability_status='unavailable'`)
+  - show a clear toast explaining archive fallback
+
+## Review (storage upload + create UX hardening)
+
+- Added migration `supabase/migrations/20260508000005_fix_expert_image_storage_rls.sql` to fix `expert-images` storage RLS:
+  - allows writes for admin/super_admin `account_type`
+  - also allows approved superadmin emails (`engineering@whisperoo.app`, `sharab.khan101010@gmail.com`)
+- Updated `src/pages/admin/AdminExpertForm.tsx` so image upload failures are non-fatal:
+  - expert create/update succeeds even if storage upload fails
+  - UI shows a warning banner for image retry instead of surfacing the entire operation as failed
 
 # Implementation Plan — Immutable Hospital QR + QR Attribution + Uploads (Experts/Resources)
 

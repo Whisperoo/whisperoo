@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, MapPin, Clock } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 
 interface ExpertSuggestion {
   id: string;
@@ -15,6 +16,7 @@ interface ExpertSuggestion {
   consultation_fee: number;
   experience_years?: number;
   location?: string;
+  tenant_id?: string | null;
 }
 
 interface ExpertSuggestionCardProps {
@@ -23,6 +25,8 @@ interface ExpertSuggestionCardProps {
 
 const ExpertSuggestionCard: React.FC<ExpertSuggestionCardProps> = ({ expert }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const isHospitalExpert = Boolean(expert.tenant_id);
 
   const handleViewProfile = () => {
     navigate(`/experts/${expert.id}`);
@@ -40,6 +44,19 @@ const ExpertSuggestionCard: React.FC<ExpertSuggestionCardProps> = ({ expert }) =
               className="w-12 h-12 rounded-full object-cover flex-shrink-0 border-2 border-gray-100"
             />
             <div className="flex-1 min-w-0">
+              <div className="mb-1">
+                <span
+                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                    isHospitalExpert
+                      ? 'border-brand-primary/30 bg-brand-primary/10 text-brand-primary'
+                      : 'border-gray-200 bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {isHospitalExpert
+                    ? t('experts.hospitalExpertTag', 'Hospital Expert')
+                    : t('experts.whisperooExpertTag', 'Whisperoo Expert')}
+                </span>
+              </div>
               <h3 className="font-semibold text-gray-900 text-sm truncate">
                 {expert.name}
               </h3>

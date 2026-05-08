@@ -130,13 +130,15 @@ const ExpertProfiles: React.FC = () => {
     return t(`experts.specialties.${key}`, specialty);
   };
 
-  // Tab-based display: whisperoo = all experts, hospital = boosted/affiliated only
-  const whisperooExperts = sortedExperts;
+  // Tab-based display:
+  // - Whisperoo tab: only independent Whisperoo experts for hospital users
+  // - Hospital tab: only hospital-affiliated/boosted experts
+  const whisperooExperts = isHospitalUser
+    ? sortedExperts.filter((expert) => !isExpertBoosted(expert))
+    : sortedExperts;
   const hospitalExperts = isHospitalUser
     ? sortedExperts.filter(expert => isExpertBoosted(expert))
     : [];
-
-  const displayExperts = activeTab === 'hospital' ? hospitalExperts : whisperooExperts;
 
   const handleExpertClick = (expertId: string) => {
     navigate(`/experts/${expertId}`);
@@ -278,7 +280,7 @@ const ExpertProfiles: React.FC = () => {
           <TabsContent value="whisperoo" className="mt-0">
             {/* Disclaimer */}
             <p className="text-xs text-brand-primary/80 font-medium mb-4 leading-relaxed">
-              {t('experts.whisperooDisclaimer')}
+              {t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
             </p>
 
             {/* Results Count */}
@@ -303,6 +305,9 @@ const ExpertProfiles: React.FC = () => {
           {/* Hospital Experts Tab */}
           {isHospitalUser && (expertBoostIds.length > 0 || tenant) && (
             <TabsContent value="hospital" className="mt-0">
+              <p className="text-xs text-brand-primary/80 font-medium mb-4 leading-relaxed">
+                {t('experts.hospitalDisclaimer', 'Hospital Experts are affiliated with your hospital partner and curated for your care journey.')}
+              </p>
               {/* Results Count */}
               <div className="mb-4 flex items-center border-b border-gray-100 pb-3">
                 <p className="text-xs sm:text-sm font-semibold text-gray-500">

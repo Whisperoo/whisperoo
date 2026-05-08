@@ -103,7 +103,30 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
     setDeletingId(expertId);
     try {
       const { error } = await supabase.from('profiles').delete().eq('id', expertId);
-      if (error) throw error;
+      if (error) {
+        const isBookingFk =
+          error.code === '23503' ||
+          (error.message?.includes('consultation_bookings_expert_id_fkey') ?? false);
+
+        if (!isBookingFk) throw error;
+
+        // If booking history exists, keep referential integrity and archive instead.
+        const { error: archiveErr } = await supabase
+          .from('profiles')
+          .update({
+            expert_verified: false,
+            expert_profile_visibility: false,
+            expert_accepts_new_clients: false,
+            expert_availability_status: 'unavailable',
+          })
+          .eq('id', expertId);
+        if (archiveErr) throw archiveErr;
+
+        toast({
+          title: 'Expert archived',
+          description: 'This expert has booking history, so they were archived instead of deleted.',
+        });
+      }
       fetchData();
     } catch (err: any) {
       toast({ title: 'Error', description: `Failed to delete: ${err.message}`, variant: 'destructive' });
