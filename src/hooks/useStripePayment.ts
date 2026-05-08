@@ -18,6 +18,19 @@ interface CreatePaymentIntentResponse {
     stripeMode?: 'test' | 'live';
 }
 
+interface RawCreatePaymentIntentResponse {
+    clientSecret?: string | null;
+    client_secret?: string | null;
+    paymentIntentId?: string | null;
+    payment_intent_id?: string | null;
+    purchaseId?: string | null;
+    purchase_id?: string | null;
+    amount?: number | string | null;
+    currency?: string | null;
+    stripeMode?: 'test' | 'live';
+    stripe_mode?: 'test' | 'live';
+}
+
 interface PaymentStatus {
     status: 'pending' | 'completed' | 'failed' | 'canceled';
     purchaseId: string;
@@ -28,6 +41,24 @@ export const useStripePayment = () => {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const normalizePaymentIntentResponse = (raw: RawCreatePaymentIntentResponse): CreatePaymentIntentResponse => {
+        const amount =
+            typeof raw.amount === 'number'
+                ? raw.amount
+                : typeof raw.amount === 'string'
+                    ? Number(raw.amount)
+                    : 0;
+
+        return {
+            clientSecret: (raw.clientSecret ?? raw.client_secret ?? '') as string,
+            paymentIntentId: (raw.paymentIntentId ?? raw.payment_intent_id ?? '') as string,
+            purchaseId: (raw.purchaseId ?? raw.purchase_id ?? '') as string,
+            amount: Number.isFinite(amount) ? amount : 0,
+            currency: raw.currency ?? 'usd',
+            stripeMode: raw.stripeMode ?? raw.stripe_mode,
+        };
+    };
 
     const createPaymentIntent = async (
         productId: string,
@@ -64,7 +95,7 @@ export const useStripePayment = () => {
                 };
             }
 
-            const { data, error: functionError } = await supabase.functions.invoke<CreatePaymentIntentResponse>(
+            const { data, error: functionError } = await supabase.functions.invoke<RawCreatePaymentIntentResponse>(
                 'create-payment',
                 {
                     body,
@@ -83,7 +114,7 @@ export const useStripePayment = () => {
                 throw new Error('No data returned from payment intent creation');
             }
 
-            return data;
+            return normalizePaymentIntentResponse(data);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to create payment intent';
             setError(errorMessage);

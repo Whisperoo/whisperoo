@@ -1,3 +1,19 @@
+# Bug Fix — Query-based Expert Payment Gateway
+
+## Plan (checklist)
+
+- [x] Trace expert consultation booking flow to identify why query/inquiry experts still enter Stripe checkout.
+- [x] Add a safe booking-model fallback so consultation products without explicit `booking_model` and no payable amount default to inquiry flow.
+- [x] Harden Stripe payment intent response parsing to accept both camelCase and snake_case payload keys.
+- [x] Run linter diagnostics for edited files and verify no new issues were introduced.
+
+## Review
+
+- Updated `ExpertDetails` to infer booking model from price when legacy consultation products are missing `booking_model` (prevents query-based experts from opening payment modal).
+- New consultation products auto-set `booking_model` to `inquiry` when consultation rate is `0`, otherwise `direct`.
+- Updated `useStripePayment` response normalization to support both `clientSecret/paymentIntentId/purchaseId` and `client_secret/payment_intent_id/purchase_id` payloads.
+- This removes the `invalid client secret returned from server` failure mode caused by response key mismatches and hardens backward compatibility.
+
 # UI Consistency — Chat + Experts Tabs
 
 ## Plan (checklist)

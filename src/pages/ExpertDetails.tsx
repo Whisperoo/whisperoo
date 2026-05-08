@@ -45,6 +45,16 @@ const ExpertDetails: React.FC = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
 
+  const getBookingModel = (product: ProductWithDetails | null): 'direct' | 'inquiry' | 'hospital' => {
+    if (!product) return 'direct';
+    const configuredModel = (product as any).booking_model as string | null | undefined;
+    if (configuredModel === 'direct' || configuredModel === 'inquiry' || configuredModel === 'hospital') {
+      return configuredModel;
+    }
+    // Safe fallback for legacy products: if there is no payable amount, treat as inquiry.
+    return product.price > 0 ? 'direct' : 'inquiry';
+  };
+
   useEffect(() => {
     if (id) {
       fetchExpertDetails(id);
@@ -118,6 +128,7 @@ const ExpertDetails: React.FC = () => {
             description: `Book a one-on-one consultation session with ${expertData.first_name}. This expert will reach out to you within 24 hours to schedule your appointment.`,
             product_type: 'consultation',
             price: expertData.expert_consultation_rate || 0, // Use expert's rate or 0 if not set
+            booking_model: (expertData.expert_consultation_rate || 0) > 0 ? 'direct' : 'inquiry',
             expert_id: expertId,
             is_active: true
           })
@@ -178,7 +189,7 @@ const ExpertDetails: React.FC = () => {
       return;
     }
 
-    const model = (consultationProduct as any).booking_model || 'direct';
+    const model = getBookingModel(consultationProduct);
 
     switch (model) {
       case 'hospital':
@@ -371,7 +382,7 @@ const ExpertDetails: React.FC = () => {
                       <div className="bg-indigo-50 rounded-xl p-5 w-full sm:w-[280px]">
                         <p className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 opacity-70">{t('experts.consultation')}</p>
                         {/* Price: hide for inquiry and hospital models */}
-                        {((consultationProduct as any)?.booking_model || 'direct') === 'direct' ? (
+                        {getBookingModel(consultationProduct) === 'direct' ? (
                           <p className="text-2xl font-bold text-indigo-600 mb-4">
                             {consultationProduct && consultationProduct.price > 0
                               ? `$${consultationProduct.price.toFixed(0)}`
@@ -380,7 +391,7 @@ const ExpertDetails: React.FC = () => {
                           </p>
                         ) : (
                           <p className="text-sm text-indigo-500 mb-4 font-medium">
-                            {((consultationProduct as any)?.booking_model) === 'hospital'
+                            {getBookingModel(consultationProduct) === 'hospital'
                               ? 'Schedule through your hospital'
                               : 'No upfront payment required'}
                           </p>
@@ -392,9 +403,9 @@ const ExpertDetails: React.FC = () => {
                         >
                           {inquirySubmitting
                             ? 'Submitting...'
-                            : ((consultationProduct as any)?.booking_model || 'direct') === 'inquiry'
+                            : getBookingModel(consultationProduct) === 'inquiry'
                               ? t('experts.requestAppointment', 'Request Appointment')
-                              : ((consultationProduct as any)?.booking_model) === 'hospital'
+                              : getBookingModel(consultationProduct) === 'hospital'
                                 ? t('experts.howToSchedule', 'How to Schedule')
                                 : t('experts.bookConsultation')}
                         </Button>
