@@ -5,6 +5,7 @@ import { Database } from '@/types/database.types'
 import i18n from '@/i18n/config'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
+const LANGUAGE_STORAGE_KEY = 'whisperoo-language'
 
 interface AuthContextType {
   user: User | null
@@ -63,9 +64,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Profile fetched successfully:', data)
       setProfile(data)
       
-      // Apply user's language preference
-      if (data.language_preference && data.language_preference !== i18n.language) {
-        i18n.changeLanguage(data.language_preference)
+      // Apply language preference deterministically, preferring the latest local choice.
+      const localLanguage = typeof window !== 'undefined'
+        ? window.localStorage.getItem(LANGUAGE_STORAGE_KEY)
+        : null
+      const profileLanguage = data.language_preference || data.preferred_language
+      const nextLanguage = localLanguage || profileLanguage
+      if (nextLanguage && nextLanguage !== i18n.language) {
+        i18n.changeLanguage(nextLanguage)
+      }
+      if (profileLanguage && profileLanguage !== localLanguage && typeof window !== 'undefined') {
+        window.localStorage.setItem(LANGUAGE_STORAGE_KEY, profileLanguage)
       }
       
       return data

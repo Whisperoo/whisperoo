@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 export const HelpSupportPage: React.FC = () => {
   const { t } = useTranslation();
   const handleEmailSupport = () => {
-    window.location.href = "mailto:info@whisperoo.app?subject=Support Request";
+    window.location.href = "mailto:support@whisperoo.app?subject=Support Request";
   };
 
   return (
@@ -40,7 +40,7 @@ export const HelpSupportPage: React.FC = () => {
               className="bg-blue-600 hover:bg-blue-700"
             >
               <Mail className="h-4 w-4 mr-2" />
-              info@whisperoo.app
+              support@whisperoo.app
             </Button>
           </div>
         </div>

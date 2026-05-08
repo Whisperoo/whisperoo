@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
 const LANGUAGES = [
@@ -10,6 +9,7 @@ const LANGUAGES = [
   { code: 'es', flag: '🇲🇽', label: 'Español' },
   { code: 'vi', flag: '🇻🇳', label: 'Tiếng Việt' },
 ];
+const LANGUAGE_STORAGE_KEY = 'whisperoo-language';
 
 /**
  * LanguageSwitcher — renders in the Settings page.
@@ -27,21 +27,31 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
 
   // Sync language from profile on mount
   useEffect(() => {
-    const stored = (profile as Record<string, unknown>)?.language_preference as string | undefined;
+    const profileLang = (profile as Record<string, unknown>)?.language_preference as string | undefined;
+    const localLang = typeof window !== 'undefined'
+      ? window.localStorage.getItem(LANGUAGE_STORAGE_KEY) ?? undefined
+      : undefined;
+    const stored = localLang || profileLang;
     if (stored && stored !== i18n.language) {
       i18n.changeLanguage(stored);
     }
-  }, [profile]);
+  }, [profile, i18n]);
 
   const handleChange = async (langCode: string) => {
     if (langCode === i18n.language || saving) return;
 
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, langCode);
+    }
     i18n.changeLanguage(langCode);
 
     if (!user) return;
     setSaving(true);
     try {
-      const { error } = await updateProfile({ language_preference: langCode } as any);
+      const { error } = await updateProfile({
+        language_preference: langCode,
+        preferred_language: langCode,
+      } as any);
       if (error) throw error;
 
       toast({
@@ -50,6 +60,11 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
       });
     } catch (err) {
       console.error('Failed to save language preference:', err);
+      toast({
+        title: 'Error',
+        description: 'Unable to save language preference right now. Your local choice is still applied.',
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }

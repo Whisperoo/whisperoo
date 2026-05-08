@@ -16,6 +16,12 @@ i18n
       vi: { translation: viTranslation },
     },
     fallbackLng: 'en',
+    detection: {
+      // Prefer persisted user choice over browser auto-detection
+      order: ['localStorage', 'htmlTag', 'navigator'],
+      lookupLocalStorage: 'whisperoo-language',
+      caches: ['localStorage'],
+    },
     interpolation: {
       escapeValue: false, // react already safes from xss
     },

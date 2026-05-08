@@ -23,6 +23,8 @@ interface ProductFormData {
   duration_minutes: number;
   difficulty_level: string;
   is_hospital_resource: boolean;
+  booking_model: 'direct' | 'inquiry' | 'hospital';
+  how_to_schedule: string;
 }
 
 interface ExpertOption {
@@ -44,6 +46,8 @@ const EMPTY_FORM: ProductFormData = {
   duration_minutes: 0,
   difficulty_level: 'beginner',
   is_hospital_resource: false,
+  booking_model: 'direct',
+  how_to_schedule: '',
 };
 
 const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose, onSaved }) => {
@@ -70,7 +74,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
       if (!isNew) {
         const { data, error: fetchErr } = await supabase
           .from('products')
-          .select('title, description, product_type, price, is_free, file_url, thumbnail_url, expert_id, status, tags, duration_minutes, difficulty_level, is_hospital_resource')
+          .select('title, description, product_type, price, is_free, file_url, thumbnail_url, expert_id, status, tags, duration_minutes, difficulty_level, is_hospital_resource, booking_model, how_to_schedule')
           .eq('id', productId)
           .single();
         if (fetchErr) {
@@ -90,6 +94,8 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
             duration_minutes: data.duration_minutes || 0,
             difficulty_level: data.difficulty_level || 'beginner',
             is_hospital_resource: data.is_hospital_resource ?? false,
+            booking_model: data.booking_model || 'direct',
+            how_to_schedule: data.how_to_schedule || '',
           });
         }
       }
@@ -123,6 +129,8 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
       duration_minutes: form.duration_minutes || null,
       difficulty_level: form.difficulty_level || null,
       is_hospital_resource: form.is_hospital_resource,
+      booking_model: form.booking_model,
+      how_to_schedule: form.booking_model === 'hospital' ? form.how_to_schedule.trim() || null : null,
     };
 
     try {
@@ -378,13 +386,68 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
                 type="checkbox"
                 id="is_hospital_resource"
                 checked={form.is_hospital_resource}
-                onChange={(e) => setForm({ ...form, is_hospital_resource: e.target.checked })}
+                onChange={(e) => {
+                  const isHospital = e.target.checked;
+                  setForm({
+                    ...form,
+                    is_hospital_resource: isHospital,
+                    booking_model: isHospital ? 'hospital' : form.booking_model === 'hospital' ? 'direct' : form.booking_model,
+                    is_free: isHospital ? true : form.is_free,
+                    price: isHospital ? 0 : form.price,
+                  });
+                }}
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <label htmlFor="is_hospital_resource" className="text-sm text-gray-700">
                 Mark as <span className="font-medium">Hospital Resource</span> — will appear in hospital resource utilization metrics
               </label>
             </div>
+
+            {/* Booking Model */}
+            {(form.product_type === 'consultation' || form.is_hospital_resource) && (
+              <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100 space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-blue-800 mb-1 block">Booking Model</label>
+                  <select
+                    value={form.booking_model}
+                    onChange={(e) => {
+                      const model = e.target.value as 'direct' | 'inquiry' | 'hospital';
+                      setForm({
+                        ...form,
+                        booking_model: model,
+                        is_free: model !== 'direct' ? true : form.is_free,
+                        price: model !== 'direct' ? 0 : form.price,
+                        is_hospital_resource: model === 'hospital' ? true : form.is_hospital_resource,
+                      });
+                    }}
+                    className="w-full text-sm border border-blue-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="direct">💳 Direct Booking (pay in app)</option>
+                    <option value="inquiry">📩 Inquiry Only (expert contacts user)</option>
+                    <option value="hospital">🏥 Hospital Resource (custom instructions)</option>
+                  </select>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {form.booking_model === 'direct' && 'User pays through Stripe and booking is created for admin to manage.'}
+                    {form.booking_model === 'inquiry' && 'User requests appointment (no payment). Expert reaches out directly. Admin tracks connection.'}
+                    {form.booking_model === 'hospital' && 'Shows custom scheduling instructions. No booking/payment through Whisperoo.'}
+                  </p>
+                </div>
+
+                {/* How to Schedule (hospital only) */}
+                {form.booking_model === 'hospital' && (
+                  <div>
+                    <label className="text-xs font-semibold text-blue-800 mb-1 block">How to Schedule</label>
+                    <textarea
+                      value={form.how_to_schedule}
+                      onChange={(e) => setForm({ ...form, how_to_schedule: e.target.value })}
+                      placeholder="Enter scheduling instructions (e.g., 'Call Labor & Delivery at 555-1234 to schedule your appointment')"
+                      rows={3}
+                      className="w-full text-sm border border-blue-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

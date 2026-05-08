@@ -15,6 +15,7 @@ interface CreatePaymentIntentResponse {
     purchaseId: string;
     amount: number;
     currency: string;
+    stripeMode?: 'test' | 'live';
 }
 
 interface PaymentStatus {

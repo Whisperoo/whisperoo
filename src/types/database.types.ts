@@ -307,6 +307,91 @@ export type Database = {
           },
         ]
       }
+      consultation_bookings: {
+        Row: {
+          id: string
+          user_id: string
+          user_email: string
+          user_name: string
+          expert_id: string
+          expert_name: string
+          product_id: string
+          appointment_name: string
+          booking_type: string
+          amount_paid: number | null
+          purchase_id: string | null
+          resource_type: string
+          status: string
+          booked_at: string
+          completed_at: string | null
+          cancelled_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          user_email: string
+          user_name: string
+          expert_id: string
+          expert_name: string
+          product_id: string
+          appointment_name: string
+          booking_type: string
+          amount_paid?: number | null
+          purchase_id?: string | null
+          resource_type?: string
+          status?: string
+          booked_at?: string
+          completed_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          user_email?: string
+          user_name?: string
+          expert_id?: string
+          expert_name?: string
+          product_id?: string
+          appointment_name?: string
+          booking_type?: string
+          amount_paid?: number | null
+          purchase_id?: string | null
+          resource_type?: string
+          status?: string
+          booked_at?: string
+          completed_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultation_bookings_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultation_bookings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expert_embeddings: {
         Row: {
           created_at: string | null
@@ -644,6 +729,7 @@ export type Database = {
       }
       products: {
         Row: {
+          booking_model: string | null
           content_type: string | null
           created_at: string | null
           description: string | null
@@ -654,6 +740,7 @@ export type Database = {
           file_size_mb: number | null
           file_url: string | null
           has_multiple_files: boolean | null
+          how_to_schedule: string | null
           id: string
           is_active: boolean | null
           page_count: number | null
@@ -670,6 +757,7 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          booking_model?: string | null
           content_type?: string | null
           created_at?: string | null
           description?: string | null
@@ -680,6 +768,7 @@ export type Database = {
           file_size_mb?: number | null
           file_url?: string | null
           has_multiple_files?: boolean | null
+          how_to_schedule?: string | null
           id?: string
           is_active?: boolean | null
           page_count?: number | null
@@ -696,6 +785,7 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          booking_model?: string | null
           content_type?: string | null
           created_at?: string | null
           description?: string | null
@@ -706,6 +796,7 @@ export type Database = {
           file_size_mb?: number | null
           file_url?: string | null
           has_multiple_files?: boolean | null
+          how_to_schedule?: string | null
           id?: string
           is_active?: boolean | null
           page_count?: number | null

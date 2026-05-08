@@ -543,12 +543,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     {t('experts.tabHospital', 'Hospital Expert')}
                   </span>
                 ) : (
-                  <span className="inline-block px-1.5 py-0.5 bg-fuchsia-100 text-fuchsia-700 text-[10px] font-semibold rounded">
+                  <span className="inline-block px-1.5 py-0.5 bg-blue-50 text-brand-primary text-[10px] font-semibold rounded">
                     {t('experts.tabWhisperoo', 'Whisperoo Expert')}
                   </span>
                 )}
               </div>
-              <p className="mt-1 font-medium text-[9px] text-fuchsia-600 leading-tight">
+              <p className="mt-1 font-medium text-[9px] text-brand-primary leading-tight">
                 {expert?.tenant_id 
                   ? t('experts.hospitalDisclaimer', 'This expert is affiliated with a hospital partner.') 
                   : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}

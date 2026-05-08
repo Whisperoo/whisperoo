@@ -239,20 +239,30 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {purchases.map((purchase) => (
+        {purchases.map((purchase) => {
+          // Normalize product — Supabase joins can return arrays
+          const product = Array.isArray(purchase.product) ? purchase.product[0] : purchase.product;
+          if (!product) return null;
+
+          const expert = product.expert ?? null;
+          const expertName = expert?.first_name || t('contentGrid.expert');
+          const expertImageUrl = expert?.profile_image_url || undefined;
+          const expertInitial = expert?.first_name?.[0] || "E";
+
+          return (
           <Card
             className={`flex flex-col rounded-[16px] max-w-full h-full border border-[#e5e5e5] bg-white shadow-[0px_0px_10px_0px_rgba(46,84,165,0.1)] overflow-hidden `}
             key={purchase.id}
           >
             {/* Thumbnail */}
-            {purchase.product.thumbnail_url &&
-            purchase.product.thumbnail_url.trim() &&
-            !purchase.product.thumbnail_url.includes("placeholder") ? (
+            {product.thumbnail_url &&
+            product.thumbnail_url.trim() &&
+            !product.thumbnail_url.includes("placeholder") ? (
               <div className="relative h-[99px] overflow-hidden rounded-tl-[16px] rounded-tr-[16px] flex-shrink-0">
                 {/* Background Image */}
                 <img
-                  src={purchase.product.thumbnail_url}
-                  alt={currentLang === 'es' && purchase.product.title_es ? purchase.product.title_es : currentLang === 'vi' && purchase.product.title_vi ? purchase.product.title_vi : purchase.product.title}
+                  src={product.thumbnail_url}
+                  alt={currentLang === 'es' && product.title_es ? product.title_es : currentLang === 'vi' && product.title_vi ? product.title_vi : product.title}
                   className="w-full h-full object-cover rounded-tl-[16px] rounded-tr-[16px]"
                 />
 
@@ -264,17 +274,17 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                   {/* Product Type Badge */}
                   <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 flex items-center justify-center">
                     <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
-                      {isCourse(purchase.product)
+                      {isCourse(product)
                         ? t('contentGrid.course')
-                        : t(`productTypes.${purchase.product.product_type}`, { defaultValue: purchase.product.product_type })}
+                        : t(`productTypes.${product.product_type}`, { defaultValue: product.product_type })}
                     </p>
                   </div>
 
                   {/* Lesson Count Badge */}
-                  {lessonCount(purchase.product) > 1 && (
+                  {lessonCount(product) > 1 && (
                     <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2  flex items-center justify-center">
                       <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
-                        {t('contentGrid.lessons', { count: lessonCount(purchase.product) })}
+                        {t('contentGrid.lessons', { count: lessonCount(product) })}
                       </p>
                     </div>
                   )}
@@ -286,67 +296,28 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
               className="relative w-full h-[99px] flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100"
               style={{
                 display:
-                  !purchase.product.thumbnail_url ||
-                  purchase.product.thumbnail_url.includes("placeholder")
+                  !product.thumbnail_url ||
+                  product.thumbnail_url.includes("placeholder")
                     ? "flex"
                     : "none",
               }}
             >
-              {/* {purchase.product.product_type === "video" ? (
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-xl">
-                      <Play className="h-10 w-10 text-white ml-1" />
-                    </div>
-                  </div>
-                  <p className="text-sm font-semibold text-gray-700 mt-1">
-                    Video Content
-                  </p>
-                </div>
-              ) : purchase.product.product_type === "consultation" &&
-                purchase.product.expert ? (
-                <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 rounded-full overflow-hidden shadow-xl border-4 border-green-500">
-                    <Avatar className="w-full h-full">
-                      <AvatarImage
-                        src={
-                          purchase.product.expert.profile_image_url || undefined
-                        }
-                      />
-                      <AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white text-xl font-bold">
-                        {purchase.product.expert.first_name?.[0] || "E"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl">
-                      <File className="h-10 w-10 text-white" />
-                    </div>
-                  </div>
-                  <p className="text-sm font-semibold text-gray-700 mt-1">
-                    Document
-                  </p>
-                </div>
-              )} */}
               <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent to-[70.707%] rounded-tl-[16px] rounded-tr-[16px]" />
               <div className="absolute inset-0 flex items-start justify-between p-4 rounded-tl-[16px] rounded-tr-[16px]">
                 {/* Product Type Badge */}
                 <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 flex items-center justify-center">
                   <p className="font-bold capitalize text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
-                    {isCourse(purchase.product)
+                    {isCourse(product)
                       ? t('contentGrid.course')
-                      : t(`productTypes.${purchase.product.product_type}`, { defaultValue: purchase.product.product_type })}
+                      : t(`productTypes.${product.product_type}`, { defaultValue: product.product_type })}
                   </p>
                 </div>
 
                 {/* Lesson Count Badge */}
-                {lessonCount(purchase.product) > 1 && (
+                {lessonCount(product) > 1 && (
                   <div className="backdrop-blur-[2px] bg-white/35 rounded-full px-2 flex items-center justify-center">
                     <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans']">
-                      {t('contentGrid.lessons', { count: lessonCount(purchase.product) })}
+                      {t('contentGrid.lessons', { count: lessonCount(product) })}
                     </p>
                   </div>
                 )}
@@ -358,11 +329,11 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
               <div className="flex flex-col gap-3 w-full">
                 {/* Title */}{" "}
                 <h2 className="font-semibold text-[18px] leading-normal text-[#393939] font-['Plus_Jakarta_Sans'] md:truncate">
-                  {currentLang === 'es' && purchase.product.title_es ? purchase.product.title_es : currentLang === 'vi' && purchase.product.title_vi ? purchase.product.title_vi : purchase.product.title}{" "}
+                  {currentLang === 'es' && product.title_es ? product.title_es : currentLang === 'vi' && product.title_vi ? product.title_vi : product.title}{" "}
                 </h2>
                 {/* Description */}{" "}
                 <p className="font-normal text-[14px] leading-[19.6px] text-[#111111] font-['Plus_Jakarta_Sans'] max-w-[21rem] line-clamp-3 break-words">
-                  {currentLang === 'es' && purchase.product.description_es ? purchase.product.description_es : currentLang === 'vi' && purchase.product.description_vi ? purchase.product.description_vi : purchase.product.description}{" "}
+                  {currentLang === 'es' && product.description_es ? product.description_es : currentLang === 'vi' && product.description_vi ? product.description_vi : product.description}{" "}
                 </p>{" "}
               </div>
               {/* Expert Info & Price Section */}{" "}
@@ -373,20 +344,20 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                   <Avatar className="w-9 h-9 rounded-full flex-shrink-0">
                     {" "}
                     <AvatarImage
-                      src={purchase.product.expert.profile_image_url}
-                      alt={purchase.product.expert.first_name}
+                      src={expertImageUrl}
+                      alt={expertName}
                     />
                     <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-sm">
-                      {purchase.product.expert.first_name?.[0] || "E"}
+                      {expertInitial}
                     </AvatarFallback>
                   </Avatar>
                   {/* Expert Info */}
                   <div className="flex flex-col flex-1 min-w-0">
                     <p className="font-semibold text-[14px] text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
-                      {purchase.product.expert.first_name || t('contentGrid.expert')}
+                      {expertName}
                     </p>
                     <p className="font-normal text-[12px] text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
-                      {translateSpecialty(purchase.product.expert?.expert_specialties?.[0] || "") ||
+                      {translateSpecialty(expert?.expert_specialties?.[0] || "") ||
                         t('contentGrid.expert')}
                     </p>
                   </div>
@@ -398,9 +369,9 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
             <CardFooter className="p-0 pl-4 pb-4 pr-4">
               <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
                 {/* View Content Button */}
-                {purchase.product && (
+                {product && (
                   <Button
-                    onClick={() => handlePreview(purchase.product!)}
+                    onClick={() => handlePreview(product)}
                     variant="outline"
                     className="w-full border-gray-300 font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans']"
                   >
@@ -410,9 +381,9 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
                 )}
 
                 {/* Download Button - NEW */}
-                {purchase.product &&
-                  purchase.product.product_type !== "consultation" &&
-                  purchase.product.product_type === "document" && (
+                {product &&
+                  product.product_type !== "consultation" &&
+                  product.product_type === "document" && (
                     <Button
                       onClick={() => onDownload(purchase)}
                       disabled={downloadingId === purchase.product_id}
@@ -434,7 +405,8 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
               </div>
             </CardFooter>{" "}
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {/* Content Viewer Modal */}

@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTenant } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
 import { getLocalizedBio } from '@/services/translationService';
+import { useToast } from '@/hooks/use-toast';
 
 interface ExpertProfile {
   id: string;
@@ -35,12 +36,15 @@ const ExpertDetails: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { isHospitalUser, tenant, config } = useTenant();
+  const { toast } = useToast();
   const [expert, setExpert] = useState<ExpertProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
   const [consultationProduct, setConsultationProduct] = useState<ProductWithDetails | null>(null);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [inquirySubmitting, setInquirySubmitting] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -164,27 +168,69 @@ const ExpertDetails: React.FC = () => {
     }
   };
 
-  const handleBookConsultation = () => {
+  const handleBookConsultation = async () => {
     if (!user) {
       navigate('/auth/login');
       return;
     }
     
-    // For Francie and Karen, do an "Inquire" flow instead of actual checkout
-    if (expert?.first_name === 'Francie' || expert?.first_name === 'Karen') {
-      toast({
-        title: t('experts.inquirySent', 'Inquiry Sent'),
-        description: t('experts.inquiryDesc', "We'll notify the expert directly. They'll reach out within 24-48 hours to coordinate a time that works for you."),
-      });
+    if (!consultationProduct || !expert) {
+      console.error('Consultation product or expert not available');
       return;
     }
-    
-    if (!consultationProduct) {
-      console.error('Consultation product not available');
-      return;
+
+    const model = (consultationProduct as any).booking_model || 'direct';
+
+    switch (model) {
+      case 'hospital':
+        // Show custom scheduling instructions (informational only)
+        setShowScheduleModal(true);
+        break;
+
+      case 'inquiry':
+        // Create booking record for admin — no payment
+        setInquirySubmitting(true);
+        try {
+          const { error: bookingError } = await supabase
+            .from('consultation_bookings')
+            .insert({
+              user_id: user.id,
+              user_email: user.email || '',
+              user_name: profile?.first_name || 'User',
+              expert_id: expert.id,
+              expert_name: expert.first_name,
+              product_id: consultationProduct.id,
+              appointment_name: consultationProduct.title || `Consultation with ${expert.first_name}`,
+              booking_type: 'inquiry',
+              amount_paid: null,
+              resource_type: expert.tenant_id ? 'hospital' : 'whisperoo',
+              status: 'pending',
+            });
+
+          if (bookingError) throw bookingError;
+
+          toast({
+            title: t('experts.inquirySent', 'Request Sent'),
+            description: t('experts.inquiryDesc', "We'll notify the expert directly. They'll reach out within 24-48 hours to coordinate a time that works for you."),
+          });
+        } catch (err: any) {
+          console.error('Inquiry booking error:', err);
+          toast({
+            title: 'Error',
+            description: 'Failed to submit your request. Please try again.',
+            variant: 'destructive',
+          });
+        } finally {
+          setInquirySubmitting(false);
+        }
+        break;
+
+      case 'direct':
+      default:
+        // Open Stripe checkout (current behavior)
+        setPurchaseModalOpen(true);
+        break;
     }
-    
-    setPurchaseModalOpen(true);
   };
 
   const handlePurchaseSuccess = (purchaseId: string) => {
@@ -283,7 +329,7 @@ const ExpertDetails: React.FC = () => {
                         {t('experts.tabHospital', 'Hospital Expert')}
                       </span>
                     ) : (
-                      <span className="inline-block px-2 py-1 bg-fuchsia-100 text-fuchsia-700 text-xs font-semibold rounded mb-2">
+                      <span className="inline-block px-2 py-1 bg-blue-50 text-brand-primary text-xs font-semibold rounded mb-2">
                         {t('experts.tabWhisperoo', 'Whisperoo Expert')}
                       </span>
                     )}
@@ -311,8 +357,8 @@ const ExpertDetails: React.FC = () => {
                     </div>
 
                     {/* Disclaimer */}
-                    <div className="mt-4 border border-fuchsia-500 bg-white p-3 rounded-md max-w-lg shadow-sm">
-                      <p className="text-fuchsia-600 text-sm font-medium">
+                    <div className="mt-4 border border-brand-primary bg-white p-3 rounded-md max-w-lg shadow-sm">
+                      <p className="text-brand-primary text-sm font-medium">
                         {expert.tenant_id 
                           ? t('experts.hospitalDisclaimer', 'This expert is affiliated with a hospital partner.') 
                           : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
@@ -325,19 +371,33 @@ const ExpertDetails: React.FC = () => {
                     <div className="w-full sm:w-auto flex-shrink-0">
                       <div className="bg-indigo-50 rounded-xl p-5 w-full sm:w-[280px]">
                         <p className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1 opacity-70">{t('experts.consultation')}</p>
-                        <p className="text-2xl font-bold text-indigo-600 mb-4">
-                          {consultationProduct && consultationProduct.price > 0
-                            ? `$${consultationProduct.price.toFixed(0)}`
-                            : t('experts.contactForRates')
-                          }
-                        </p>
+                        {/* Price: hide for inquiry and hospital models */}
+                        {((consultationProduct as any)?.booking_model || 'direct') === 'direct' ? (
+                          <p className="text-2xl font-bold text-indigo-600 mb-4">
+                            {consultationProduct && consultationProduct.price > 0
+                              ? `$${consultationProduct.price.toFixed(0)}`
+                              : t('experts.contactForRates')
+                            }
+                          </p>
+                        ) : (
+                          <p className="text-sm text-indigo-500 mb-4 font-medium">
+                            {((consultationProduct as any)?.booking_model) === 'hospital'
+                              ? 'Schedule through your hospital'
+                              : 'No upfront payment required'}
+                          </p>
+                        )}
                         <Button
                           className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-md font-bold h-11"
                           onClick={handleBookConsultation}
+                          disabled={inquirySubmitting}
                         >
-                          {(expert.first_name === 'Francie' || expert.first_name === 'Karen') 
-                            ? t('experts.inquireCTA', 'Inquire')
-                            : t('experts.bookConsultation')}
+                          {inquirySubmitting
+                            ? 'Submitting...'
+                            : ((consultationProduct as any)?.booking_model || 'direct') === 'inquiry'
+                              ? t('experts.requestAppointment', 'Request Appointment')
+                              : ((consultationProduct as any)?.booking_model) === 'hospital'
+                                ? t('experts.howToSchedule', 'How to Schedule')
+                                : t('experts.bookConsultation')}
                         </Button>
                       </div>
                     </div>
@@ -470,6 +530,37 @@ const ExpertDetails: React.FC = () => {
             product={consultationProduct}
             onPurchaseSuccess={handlePurchaseSuccess}
           />
+        )}
+
+        {/* How to Schedule Modal (hospital resources) */}
+        {showScheduleModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900">How to Schedule</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {expert?.first_name ? `Scheduling with ${expert.first_name}` : 'Scheduling Instructions'}
+                </p>
+              </div>
+              <div className="px-6 py-5">
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                  <p className="text-sm text-blue-900 whitespace-pre-wrap leading-relaxed">
+                    {(consultationProduct as any)?.how_to_schedule
+                      || 'Please contact your hospital care team for scheduling details. They will coordinate your appointment directly.'}
+                  </p>
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowScheduleModal(false)}
+                  className="font-semibold"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

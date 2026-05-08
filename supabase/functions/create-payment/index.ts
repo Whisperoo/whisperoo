@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
 
     const { data: product, error: productError } = await supabaseClient
       .from('products')
-      .select('id, expert_id, title, price, product_type')
+      .select('id, expert_id, title, price, product_type, is_hospital_resource')
       .eq('id', product_id)
       .eq('is_active', true)
       .single()
@@ -171,6 +171,26 @@ Deno.serve(async (req) => {
         await supabaseClient.rpc('increment_discount_usage', { discount_id: appliedDiscountCodeId });
       }
 
+      // Create consultation booking record for admin dashboard
+      if (product.product_type === 'consultation') {
+        const { data: userProfile } = await supabaseClient.from('profiles').select('first_name, email').eq('id', user.id).single()
+        const { data: expertProfile } = await supabaseClient.from('profiles').select('first_name').eq('id', product.expert_id).single()
+        await supabaseClient.from('consultation_bookings').insert({
+          user_id: user.id,
+          user_email: userProfile?.email || user.email || '',
+          user_name: userProfile?.first_name || 'User',
+          expert_id: product.expert_id,
+          expert_name: expertProfile?.first_name || 'Expert',
+          product_id: product.id,
+          appointment_name: product.title || 'Consultation',
+          booking_type: 'direct',
+          amount_paid: 0,
+          purchase_id: purchase.id,
+          resource_type: product.is_hospital_resource ? 'hospital' : 'whisperoo',
+          status: 'pending',
+        })
+      }
+
       return new Response(JSON.stringify({
         clientSecret: null,
         paymentIntentId: 'free',
@@ -183,6 +203,8 @@ Deno.serve(async (req) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(finalPrice * 100),
       currency: 'usd',
+      // PaymentElement expects PaymentIntent configuration compatible with dynamic methods.
+      automatic_payment_methods: { enabled: true },
       metadata: {
         product_id: product.id,
         user_id: user.id,
@@ -237,6 +259,26 @@ Deno.serve(async (req) => {
       await supabaseClient.rpc('increment_discount_usage', { discount_id: appliedDiscountCodeId });
     }
 
+    // Create consultation booking record for admin dashboard
+    if (product.product_type === 'consultation') {
+      const { data: userProfile } = await supabaseClient.from('profiles').select('first_name, email').eq('id', user.id).single()
+      const { data: expertProfile } = await supabaseClient.from('profiles').select('first_name').eq('id', product.expert_id).single()
+      await supabaseClient.from('consultation_bookings').insert({
+        user_id: user.id,
+        user_email: userProfile?.email || user.email || '',
+        user_name: userProfile?.first_name || 'User',
+        expert_id: product.expert_id,
+        expert_name: expertProfile?.first_name || 'Expert',
+        product_id: product.id,
+        appointment_name: product.title || 'Consultation',
+        booking_type: 'direct',
+        amount_paid: finalPrice,
+        purchase_id: purchase.id,
+        resource_type: product.is_hospital_resource ? 'hospital' : 'whisperoo',
+        status: 'pending',
+      })
+    }
+
     return new Response(
       JSON.stringify({
         clientSecret: paymentIntent.client_secret,
@@ -244,6 +286,7 @@ Deno.serve(async (req) => {
         purchaseId: purchase.id,
         amount: finalPrice,
         currency: 'usd',
+        stripeMode: stripeSecretKey.startsWith('sk_live') ? 'live' : 'test',
       }),
       {
         status: 200,

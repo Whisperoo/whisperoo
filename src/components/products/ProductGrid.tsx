@@ -18,7 +18,8 @@ import {
   ProductWithDetails,
 } from "@/services/products";
 import { useQuery } from "@tanstack/react-query";
-import { Grid, List, Search } from "lucide-react";
+import { Grid, List, Search, Building2 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProductCard } from "./ProductCard";
@@ -183,7 +184,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { config } = useTenant();
+  const { config, isHospitalUser, tenant } = useTenant();
   const { sortPersonalized } = usePersonalizedSort();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -197,6 +198,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   });
   const [page, setPage] = useState(1);
   const [userPurchases, setUserPurchases] = useState<Set<string>>(new Set());
+  const [activeResourceTab, setActiveResourceTab] = useState<'whisperoo' | 'hospital'>('whisperoo');
 
   // ✅ Fixed: Added refetch to useQuery
   const { data, isLoading, error, refetch } = useQuery({
@@ -289,9 +291,19 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       })
     : sortedProducts;
 
-  const displayProducts = disabledProductIds.length > 0
+  const afterDisabledFilter = disabledProductIds.length > 0
     ? afterTagFilter.filter((p) => !disabledProductIds.includes(p.id))
     : afterTagFilter;
+
+  // Phase 4: Tab-based resource filtering (mirrors ExpertProfiles)
+  const hospitalProducts = afterDisabledFilter.filter((p: any) =>
+    p.is_hospital_resource === true ||
+    (p.expert?.tenant_id && tenant && p.expert.tenant_id === tenant.id)
+  );
+
+  const displayProducts = activeResourceTab === 'hospital'
+    ? hospitalProducts
+    : afterDisabledFilter;
 
   const totalResults = data?.total || 0;
   // console.log(displayProducts, "from grid");
@@ -598,6 +610,39 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           })()}
         </div>
       )}
+
+      {/* Whisperoo / Hospital Tabs */}
+      <Tabs
+        value={activeResourceTab}
+        onValueChange={(v) => setActiveResourceTab(v as 'whisperoo' | 'hospital')}
+        className="w-full"
+      >
+        <TabsList className="w-full sm:w-auto mb-4 bg-gray-100 rounded-xl p-1">
+          <TabsTrigger
+            value="whisperoo"
+            className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
+          >
+            {t('experts.tabWhisperoo', 'Whisperoo Resources')}
+          </TabsTrigger>
+          {isHospitalUser && tenant && (
+            <TabsTrigger
+              value="hospital"
+              className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
+            >
+              <Building2 className="w-3.5 h-3.5 mr-1.5 inline-block" />
+              {t('experts.tabHospital', 'Hospital Resources')}
+            </TabsTrigger>
+          )}
+        </TabsList>
+
+        <TabsContent value={activeResourceTab} className="mt-0">
+          <p className="text-xs text-brand-primary/80 font-medium mb-4 leading-relaxed">
+            {activeResourceTab === 'hospital'
+              ? t('experts.hospitalDisclaimer', 'These resources are provided by your hospital partner.')
+              : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
+          </p>
+        </TabsContent>
+      </Tabs>
 
       {/* Products Grid/List */}
       {isLoading ? (

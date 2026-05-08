@@ -464,7 +464,7 @@ export const ProductDetailPage: React.FC = () => {
                           {t('experts.tabHospital', 'Hospital Expert')}
                         </span>
                       ) : (
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-fuchsia-100 text-fuchsia-700 text-xs font-semibold rounded">
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-brand-primary text-xs font-semibold rounded">
                           {t('experts.tabWhisperoo', 'Whisperoo Expert')}
                         </span>
                       )}
@@ -473,7 +473,7 @@ export const ProductDetailPage: React.FC = () => {
                 )}
 
                 {product.expert && (
-                  <div className="mb-4 text-xs font-medium text-fuchsia-600">
+                  <div className="mb-4 text-xs font-medium text-brand-primary">
                     {product.expert.tenant_id 
                       ? t('experts.hospitalDisclaimer', 'This expert is affiliated with a hospital partner.') 
                       : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}

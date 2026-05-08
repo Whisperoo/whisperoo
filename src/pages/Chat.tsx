@@ -189,6 +189,11 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
       });
       if (error) throw error;
 
+      // ── Debug: surface AI backend errors in console ──
+      if (data?.debug_error) {
+        console.warn('[Chat AI Debug] Edge function error:', data.debug_error);
+      }
+
       // Update session ID if this was a new session
       const sessionId = data.sessionId || currentSessionId;
       if (data.sessionId && !currentSessionId) {

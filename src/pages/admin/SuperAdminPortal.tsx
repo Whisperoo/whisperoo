@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
-import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut } from 'lucide-react';
+import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut, CalendarCheck } from 'lucide-react';
 import HospitalSelector from './HospitalSelector';
 import MetricsDash from './MetricsDash';
 import AIInteractionsPanel from './AIInteractionsPanel';
 import TenantConfigEditor from './TenantConfigEditor';
 import ContentCurationPanel from './ContentCurationPanel';
 import ExpertCurationPanel from './ExpertCurationPanel';
+import DiscountCodesPanel from './DiscountCodesPanel';
+import ConsultationBookingsPanel from './ConsultationBookingsPanel';
 
 // ─── Super Admin Access Control ───────────────────────────────────
 const SUPER_ADMIN_EMAILS = [
@@ -17,7 +19,7 @@ const SUPER_ADMIN_EMAILS = [
   'sharab.khan101010@gmail.com'
 ];
 
-type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'config';
+type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'bookings' | 'discounts' | 'config';
 
 const SuperAdminPortal: React.FC = () => {
   const { user, profile, signOut } = useAuth();
@@ -125,6 +127,8 @@ const SuperAdminPortal: React.FC = () => {
                 { id: 'ai',       icon: MessageSquare,  label: t('admin.portal.tabs.aiLogs')  },
                 { id: 'content',  icon: PackageSearch,  label: t('admin.portal.tabs.content')  },
                 { id: 'experts',  icon: Users,          label: t('admin.portal.tabs.experts')  },
+                { id: 'bookings', icon: CalendarCheck,   label: 'Bookings' },
+                { id: 'discounts', icon: PackageSearch, label: 'Discounts' },
                 { id: 'config',   icon: Settings2,      label: t('admin.portal.tabs.config')   },
               ] as { id: Tab; icon: React.ElementType; label: string }[]).map(({ id, icon: Icon, label }) => (
                 <button
@@ -152,6 +156,8 @@ const SuperAdminPortal: React.FC = () => {
         {activeTab === 'ai'       && <AIInteractionsPanel tenantId={selectedTenantId} />}
         {activeTab === 'content'  && <ContentCurationPanel tenantId={selectedTenantId} />}
         {activeTab === 'experts'  && <ExpertCurationPanel tenantId={selectedTenantId} />}
+        {activeTab === 'bookings' && <ConsultationBookingsPanel tenantId={selectedTenantId} />}
+        {activeTab === 'discounts' && <DiscountCodesPanel tenantId={selectedTenantId} />}
         {activeTab === 'config'   && <TenantConfigEditor tenantId={selectedTenantId} />}
       </main>
     </div>

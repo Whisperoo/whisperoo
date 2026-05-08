@@ -206,6 +206,7 @@ serve(async (req) => {
     let aiResponse = "";
     let matchedExperts: any[] = [];
     let matchedProducts: any[] = [];
+    let debugError: string | null = null;
     
     // SOW 1.1: Compliance context for medical questions
     const complianceContext = isMedicalQuestion ? 
@@ -219,16 +220,49 @@ serve(async (req) => {
       // Get enhanced chat context
       const context = await getEnhancedChatContext(supabase, user.id, childId, currentSessionId);
 
+      // ── Recurring Topic Detection ──
+      // Count how many times this topic category has appeared in this session.
+      // On 2nd+ mention, we proactively recommend matched experts.
+      let isRecurringTopic = false;
+      if (currentSessionId && messageCategory && messageCategory !== 'General Parenting') {
+        const { data: prevMessages } = await supabase
+          .from('messages')
+          .select('metadata')
+          .eq('session_id', currentSessionId)
+          .eq('role', 'user');
+
+        if (prevMessages) {
+          const categoryCount = prevMessages.filter(
+            m => (m.metadata as any)?.category === messageCategory
+          ).length;
+          // categoryCount >= 1 means there's already at least one prior message with this category
+          // (the current message hasn't been counted yet since it was stored above)
+          isRecurringTopic = categoryCount >= 1;
+          if (isRecurringTopic) {
+            console.log(`Recurring topic detected: "${messageCategory}" appeared ${categoryCount + 1} times — will recommend experts`);
+          }
+        }
+      }
+
       // ── Expert/Resource matching: semantic + keyword ──
       matchedExperts = await findMatchingExpertsRAGFirst(supabase, message, userTenantId, expertBoostIds);
       matchedProducts = await findMatchingProductsRAG(supabase, message, userTopics);
 
       // Generate AI response — now includes user's onboarding interests and products
-      aiResponse = await generateEnhancedAIResponse(
+      const aiResult = await generateEnhancedAIResponse(
         message, context, matchedExperts, matchedProducts, intent, complianceContext,
         { topics: userTopics, expectingStatus: userExpectingStatus, parentingStyles: userParentingStyles, personalContext: userPersonalContext },
-        userLanguage
+        userLanguage,
+        isRecurringTopic
       );
+
+      // Support returning { response, error } for debugging
+      if (typeof aiResult === 'object' && aiResult !== null && 'response' in aiResult) {
+        aiResponse = aiResult.response;
+        debugError = aiResult.error || null;
+      } else {
+        aiResponse = aiResult;
+      }
 
       // Handle language sync marker if user spoke in a different language
       const detectedLanguage = detectLanguage(messageLower);
@@ -247,7 +281,8 @@ serve(async (req) => {
         metadata: {
           child_id: childId,
           expert_suggestions: matchedExperts.length > 0 ? matchedExperts : undefined,
-          original_user_query: message
+          original_user_query: message,
+          ...(debugError ? { ai_error: debugError } : {})
         }
       });
 
@@ -275,7 +310,8 @@ serve(async (req) => {
       JSON.stringify({
         response: aiResponse,
         sessionId: currentSessionId,
-        expertSuggestions: matchedExperts
+        expertSuggestions: matchedExperts,
+        ...(debugError ? { debug_error: debugError } : {})
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -286,10 +322,15 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in chat_ai function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({
+        response: "I can still help with general parenting guidance right now. If this concern may be urgent or medical, please contact your provider.",
+        sessionId: null,
+        expertSuggestions: [],
+        debug_error: `Outer catch: ${(error as any)?.message || String(error)}`
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status: 200
       }
     );
   }
@@ -777,7 +818,7 @@ async function getEnhancedChatContext(supabase, userId, childId, sessionId) {
       }
     });
 
-    sessionHistory = combinedSessions.slice(0, 10);
+    sessionHistory = combinedSessions.slice(0, 5);  // Reduced from 10 to 5 to cut token bloat
   }
 
   return {
@@ -796,11 +837,13 @@ async function getEnhancedChatContext(supabase, userId, childId, sessionId) {
 async function generateEnhancedAIResponse(
   message, context, matchedExperts, matchedProducts = [], intent = 'general', complianceContext = '',
   userInterests: { topics: string[]; expectingStatus: string; parentingStyles: string[]; personalContext: string } = { topics: [], expectingStatus: '', parentingStyles: [], personalContext: '' },
-  userLanguage: string = 'en'
+  userLanguage: string = 'en',
+  isRecurringTopic: boolean = false
 ) {
-  const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+  const openaiApiKey = (Deno.env.get('OPENAI_API_KEY') || '').trim();
   if (!openaiApiKey) {
-    return "I'm sorry, I'm having trouble connecting to my AI service right now. Please try again later.";
+    console.error('CRITICAL: OPENAI_API_KEY is not set in Supabase Edge Function secrets. AI chat will use fallback responses only.');
+    return { response: buildDeterministicFallbackResponse(message, matchedExperts, matchedProducts, intent, userLanguage), error: 'OPENAI_API_KEY is missing from Edge Function secrets' };
   }
 
   let systemPrompt = `Do NOT act as a general-purpose AI assistant. Do NOT answer off-topic questions even if you know the answer. Stay in your lane.
@@ -881,7 +924,16 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
       systemPrompt += `\n\nHOSPITAL EXPERT PRIORITY: Prioritize the [🏥 Hospital Partner] experts as they are directly connected to the user's healthcare network.`;
     }
 
-    systemPrompt += `\n\nEXPERT RECOMMENDATION RULE: Only mention an expert if their specialty is directly and specifically relevant to the user's current message. If the query can be answered with general advice, do NOT suggest experts. Never suggest all experts — only the most relevant 1-2.`;
+    if (isRecurringTopic) {
+      // RECURRING TOPIC: The user has asked about this topic before — proactively recommend experts
+      systemPrompt += `\n\nRECURRING TOPIC DETECTED: The user has asked about this topic multiple times in this conversation. This signals deeper interest or an ongoing concern. You MUST:
+1. Provide your helpful answer as usual.
+2. At the END of your response, add a section like: "Since you've been asking about [topic], I'd recommend connecting with one of our experts who specializes in this area:"
+3. Recommend the most relevant 1-2 experts from the list above by name, specialty, and a brief reason why they'd be a great fit.
+4. Frame it warmly and naturally — not as a sales pitch, but as a helpful next step.`;
+    } else {
+      systemPrompt += `\n\nEXPERT RECOMMENDATION RULE: Only mention an expert if their specialty is directly and specifically relevant to the user's current message. If the query can be answered with general advice, do NOT suggest experts. Never suggest all experts — only the most relevant 1-2.`;
+    }
   } else {
     systemPrompt += `\n\nNo experts closely matched this query — do NOT fabricate or suggest any expert names. Answer the question with general parenting guidance.`;
   }
@@ -942,39 +994,99 @@ GUIDELINES:
 - If the user tries to use you as a general AI chatbot, gently redirect them back to parenting topics
 - You are NOT a general-purpose assistant — you are a specialized parenting companion`;
 
+  // Don't duplicate conversation history: it's already in the system prompt via context.conversationHistory
+  // Only add the current user message as a separate message object
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...context.recentMessages.slice(-4).map(m => ({
-      role: m.role === 'user' ? 'user' : 'assistant',
-      content: m.content
-    })),
     { role: 'user', content: message }
   ];
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages,
-        max_tokens: 1024,
-        temperature: 0.2
-      })
-    });
+    const modelCandidates = ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo'];
+    let lastError: string | null = null;
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+    console.log(`OpenAI API key present: ${!!openaiApiKey}, length: ${openaiApiKey.length}, starts with: ${openaiApiKey.substring(0, 8)}...`);
+    console.log(`System prompt length: ${systemPrompt.length} chars, ~${Math.ceil(systemPrompt.length / 4)} tokens`);
+
+    for (const model of modelCandidates) {
+      console.log(`Attempting OpenAI model: ${model}`);
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            max_tokens: 1024,
+            temperature: 0.2
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          lastError = `${model}: HTTP ${response.status} - ${errorText.substring(0, 300)}`;
+          console.error('OpenAI API error:', lastError);
+          continue;
+        }
+
+        const data = await response.json();
+        const content = data?.choices?.[0]?.message?.content;
+        if (content && typeof content === 'string') {
+          console.log(`OpenAI response received from model: ${model}, tokens used: ${data?.usage?.total_tokens || 'unknown'}`);
+          return content;
+        }
+        lastError = `${model}: empty response content - ${JSON.stringify(data).substring(0, 200)}`;
+      } catch (fetchError) {
+        lastError = `${model}: fetch exception - ${(fetchError as any)?.message || String(fetchError)}`;
+        console.error('OpenAI fetch error:', lastError);
+        continue;
+      }
     }
 
-    const data = await response.json();
-    return data.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response right now.";
-
+    console.error('All OpenAI model attempts failed:', lastError);
+    console.error('FALLING BACK to deterministic safe response.');
+    return { response: buildDeterministicFallbackResponse(message, matchedExperts, matchedProducts, intent, userLanguage), error: `All models failed: ${lastError}` };
   } catch (error) {
     console.error('OpenAI API error:', error);
-    return "I'm experiencing some technical difficulties. Please try again in a moment.";
+    return { response: buildDeterministicFallbackResponse(message, matchedExperts, matchedProducts, intent, userLanguage), error: `Exception: ${(error as any)?.message || String(error)}` };
   }
+}
+
+function buildDeterministicFallbackResponse(
+  message: string,
+  matchedExperts: any[],
+  matchedProducts: any[],
+  intent: string,
+  userLanguage: string
+): string {
+  const isSpanish = userLanguage === 'es';
+  const isVietnamese = userLanguage === 'vi';
+
+  if (intent === 'escalation') {
+    if (isSpanish) {
+      return 'Por favor, consulta a tu proveedor de salud de inmediato o llama a emergencias si crees que es urgente. Tu seguridad y la de tu bebé es la prioridad.';
+    }
+    if (isVietnamese) {
+      return 'Vui lòng liên hệ bác sĩ của bạn ngay hoặc gọi cấp cứu nếu đây là tình huống khẩn cấp. Sự an toàn của bạn và em bé là ưu tiên hàng đầu.';
+    }
+    return 'Please see your provider immediately or call emergency services if this is urgent. Your safety and your child\'s safety is the top priority.';
+  }
+
+  const expertLine = matchedExperts?.length
+    ? `\n- ${isSpanish ? 'Expertos recomendados' : isVietnamese ? 'Chuyen gia de xuat' : 'Suggested experts'}: ${matchedExperts.slice(0, 2).map((e) => `${e.name} (${e.specialty})`).join(', ')}`
+    : '';
+  const productLine = matchedProducts?.length
+    ? `\n- ${isSpanish ? 'Recursos utiles' : isVietnamese ? 'Tai nguyen huu ich' : 'Helpful resources'}: ${matchedProducts.slice(0, 2).map((p) => p.title).join(', ')}`
+    : '';
+
+  if (isSpanish) {
+    return `Gracias por tu mensaje. En este momento estoy en modo de respuesta segura, así que compartiré una orientación general breve: prioriza hidratación, descanso, observación de señales de alarma y seguimiento con tu pediatra/proveedor si los síntomas persisten o empeoran.${expertLine}${productLine}\n\nSi quieres, puedo ayudarte con pasos prácticos según la edad de tu bebé y la situación exacta.`;
+  }
+  if (isVietnamese) {
+    return `Cam on ban da chia se. Hien tai toi dang o che do phan hoi an toan, vi vay toi se dua huong dan tong quat ngan gon: uu tien bo sung nuoc, nghi ngoi, theo doi dau hieu bat thuong va lien he bac si nhi/kham benh neu trieu chung keo dai hoac nang hon.${expertLine}${productLine}\n\nNeu ban muon, toi co the dua cac buoc cu the hon theo do tuoi cua be va tinh huong hien tai.`;
+  }
+  return `Thanks for sharing this. I’m currently in safe-response mode, so I’ll provide concise general guidance: prioritize hydration, rest, monitoring for warning signs, and follow up with your pediatric/provider if symptoms persist or worsen.${expertLine}${productLine}\n\nIf you want, I can walk you through practical next steps based on your child’s age and exact symptoms/situation.`;
 }

@@ -48,24 +48,24 @@ CREATE POLICY "Super admin can view all profiles"
   ON public.profiles
   FOR SELECT
   TO authenticated
-  USING ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app', 'sharab.khan101010@gmail.com'));
+  USING ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app'));
 
 CREATE POLICY "Super admin can insert profiles"
   ON public.profiles
   FOR INSERT
   TO authenticated
-  WITH CHECK ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app', 'sharab.khan101010@gmail.com'));
+  WITH CHECK ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app'));
 
 CREATE POLICY "Super admin can update all profiles"
   ON public.profiles
   FOR UPDATE
   TO authenticated
-  USING ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app', 'sharab.khan101010@gmail.com'))
-  WITH CHECK ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app', 'sharab.khan101010@gmail.com'));
+  USING ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app'))
+  WITH CHECK ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app'));
 
 CREATE POLICY "Super admin can delete profiles"
   ON public.profiles
   FOR DELETE
   TO authenticated
-  USING ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app', 'sharab.khan101010@gmail.com'));
+  USING ((auth.jwt() ->> 'email') IN ('engineering@whisperoo.app'));
 
