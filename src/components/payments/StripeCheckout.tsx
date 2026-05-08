@@ -70,7 +70,8 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
             onSuccess(result.purchaseId);
             return;
           }
-          if (!result.clientSecret || !result.clientSecret.includes('_secret_')) {
+          const normalizedClientSecret = (result.clientSecret || "").trim();
+          if (!normalizedClientSecret) {
             setError("Payment setup failed: invalid client secret returned from server.");
             setIsInitializing(false);
             return;
@@ -87,7 +88,7 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
             setIsInitializing(false);
             return;
           }
-          setClientSecret(result.clientSecret);
+          setClientSecret(normalizedClientSecret);
           setPurchaseId(result.purchaseId);
         } else {
           setError("Failed to initialize payment. The payment service may be temporarily unavailable. Please try again.");

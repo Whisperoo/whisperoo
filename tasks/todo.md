@@ -7,6 +7,12 @@
 - [x] Harden Stripe payment intent response parsing to accept both camelCase and snake_case payload keys.
 - [x] Run linter diagnostics for edited files and verify no new issues were introduced.
 
+## Follow-up hardening
+
+- [x] Accept nested function payload shape (`{ data: { ... } }`) in payment response normalization.
+- [x] Relax client-secret pre-validation to only require non-empty secret and let Stripe SDK validate exact format.
+- [x] Re-run linter diagnostics on updated payment files.
+
 ## Review
 
 - Updated `ExpertDetails` to infer booking model from price when legacy consultation products are missing `booking_model` (prevents query-based experts from opening payment modal).

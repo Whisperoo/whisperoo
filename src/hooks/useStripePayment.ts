@@ -29,6 +29,7 @@ interface RawCreatePaymentIntentResponse {
     currency?: string | null;
     stripeMode?: 'test' | 'live';
     stripe_mode?: 'test' | 'live';
+    data?: RawCreatePaymentIntentResponse | null;
 }
 
 interface PaymentStatus {
@@ -43,20 +44,21 @@ export const useStripePayment = () => {
     const [error, setError] = useState<string | null>(null);
 
     const normalizePaymentIntentResponse = (raw: RawCreatePaymentIntentResponse): CreatePaymentIntentResponse => {
+        const payload = raw.data && typeof raw.data === 'object' ? raw.data : raw;
         const amount =
-            typeof raw.amount === 'number'
-                ? raw.amount
-                : typeof raw.amount === 'string'
-                    ? Number(raw.amount)
+            typeof payload.amount === 'number'
+                ? payload.amount
+                : typeof payload.amount === 'string'
+                    ? Number(payload.amount)
                     : 0;
 
         return {
-            clientSecret: (raw.clientSecret ?? raw.client_secret ?? '') as string,
-            paymentIntentId: (raw.paymentIntentId ?? raw.payment_intent_id ?? '') as string,
-            purchaseId: (raw.purchaseId ?? raw.purchase_id ?? '') as string,
+            clientSecret: (payload.clientSecret ?? payload.client_secret ?? '') as string,
+            paymentIntentId: (payload.paymentIntentId ?? payload.payment_intent_id ?? '') as string,
+            purchaseId: (payload.purchaseId ?? payload.purchase_id ?? '') as string,
             amount: Number.isFinite(amount) ? amount : 0,
-            currency: raw.currency ?? 'usd',
-            stripeMode: raw.stripeMode ?? raw.stripe_mode,
+            currency: payload.currency ?? 'usd',
+            stripeMode: payload.stripeMode ?? payload.stripe_mode,
         };
     };
 
