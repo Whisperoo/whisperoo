@@ -39,7 +39,6 @@ interface ExpertFormData {
   expert_experience_years: number;
   expert_consultation_rate: number;
   expert_availability_status: string;
-  expert_rating: number;
   tenant_id: string | null;
 }
 
@@ -54,7 +53,6 @@ const EMPTY_FORM: ExpertFormData = {
   expert_experience_years: 0,
   expert_consultation_rate: 0,
   expert_availability_status: 'available',
-  expert_rating: 5.0,
   tenant_id: null,
 };
 
@@ -101,7 +99,6 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           expert_experience_years: data.expert_experience_years || 0,
           expert_consultation_rate: data.expert_consultation_rate || 0,
           expert_availability_status: data.expert_availability_status || 'available',
-          expert_rating: data.expert_rating || 5.0,
           tenant_id: data.tenant_id || null,
         });
       }
@@ -146,7 +143,6 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           p_expert_experience_years: form.expert_experience_years,
           p_expert_consultation_rate: form.expert_consultation_rate,
           p_expert_availability_status: form.expert_availability_status,
-          p_expert_rating: form.expert_rating,
           p_tenant_id: form.tenant_id,
           p_password: form.password.trim() || null,
         });
@@ -163,7 +159,6 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
             expert_experience_years: form.expert_experience_years,
             expert_consultation_rate: form.expert_consultation_rate,
             expert_availability_status: form.expert_availability_status,
-            expert_rating: form.expert_rating,
             tenant_id: form.tenant_id,
           })
           .eq('id', expertId);
@@ -397,7 +392,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
             </div>
 
             {/* Numbers Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-medium text-gray-600 mb-1 block">Years of Experience</label>
                 <input
@@ -416,18 +411,6 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
                   step={0.01}
                   value={form.expert_consultation_rate}
                   onChange={(e) => setForm({ ...form, expert_consultation_rate: parseFloat(e.target.value) || 0 })}
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Rating (0–5)</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={5}
-                  step={0.1}
-                  value={form.expert_rating}
-                  onChange={(e) => setForm({ ...form, expert_rating: parseFloat(e.target.value) || 0 })}
                   className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

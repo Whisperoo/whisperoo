@@ -312,11 +312,11 @@ export const ExpertDashboard: React.FC = () => {
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-orange-600" />
               <span className="text-sm font-medium text-muted-foreground">
-                Avg Rating
+                Total Clients
               </span>
             </div>
             <div className="text-2xl font-bold">
-              {profile.expert_rating ? profile.expert_rating.toFixed(1) : "N/A"}
+              {analyticsLoading ? "..." : analytics?.totalSales || 0}
             </div>
           </CardContent>
         </Card>
@@ -819,12 +819,10 @@ export const ExpertDashboard: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">
-                      Average Product Rating
+                      Active Products
                     </span>
                     <span className="font-medium">
-                      {profile.expert_rating
-                        ? `★ ${profile.expert_rating.toFixed(1)}`
-                        : "N/A"}
+                      {analyticsLoading ? "..." : analytics?.productsCount || 0}
                     </span>
                   </div>
                   <div className="flex justify-between">

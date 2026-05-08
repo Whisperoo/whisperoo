@@ -17,6 +17,7 @@ interface ConsultationBooking {
   appointment_name: string;
   booking_type: 'direct' | 'inquiry';
   amount_paid: number | null;
+  payment_status: 'unpaid' | 'paid' | 'free' | 'refunded';
   resource_type: 'whisperoo' | 'hospital';
   status: 'pending' | 'completed' | 'cancelled';
   booked_at: string;
@@ -191,15 +192,34 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
     </span>
   );
 
-  const BookingTypeBadge = ({ type }: { type: string }) => (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-      type === 'inquiry'
-        ? 'bg-purple-50 text-purple-700'
-        : 'bg-green-50 text-green-700'
-    }`}>
-      {type === 'inquiry' ? '📩 Inquiry' : '💳 Paid'}
-    </span>
-  );
+  const PaymentStatusBadge = ({ status, amount }: { status: string; amount: number | null }) => {
+    switch (status) {
+      case 'paid':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
+            💳 Paid {amount ? `$${Number(amount).toFixed(2)}` : ''}
+          </span>
+        );
+      case 'free':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            🆓 Free
+          </span>
+        );
+      case 'refunded':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-200">
+            ↩️ Refunded
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600 border border-red-200">
+            ⏳ Unpaid
+          </span>
+        );
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -324,11 +344,11 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/50">
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Client</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Email</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Date Booked</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Expert</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Appointment</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Type</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Amount</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Payment</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Resource</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600">Actions</th>
@@ -342,18 +362,20 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                       booking.status === 'cancelled' ? 'opacity-50' : ''
                     }`}
                   >
-                    {/* Client */}
+                    {/* Client Name */}
                     <td className="px-4 py-3">
-                      <div>
-                        <p className="font-medium text-gray-900">{booking.user_name}</p>
-                        <a
-                          href={`mailto:${booking.user_email}`}
-                          className="text-xs text-blue-500 hover:underline flex items-center gap-1"
-                        >
-                          <Mail className="w-3 h-3" />
-                          {booking.user_email}
-                        </a>
-                      </div>
+                      <p className="font-medium text-gray-900">{booking.user_name}</p>
+                    </td>
+
+                    {/* Email */}
+                    <td className="px-4 py-3">
+                      <a
+                        href={`mailto:${booking.user_email}`}
+                        className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                      >
+                        <Mail className="w-3 h-3" />
+                        {booking.user_email || '—'}
+                      </a>
                     </td>
 
                     {/* Date */}
@@ -371,14 +393,9 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                       <span className="line-clamp-2">{booking.appointment_name}</span>
                     </td>
 
-                    {/* Booking Type */}
+                    {/* Payment Status */}
                     <td className="px-4 py-3">
-                      <BookingTypeBadge type={booking.booking_type} />
-                    </td>
-
-                    {/* Amount */}
-                    <td className="px-4 py-3">
-                      {formatAmount(booking.amount_paid, booking.booking_type)}
+                      <PaymentStatusBadge status={booking.payment_status} amount={booking.amount_paid} />
                     </td>
 
                     {/* Resource Type */}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Star, Loader2, Users, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Users, Plus, Pencil, Trash2, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { TenantConfig } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +15,6 @@ interface Expert {
   first_name: string;
   expert_specialties: string[] | null;
   profile_image_url: string | null;
-  expert_rating: number | null;
   expert_experience_years: number | null;
   expert_availability_status: string | null;
 }
@@ -35,10 +34,10 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
     try {
       const { data: expertData, error: expertError } = await supabase
         .from('profiles')
-        .select('id, first_name, expert_specialties, profile_image_url, expert_rating, expert_experience_years, expert_availability_status')
+        .select('id, first_name, expert_specialties, profile_image_url, expert_experience_years, expert_availability_status')
         .eq('account_type', 'expert')
         .eq('expert_verified', true)
-        .order('expert_rating', { ascending: false });
+        .order('first_name', { ascending: true });
       if (expertError) throw expertError;
       setExperts(expertData ?? []);
 
@@ -197,13 +196,6 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
                     </div>
                   </div>
 
-                  {/* Rating */}
-                  {expert.expert_rating && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500 flex-shrink-0">
-                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                      {expert.expert_rating.toFixed(1)}
-                    </div>
-                  )}
 
                   {/* Actions */}
                   <div className="flex items-center gap-1.5 flex-shrink-0">

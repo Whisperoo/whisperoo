@@ -101,12 +101,16 @@ SELECT
   p.amount,
   p.id,
   CASE WHEN pr.is_hospital_resource THEN 'hospital' ELSE 'whisperoo' END,
-  'pending',
+  CASE
+    WHEN p.consultation_completed = true THEN 'completed'
+    ELSE 'pending'
+  END,
   COALESCE(p.purchased_at, pr.created_at, NOW())
 FROM purchases p
 JOIN products pr ON p.product_id = pr.id
-JOIN profiles prof ON p.user_id = prof.id
-JOIN profiles exp ON p.expert_id = exp.id
+LEFT JOIN profiles prof ON p.user_id = prof.id
+LEFT JOIN profiles exp ON p.expert_id = exp.id
 WHERE pr.product_type = 'consultation'
+  AND p.expert_id IS NOT NULL
 ON CONFLICT DO NOTHING;
 

@@ -19,7 +19,6 @@ interface ExpertProfile {
   expert_experience_years: number;
   profile_image_url: string;
   expert_consultation_rate: number;
-  expert_rating: number;
   expert_total_reviews: number;
   expert_availability_status: string;
   expert_verified: boolean;
@@ -47,7 +46,7 @@ const ExpertProfiles: React.FC = () => {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified, expert_profile_visibility, expert_accepts_new_clients, tenant_id",
+         "id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, profile_image_url, expert_consultation_rate, expert_total_reviews, expert_availability_status, expert_verified, expert_profile_visibility, expert_accepts_new_clients, tenant_id",
         )
         .eq("account_type", "expert")
         .eq("expert_verified", true)
@@ -55,7 +54,7 @@ const ExpertProfiles: React.FC = () => {
         // Treat NULL as enabled for legacy experts created before these flags existed
         .not("expert_profile_visibility", "eq", false)
         .not("expert_accepts_new_clients", "eq", false)
-        .order("expert_rating", { ascending: false });
+        .order("first_name", { ascending: true });
 
       if (error) throw error;
       setExperts(data || []);
@@ -103,7 +102,7 @@ const ExpertProfiles: React.FC = () => {
         const bIsBoosted = expertBoostIds.includes(b.id) || (tenant && b.tenant_id === tenant.id);
         if (aIsBoosted && !bIsBoosted) return -1;
         if (!aIsBoosted && bIsBoosted) return 1;
-        return (b.expert_rating || 0) - (a.expert_rating || 0);
+        return 0;
       })
     : filteredExperts;
 

@@ -25,7 +25,6 @@ interface ExpertProfile {
   expert_credentials: string[];
   profile_image_url: string;
   expert_consultation_rate: number;
-  expert_rating: number;
   expert_total_reviews: number;
   expert_availability_status: string;
   expert_verified: boolean;
@@ -58,7 +57,7 @@ const ExpertDetails: React.FC = () => {
       // Note: expertId is profiles.id where account_type = 'expert'
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_rating, expert_total_reviews, expert_availability_status, expert_verified, tenant_id')
+        .select('id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_total_reviews, expert_availability_status, expert_verified, tenant_id')
         .eq('id', expertId)
         .eq('account_type', 'expert')
         .eq('expert_verified', true)
