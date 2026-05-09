@@ -178,6 +178,20 @@ export const ProductPurchasePage: React.FC = () => {
                   onSuccess={handlePaymentSuccess}
                   onError={handlePaymentError}
                   onCancel={() => navigate(-1)}
+                  onDiscountChange={(discountedAmt, code) => {
+                    if (discountedAmt !== null && code) {
+                      // Sync sidebar Order Summary with the actual server-computed discount
+                      const savings = basePrice - discountedAmt;
+                      setDiscountCode(code);
+                      setDiscountInfo({ type: 'fixed', amount: savings });
+                      setDiscountStatus('valid');
+                    } else {
+                      // Promo removed
+                      setDiscountInfo(null);
+                      setDiscountCode('');
+                      setDiscountStatus('idle');
+                    }
+                  }}
                 />
               </CardContent>
             </Card>

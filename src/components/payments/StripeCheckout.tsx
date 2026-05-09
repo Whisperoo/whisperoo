@@ -21,6 +21,7 @@ interface StripeCheckoutProps {
   onSuccess: (purchaseId: string) => void;
   onError: (error: string) => void;
   onCancel: () => void;
+  onDiscountChange?: (discountedAmount: number | null, code: string | null) => void;
 }
 
 export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
@@ -32,6 +33,7 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   onSuccess,
   onError,
   onCancel,
+  onDiscountChange,
 }) => {
   const { createPaymentIntent, waitForPaymentConfirmation, isLoading } =
     useStripePayment();
@@ -44,6 +46,7 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   const [appliedDiscountCode, setAppliedDiscountCode] = useState<string | undefined>(discountCode);
   const [promoMessage, setPromoMessage] = useState<string | null>(null);
   const [validatingPromo, setValidatingPromo] = useState(false);
+  const [discountedAmount, setDiscountedAmount] = useState<number | null>(null);
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
 
   useEffect(() => {
@@ -90,6 +93,10 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
           }
           setClientSecret(normalizedClientSecret);
           setPurchaseId(result.purchaseId);
+          setDiscountedAmount(result.amount);
+          if (appliedDiscountCode && result.amount < amount) {
+            onDiscountChange?.(result.amount, appliedDiscountCode);
+          }
         } else {
           setError("Failed to initialize payment. The payment service may be temporarily unavailable. Please try again.");
         }
@@ -135,6 +142,8 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
     setPromoMessage("Promo removed");
     setClientSecret(null);
     setPurchaseId(null);
+    setDiscountedAmount(null);
+    onDiscountChange?.(null, null);
   };
 
   const handlePaymentSuccess = async () => {
@@ -259,11 +268,28 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
             {promoMessage || `Applied: ${appliedDiscountCode}`}
           </p>
         )}
+        {/* Savings Breakdown */}
+        {appliedDiscountCode && discountedAmount !== null && discountedAmount < amount && (
+          <div className="mt-3 pt-3 border-t border-gray-200 space-y-1.5">
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>Subtotal</span>
+              <span className="line-through">${amount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-emerald-600 font-medium">
+              <span>Discount ({appliedDiscountCode})</span>
+              <span>-${(amount - discountedAmount).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-base font-bold text-gray-900 pt-1 border-t border-dashed border-gray-200">
+              <span>Total</span>
+              <span>${discountedAmount.toFixed(2)}</span>
+            </div>
+          </div>
+        )}
       </div>
       {clientSecret ? (
         <Elements stripe={stripePromise} options={elementsOptions}>
           <StripeCheckoutForm
-            amount={amount}
+            amount={discountedAmount ?? amount}
             productTitle={productTitle}
             onSuccess={handlePaymentSuccess}
             onError={handlePaymentError}

@@ -46,6 +46,7 @@ const ExpertDetails: React.FC = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
   const [showInquiryConfirmation, setShowInquiryConfirmation] = useState(false);
+  const [existingBookingStatus, setExistingBookingStatus] = useState<string | null>(null);
 
   const getBookingModel = (product: ProductWithDetails | null): 'direct' | 'inquiry' | 'hospital' => {
     if (!product) return 'direct';
@@ -68,8 +69,9 @@ const ExpertDetails: React.FC = () => {
   useEffect(() => {
     if (id) {
       fetchExpertDetails(id);
+      if (user) checkExistingBooking(id);
     }
-  }, [id]);
+  }, [id, user]);
 
   const fetchExpertDetails = async (expertId: string) => {
     try {
@@ -93,6 +95,26 @@ const ExpertDetails: React.FC = () => {
       navigate('/experts');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkExistingBooking = async (expertId: string) => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from('consultation_bookings')
+        .select('status')
+        .eq('user_id', user.id)
+        .eq('expert_id', expertId)
+        .in('status', ['pending', 'confirmed'])
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        setExistingBookingStatus(data.status);
+      }
+    } catch (err) {
+      console.error('Error checking existing booking:', err);
     }
   };
 
@@ -258,6 +280,7 @@ const ExpertDetails: React.FC = () => {
 
           if (bookingError) throw bookingError;
 
+          setExistingBookingStatus('pending');
           setShowInquiryConfirmation(true);
         } catch (err: any) {
           console.error('Inquiry booking error:', err);
@@ -433,17 +456,25 @@ const ExpertDetails: React.FC = () => {
                           </p>
                         )}
                         <Button
-                          className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-md font-bold h-11"
+                          className={`w-full shadow-md font-bold h-11 ${
+                            existingBookingStatus
+                              ? 'bg-gray-400 cursor-not-allowed'
+                              : 'bg-indigo-600 hover:bg-indigo-700'
+                          }`}
                           onClick={handleBookConsultation}
-                          disabled={inquirySubmitting}
+                          disabled={inquirySubmitting || !!existingBookingStatus}
                         >
                           {inquirySubmitting
                             ? 'Submitting...'
-                            : getBookingModel(consultationProduct) === 'inquiry'
-                              ? t('experts.requestAppointment', 'Request Appointment')
-                              : getBookingModel(consultationProduct) === 'hospital'
-                                ? t('experts.howToSchedule', 'How to Schedule')
-                                : t('experts.bookConsultation')}
+                            : existingBookingStatus === 'confirmed'
+                              ? '✓ Appointment Confirmed'
+                              : existingBookingStatus === 'pending'
+                                ? '⏳ Request Pending'
+                                : getBookingModel(consultationProduct) === 'inquiry'
+                                  ? t('experts.requestAppointment', 'Request Appointment')
+                                  : getBookingModel(consultationProduct) === 'hospital'
+                                    ? t('experts.howToSchedule', 'How to Schedule')
+                                    : t('experts.bookConsultation')}
                         </Button>
                       </div>
                     </div>

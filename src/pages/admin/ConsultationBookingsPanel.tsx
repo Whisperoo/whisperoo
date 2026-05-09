@@ -19,7 +19,7 @@ interface ConsultationBooking {
   amount_paid: number | null;
   payment_status: 'unpaid' | 'paid' | 'free' | 'refunded';
   resource_type: 'whisperoo' | 'hospital';
-  status: 'pending' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   booked_at: string;
   completed_at: string | null;
   cancelled_at: string | null;
@@ -31,7 +31,7 @@ interface ConsultationBookingsPanelProps {
   tenantId: string | null;
 }
 
-type StatusFilter = 'all' | 'pending' | 'completed' | 'cancelled';
+type StatusFilter = 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled';
 type ResourceFilter = 'all' | 'whisperoo' | 'hospital';
 
 const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ tenantId }) => {
@@ -89,10 +89,10 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
     });
   }, [bookings, statusFilter, resourceFilter, expertFilter, search]);
 
-  // Stats
   const stats = useMemo(() => ({
     total: bookings.length,
     pending: bookings.filter(b => b.status === 'pending').length,
+    confirmed: bookings.filter(b => b.status === 'confirmed').length,
     completed: bookings.filter(b => b.status === 'completed').length,
     cancelled: bookings.filter(b => b.status === 'cancelled').length,
   }), [bookings]);
@@ -115,6 +115,28 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
           : b
       ));
       toast({ title: 'Marked Complete', description: 'Booking marked as Done.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const confirmBooking = async (bookingId: string) => {
+    setActionLoading(bookingId);
+    try {
+      const { error } = await supabase
+        .from('consultation_bookings')
+        .update({ status: 'confirmed' })
+        .eq('id', bookingId);
+      if (error) throw error;
+
+      setBookings(prev => prev.map(b =>
+        b.id === bookingId
+          ? { ...b, status: 'confirmed' as const }
+          : b
+      ));
+      toast({ title: 'Confirmed', description: 'Appointment has been confirmed.' });
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -189,6 +211,12 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
             <Clock className="w-3 h-3" /> Pending
           </span>
         );
+      case 'confirmed':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            <CheckCircle2 className="w-3 h-3" /> Confirmed
+          </span>
+        );
       case 'completed':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -251,7 +279,8 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
       <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
         {([
           { id: 'all' as StatusFilter, label: 'All Records', count: stats.total },
-          { id: 'pending' as StatusFilter, label: 'Active', count: stats.pending },
+          { id: 'pending' as StatusFilter, label: 'Pending', count: stats.pending },
+          { id: 'confirmed' as StatusFilter, label: 'Confirmed', count: stats.confirmed },
           { id: 'completed' as StatusFilter, label: 'Completed', count: stats.completed },
           { id: 'cancelled' as StatusFilter, label: 'Cancelled', count: stats.cancelled },
         ]).map(tab => (
@@ -277,10 +306,11 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         {[
           { label: 'Total Bookings', value: stats.total, color: 'text-gray-900', bg: 'bg-white' },
           { label: 'Pending', value: stats.pending, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: 'Confirmed', value: stats.confirmed, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Completed', value: stats.completed, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { label: 'Cancelled', value: stats.cancelled, color: 'text-gray-500', bg: 'bg-gray-50' },
         ].map(s => (
@@ -469,6 +499,29 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                     {/* Actions */}
                     <td className="px-3 py-3">
                       {booking.status === 'pending' ? (
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => confirmBooking(booking.id)}
+                            disabled={actionLoading === booking.id}
+                            className="flex items-center gap-1 px-2 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {actionLoading === booking.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="w-3 h-3" />
+                            )}
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => cancelBooking(booking.id)}
+                            disabled={actionLoading === booking.id}
+                            className="flex items-center gap-1 px-2 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            <XCircle className="w-3 h-3" />
+                            Cancel
+                          </button>
+                        </div>
+                      ) : booking.status === 'confirmed' ? (
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => markComplete(booking.id)}
