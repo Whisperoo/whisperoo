@@ -185,7 +185,8 @@ Deno.serve(async (req) => {
         .single()
 
       if (purchaseError) {
-        return new Response(JSON.stringify({ error: 'Failed to create free purchase' }), { status: 500, headers: corsHeaders })
+        console.error('Error creating free purchase:', purchaseError)
+        return new Response(JSON.stringify({ error: `Failed to create free purchase: ${purchaseError.message}` }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
       
       // if (appliedDiscountCodeId) {

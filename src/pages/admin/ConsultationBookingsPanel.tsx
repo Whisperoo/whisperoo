@@ -367,16 +367,13 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/50">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Client</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Email</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Date Booked</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Expert</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Appointment</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Payment</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Resource</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Admin Notes</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Actions</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Client</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Date</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Expert</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Appointment</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Details</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600">Notes</th>
+                  <th className="text-center px-3 py-3 font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -387,63 +384,51 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                       booking.status === 'cancelled' ? 'opacity-50' : ''
                     }`}
                   >
-                    {/* Client Name */}
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{booking.user_name}</p>
-                    </td>
-
-                    {/* Email */}
-                    <td className="px-4 py-3">
+                    {/* Client + Email (merged) */}
+                    <td className="px-3 py-3">
+                      <p className="font-medium text-gray-900 text-sm">{booking.user_name}</p>
                       <a
                         href={`mailto:${booking.user_email}`}
-                        className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                        className="text-[11px] text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
                       >
-                        <Mail className="w-3 h-3" />
-                        {booking.user_email || '—'}
+                        <Mail className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate max-w-[140px]">{booking.user_email || '—'}</span>
                       </a>
                     </td>
 
                     {/* Date */}
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                    <td className="px-3 py-3 text-gray-600 text-xs whitespace-nowrap">
                       {formatDate(booking.booked_at)}
                     </td>
 
                     {/* Expert */}
-                    <td className="px-4 py-3 font-medium text-gray-800">
+                    <td className="px-3 py-3 font-medium text-gray-800 text-sm">
                       {booking.expert_name}
                     </td>
 
-                    {/* Appointment Name */}
-                    <td className="px-4 py-3 text-gray-700 max-w-[200px]">
-                      <div className="flex flex-col">
-                        <span className="line-clamp-2">{booking.appointment_name}</span>
-                        {booking.discount_code && (
-                          <span className="text-[10px] font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md self-start mt-1">
-                            🎟️ {booking.discount_code}
-                          </span>
-                        )}
+                    {/* Appointment Name + Discount Code */}
+                    <td className="px-3 py-3 text-gray-700 max-w-[160px]">
+                      <span className="line-clamp-1 text-sm">{booking.appointment_name}</span>
+                      {booking.discount_code && (
+                        <span className="text-[10px] font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md inline-block mt-1">
+                          🎟️ {booking.discount_code}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Payment + Resource + Status (merged) */}
+                    <td className="px-3 py-3">
+                      <div className="flex flex-col gap-1">
+                        <StatusBadge status={booking.status} />
+                        <PaymentStatusBadge status={booking.payment_status} amount={booking.amount_paid} />
+                        <ResourceBadge type={booking.resource_type} />
                       </div>
                     </td>
 
-                    {/* Payment Status */}
-                    <td className="px-4 py-3">
-                      <PaymentStatusBadge status={booking.payment_status} amount={booking.amount_paid} />
-                    </td>
-
-                    {/* Resource Type */}
-                    <td className="px-4 py-3">
-                      <ResourceBadge type={booking.resource_type} />
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-4 py-3">
-                      <StatusBadge status={booking.status} />
-                    </td>
-
                     {/* Admin Notes */}
-                    <td className="px-4 py-3 min-w-[200px]">
+                    <td className="px-3 py-3 max-w-[180px]">
                       {editingNotes?.id === booking.id ? (
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           <textarea
                             value={editingNotes.notes}
                             onChange={(e) => setEditingNotes({ ...editingNotes, notes: e.target.value })}
@@ -482,13 +467,13 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                     </td>
 
                     {/* Actions */}
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3">
                       {booking.status === 'pending' ? (
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => markComplete(booking.id)}
                             disabled={actionLoading === booking.id}
-                            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1 px-2 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors disabled:opacity-50"
                           >
                             {actionLoading === booking.id ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
@@ -500,7 +485,7 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                           <button
                             onClick={() => cancelBooking(booking.id)}
                             disabled={actionLoading === booking.id}
-                            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1 px-2 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors disabled:opacity-50"
                           >
                             <XCircle className="w-3 h-3" />
                             Cancel
@@ -508,7 +493,7 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                         </div>
                       ) : (
                         <div className="flex items-center justify-center">
-                          <span className="text-xs text-gray-400">
+                          <span className="text-[10px] text-gray-400">
                             {booking.status === 'completed'
                               ? `Done ${booking.completed_at ? formatDate(booking.completed_at) : ''}`
                               : `Cancelled ${booking.cancelled_at ? formatDate(booking.cancelled_at) : ''}`}

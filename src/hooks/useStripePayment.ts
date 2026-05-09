@@ -116,6 +116,12 @@ export const useStripePayment = () => {
                 throw new Error('No data returned from payment intent creation');
             }
 
+            // Edge function may return { error: '...' } on server-side failures
+            const payload = (data as any);
+            if (payload.error && typeof payload.error === 'string') {
+                throw new Error(payload.error);
+            }
+
             return normalizePaymentIntentResponse(data);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to create payment intent';
