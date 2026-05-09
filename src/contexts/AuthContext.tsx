@@ -12,7 +12,7 @@ interface AuthContextType {
   profile: Profile | null
   session: Session | null
   loading: boolean
-  signUp: (email: string, password: string, firstName: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null) => Promise<{ user: User | null; error: AuthError | null }>
+  signUp: (email: string, password: string, firstName: string, phoneNumber?: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null) => Promise<{ user: User | null; error: AuthError | null }>
   signIn: (email: string, password: string) => Promise<{ user: User | null; error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>
@@ -140,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe()
   }, [fetchProfile])
 
-  const signUp = async (email: string, password: string, firstName: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null) => {
+  const signUp = async (email: string, password: string, firstName: string, phoneNumber?: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null) => {
     try {
       console.log('Signing up user')
       
@@ -150,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: {
           data: {
             first_name: firstName,
+            phone_number: phoneNumber,
           },
         },
       })

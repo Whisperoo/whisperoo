@@ -3,8 +3,14 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import {
   Search, Filter, CheckCircle2, XCircle, Clock,
-  Mail, Loader2, CalendarDays, ChevronDown, RefreshCw
+  Mail, Loader2, CalendarDays, ChevronDown, RefreshCw, Phone
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface ConsultationBooking {
   id: string;
@@ -25,6 +31,9 @@ interface ConsultationBooking {
   cancelled_at: string | null;
   discount_code: string | null;
   admin_notes: string | null;
+  profiles?: {
+    phone_number: string | null;
+  };
 }
 
 interface ConsultationBookingsPanelProps {
@@ -43,13 +52,14 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
   const [expertFilter, setExpertFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<{ id: string, notes: string } | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<ConsultationBooking | null>(null);
 
   const fetchBookings = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('consultation_bookings')
-        .select('*')
+        .select('*, profiles(phone_number)')
         .order('booked_at', { ascending: false });
 
       if (error) throw error;
@@ -410,12 +420,13 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                 {filtered.map((booking) => (
                   <tr
                     key={booking.id}
-                    className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
+                    className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer ${
                       booking.status === 'cancelled' ? 'opacity-50' : ''
                     }`}
+                    onClick={() => setSelectedBooking(booking)}
                   >
                     {/* Client + Email (merged) */}
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                       <p className="font-medium text-gray-900 text-sm">{booking.user_name}</p>
                       <a
                         href={`mailto:${booking.user_email}`}
@@ -424,6 +435,14 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                         <Mail className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate max-w-[140px]">{booking.user_email || '—'}</span>
                       </a>
+                      {booking.profiles?.phone_number && (
+                        <a
+                          href={`tel:${booking.profiles.phone_number}`}
+                          className="text-[11px] text-gray-500 hover:underline flex items-center gap-1 mt-0.5"
+                        >
+                          <span className="truncate">📞 {booking.profiles.phone_number}</span>
+                        </a>
+                      )}
                     </td>
 
                     {/* Date */}
@@ -456,7 +475,7 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                     </td>
 
                     {/* Admin Notes */}
-                    <td className="px-3 py-3 max-w-[180px]">
+                    <td className="px-3 py-3 max-w-[180px]" onClick={(e) => e.stopPropagation()}>
                       {editingNotes?.id === booking.id ? (
                         <div className="space-y-1.5">
                           <textarea
@@ -497,7 +516,7 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                     </td>
 
                     {/* Actions */}
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                       {booking.status === 'pending' ? (
                         <div className="flex items-center justify-center gap-1.5">
                           <button
@@ -568,6 +587,80 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
           </div>
         </div>
       )}
+
+      {/* Booking Details Modal */}
+      <Dialog open={!!selectedBooking} onOpenChange={(open) => !open && setSelectedBooking(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+          </DialogHeader>
+          {selectedBooking && (
+            <div className="space-y-4 mt-2">
+              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">Client Name</label>
+                  <p className="text-sm font-semibold text-gray-900">{selectedBooking.user_name}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">Email Address</label>
+                  <a href={`mailto:${selectedBooking.user_email}`} className="text-sm text-blue-600 hover:underline flex items-center gap-1.5 mt-0.5">
+                    <Mail className="w-4 h-4" />
+                    {selectedBooking.user_email || 'Not provided'}
+                  </a>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">Phone Number</label>
+                  {selectedBooking.profiles?.phone_number ? (
+                    <a href={`tel:${selectedBooking.profiles.phone_number}`} className="text-sm text-blue-600 hover:underline flex items-center gap-1.5 mt-0.5">
+                      <Phone className="w-4 h-4" />
+                      {selectedBooking.profiles.phone_number}
+                    </a>
+                  ) : (
+                    <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-0.5">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      Not provided
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <label className="text-xs text-blue-600/80 font-medium block mb-1">Expert</label>
+                  <p className="text-sm font-semibold text-blue-900">{selectedBooking.expert_name}</p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <label className="text-xs text-purple-600/80 font-medium block mb-1">Appointment</label>
+                  <p className="text-sm font-semibold text-purple-900 line-clamp-2">{selectedBooking.appointment_name}</p>
+                </div>
+              </div>
+
+              <div className="border border-gray-100 rounded-lg p-3 space-y-2">
+                 <div className="flex justify-between items-center text-sm">
+                   <span className="text-gray-500">Booked At</span>
+                   <span className="font-medium text-gray-900">{formatDate(selectedBooking.booked_at)}</span>
+                 </div>
+                 <div className="flex justify-between items-center text-sm">
+                   <span className="text-gray-500">Status</span>
+                   <StatusBadge status={selectedBooking.status} />
+                 </div>
+                 <div className="flex justify-between items-center text-sm">
+                   <span className="text-gray-500">Payment</span>
+                   <PaymentStatusBadge status={selectedBooking.payment_status} amount={selectedBooking.amount_paid} />
+                 </div>
+                 {selectedBooking.discount_code && (
+                   <div className="flex justify-between items-center text-sm">
+                     <span className="text-gray-500">Discount Code</span>
+                     <span className="font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md">
+                       {selectedBooking.discount_code}
+                     </span>
+                   </div>
+                 )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

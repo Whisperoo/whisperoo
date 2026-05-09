@@ -18,6 +18,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
+import { TermsOfServiceContent, PrivacyPolicyContent } from '@/components/legal/LegalDocuments';
 
 const CreateAccount: React.FC = () => {
   const { t } = useTranslation();
@@ -26,6 +27,7 @@ const CreateAccount: React.FC = () => {
   const { signUp, user, profile } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
+    phoneNumber: '',
     email: '',
     password: '',
     agreeToTerms: false
@@ -109,6 +111,7 @@ const CreateAccount: React.FC = () => {
         formData.email,
         formData.password,
         formData.firstName,
+        formData.phoneNumber,
         tenantInfo?.id,
         acquisitionSource,
         acquisitionDept,
@@ -224,6 +227,19 @@ const CreateAccount: React.FC = () => {
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
+              Phone Number (Optional)
+            </label>
+            <Input
+              type="tel"
+              value={formData.phoneNumber}
+              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+              placeholder="e.g. +1 234 567 8900"
+              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
               {t('auth.createAccount.emailLabel')}
             </label>
             <Input
@@ -272,19 +288,28 @@ const CreateAccount: React.FC = () => {
                 I agree to the{" "}
                 <Dialog>
                   <DialogTrigger className="text-indigo-700 hover:underline">
-                    Terms of Service and Privacy Policy
+                    Terms of Service
                   </DialogTrigger>
-                  <DialogContent className="max-h-[80vh] overflow-y-auto">
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Terms of Service and Privacy Policy</DialogTitle>
+                      <DialogTitle>Terms of Service</DialogTitle>
                     </DialogHeader>
-                    <DialogDescription>
-                      <div className="space-y-4 text-sm text-gray-700">
-                        <p><strong>1. Acceptance of Terms</strong><br/>By accessing or using Whisperoo, you agree to be bound by these Terms of Service.</p>
-                        <p><strong>2. Privacy Policy</strong><br/>Your privacy is important to us. We collect and use personal information as described in our Privacy Policy to provide and improve our services.</p>
-                        <p><strong>3. Use of Service</strong><br/>You agree to use Whisperoo only for lawful purposes and in accordance with these Terms.</p>
-                        <p><strong>4. Medical Disclaimer</strong><br/>Whisperoo's AI Chat Genie provides general information and support only. It is not a substitute for professional medical advice, diagnosis, or treatment.</p>
-                      </div>
+                    <DialogDescription className="mt-4 text-left">
+                      <TermsOfServiceContent />
+                    </DialogDescription>
+                  </DialogContent>
+                </Dialog>
+                {" "}and{" "}
+                <Dialog>
+                  <DialogTrigger className="text-indigo-700 hover:underline">
+                    Privacy Policy
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Privacy Policy</DialogTitle>
+                    </DialogHeader>
+                    <DialogDescription className="mt-4 text-left">
+                      <PrivacyPolicyContent />
                     </DialogDescription>
                   </DialogContent>
                 </Dialog>

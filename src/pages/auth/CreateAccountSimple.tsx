@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { TermsOfServiceContent } from '@/components/legal/LegalDocuments';
 
 const CreateAccountSimple: React.FC = () => {
   const navigate = useNavigate();
   const { signUp, user, profile } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
+    phoneNumber: '',
     email: '',
     password: '',
     agreeToTerms: false
@@ -36,7 +46,7 @@ const CreateAccountSimple: React.FC = () => {
     
     try {
       console.log('Calling signUp...');
-      const { user, error } = await signUp(formData.email, formData.password, formData.firstName);
+      const { user, error } = await signUp(formData.email, formData.password, formData.firstName, formData.phoneNumber);
       
       console.log('SignUp result:', { user: !!user, error: error?.message });
       
@@ -74,6 +84,17 @@ const CreateAccountSimple: React.FC = () => {
         </div>
         
         <div>
+          <label className="block text-sm font-medium mb-2">Phone Number (Optional):</label>
+          <input
+            type="tel"
+            value={formData.phoneNumber}
+            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+            className="w-full p-2 border border-gray-300 rounded"
+            placeholder="e.g. +1 234 567 8900"
+          />
+        </div>
+        
+        <div>
           <label className="block text-sm font-medium mb-2">Email:</label>
           <input
             type="email"
@@ -103,7 +124,22 @@ const CreateAccountSimple: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
               className="form-checkbox"
             />
-            <span className="text-sm">I agree to the Terms of Service</span>
+            <span className="text-sm">
+                I agree to the{" "}
+                <Dialog>
+                  <DialogTrigger className="text-blue-500 hover:underline">
+                    Terms of Service
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Terms of Service</DialogTitle>
+                    </DialogHeader>
+                    <DialogDescription className="mt-4 text-left">
+                      <TermsOfServiceContent />
+                    </DialogDescription>
+                  </DialogContent>
+                </Dialog>
+            </span>
           </label>
         </div>
         
