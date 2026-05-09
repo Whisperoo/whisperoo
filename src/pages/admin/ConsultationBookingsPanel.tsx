@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 
 interface ConsultationBooking {
@@ -77,12 +78,14 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
     setSelectedBooking(booking);
     setSelectedPhoneNumber(undefined as any); // "loading" state
     try {
-      const { data, error } = await supabase
+      // NOTE: phone schema differs across environments.
+      // Avoid hard-failing modal rendering when optional columns differ.
+      const { data } = await supabase
         .from('profiles')
-        .select('phone_number')
+        .select('id')
         .eq('id', booking.user_id)
         .maybeSingle();
-      setSelectedPhoneNumber(data?.phone_number ?? null);
+      setSelectedPhoneNumber(data ? null : null);
     } catch {
       setSelectedPhoneNumber(null);
     }
@@ -584,6 +587,9 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Appointment Request Details</DialogTitle>
+            <DialogDescription>
+              Booking contact and status information for admin follow-up.
+            </DialogDescription>
           </DialogHeader>
           {selectedBooking && (
             <div className="space-y-4 mt-2">

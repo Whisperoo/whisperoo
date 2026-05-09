@@ -123,7 +123,11 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           p_end_date: endDate || null,
         }
       );
-      if (qrErr) {
+      const qrAccessDenied =
+        (qrErr as any)?.code === 'P0001' &&
+        typeof (qrErr as any)?.message === 'string' &&
+        (qrErr as any).message.toLowerCase().includes('access denied');
+      if (qrErr && !qrAccessDenied) {
         console.warn('QR metrics unavailable:', qrErr);
       }
       

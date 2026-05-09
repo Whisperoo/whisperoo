@@ -32,32 +32,47 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
   const [selectedRow, setSelectedRow]       = useState<AuditRow | null>(null);
   const [conversation, setConversation]     = useState<any[]>([]);
   const [loadingConv, setLoadingConv]       = useState(false);
+  const [reasonSubmitted, setReasonSubmitted] = useState(false);
+  const [reasonCode, setReasonCode] = useState<'user_reported_issue' | 'quality_review' | 'debugging' | 'other'>('quality_review');
+  const [reasonText, setReasonText] = useState('');
+  const [recentAccess, setRecentAccess] = useState<any[]>([]);
   const { t } = useTranslation();
 
   const openConversation = async (row: AuditRow) => {
     setSelectedRow(row);
+    setConversation([]);
+    setRecentAccess([]);
+    setReasonSubmitted(false);
+    setReasonCode('quality_review');
+    setReasonText('');
+  };
+
+  const submitReasonAndLoadConversation = async () => {
+    if (!selectedRow) return;
+    if (reasonCode === 'other' && !reasonText.trim()) return;
+
     setLoadingConv(true);
     setConversation([]);
-    
-    // Find session_id from message_id
-    const { data: msgData } = await supabase
-      .from('messages')
-      .select('session_id')
-      .eq('id', row.message_id)
-      .single();
-      
-    if (msgData?.session_id) {
-      const { data: convData } = await supabase
-        .from('messages')
-        .select('role, content, created_at, is_flagged_for_review')
-        .eq('session_id', msgData.session_id)
-        .order('created_at', { ascending: true });
-        
-      if (convData) {
-        setConversation(convData);
-      }
+    setRecentAccess([]);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin_phi_conversation', {
+        body: {
+          message_id: selectedRow.message_id,
+          action: 'view_conversation',
+          reason_code: reasonCode,
+          reason_text: reasonText.trim() || undefined,
+        },
+      });
+      if (error) throw error;
+      setConversation(data?.messages || []);
+      setRecentAccess(data?.recent_access || []);
+      setReasonSubmitted(true);
+    } catch (e) {
+      console.error('Error fetching conversation via compliance gate:', e);
+      setReasonSubmitted(false);
+    } finally {
+      setLoadingConv(false);
     }
-    setLoadingConv(false);
   };
 
   const fetchRows = useCallback(async () => {
@@ -330,7 +345,19 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
       )}
 
       {/* Conversation Dialog */}
-      <Dialog open={!!selectedRow} onOpenChange={(open) => !open && setSelectedRow(null)}>
+      <Dialog
+        open={!!selectedRow}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedRow(null);
+            setConversation([]);
+            setRecentAccess([]);
+            setReasonSubmitted(false);
+            setReasonCode('quality_review');
+            setReasonText('');
+          }
+        }}
+      >
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
           <DialogHeader className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
             <div className="flex items-center justify-between">
@@ -351,10 +378,88 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
+            {/* Compliance gate: must document reason before rendering PHI */}
+            {!reasonSubmitted && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-semibold text-amber-900">Reason for access (required)</p>
+                <p className="text-xs text-amber-800 mt-1">
+                  Before viewing conversation content, document why you are accessing it. This will be saved to an append-only audit log.
+                </p>
+
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-amber-900 block mb-1">Reason code</label>
+                    <select
+                      value={reasonCode}
+                      onChange={(e) => setReasonCode(e.target.value as any)}
+                      className="w-full text-sm border border-amber-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    >
+                      <option value="user_reported_issue">User reported issue</option>
+                      <option value="quality_review">Quality review</option>
+                      <option value="debugging">Debugging</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-amber-900 block mb-1">
+                      Notes {reasonCode === 'other' ? '(required)' : '(optional)'}
+                    </label>
+                    <textarea
+                      value={reasonText}
+                      onChange={(e) => setReasonText(e.target.value)}
+                      rows={3}
+                      placeholder="Add context for why access is needed..."
+                      className="w-full text-sm border border-amber-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    className="text-sm px-3 py-2 rounded-lg border border-amber-200 text-amber-900 hover:bg-amber-100"
+                    onClick={() => setSelectedRow(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="text-sm px-3 py-2 rounded-lg bg-amber-700 text-white hover:bg-amber-800 disabled:opacity-50"
+                    disabled={reasonCode === 'other' && !reasonText.trim()}
+                    onClick={submitReasonAndLoadConversation}
+                  >
+                    View conversation
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {reasonSubmitted && recentAccess.length > 0 && (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <p className="text-xs font-semibold text-gray-700 mb-2">Recent access history</p>
+                <div className="space-y-1">
+                  {recentAccess.slice(0, 5).map((a: any) => (
+                    <div key={a.id} className="text-[11px] text-gray-600 flex items-center justify-between gap-3">
+                      <span className="truncate">
+                        {a.accessor_role} • {a.reason_code}{a.reason_text ? ` — ${a.reason_text}` : ''}
+                      </span>
+                      <span className="flex-shrink-0 text-gray-400">
+                        {new Date(a.accessed_at).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {loadingConv ? (
               <div className="flex items-center justify-center py-12 text-gray-400">
                 <RefreshCw className="w-5 h-5 animate-spin mr-2" />
                 Loading full conversation...
+              </div>
+            ) : !reasonSubmitted ? (
+              <div className="text-center py-10 text-gray-500 text-sm">
+                Conversation content is locked until a reason is submitted.
               </div>
             ) : conversation.length === 0 ? (
               <div className="text-center py-12 text-gray-500 text-sm">

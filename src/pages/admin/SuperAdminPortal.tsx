@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
-import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut, CalendarCheck } from 'lucide-react';
+import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut, CalendarCheck, Shield } from 'lucide-react';
 import HospitalSelector from './HospitalSelector';
 import MetricsDash from './MetricsDash';
 import AIInteractionsPanel from './AIInteractionsPanel';
@@ -12,6 +12,7 @@ import ContentCurationPanel from './ContentCurationPanel';
 import ExpertCurationPanel from './ExpertCurationPanel';
 import DiscountCodesPanel from './DiscountCodesPanel';
 import ConsultationBookingsPanel from './ConsultationBookingsPanel';
+import PhiAccessLogPanel from './PhiAccessLogPanel';
 
 // ─── Super Admin Access Control ───────────────────────────────────
 const SUPER_ADMIN_EMAILS = [
@@ -19,7 +20,7 @@ const SUPER_ADMIN_EMAILS = [
   'sharab.khan101010@gmail.com'
 ];
 
-type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'bookings' | 'discounts' | 'config';
+type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'bookings' | 'discounts' | 'phi' | 'config';
 
 const SuperAdminPortal: React.FC = () => {
   const { user, profile, signOut } = useAuth();
@@ -110,10 +111,10 @@ const SuperAdminPortal: React.FC = () => {
           </div>
 
           {/* ── Sub-header / Toolbar ── */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6">
+          <div className="flex flex-col gap-4 py-5">
             
             {/* Left: Hospital Selector */}
-            <div className="w-full sm:w-auto">
+            <div className="w-full sm:w-64">
               <HospitalSelector
                 selectedTenantId={selectedTenantId}
                 onTenantChange={setSelectedTenantId}
@@ -121,29 +122,32 @@ const SuperAdminPortal: React.FC = () => {
             </div>
 
             {/* Right: Tabs */}
-            <div className="flex flex-wrap items-center gap-1 bg-gray-50 p-1.5 rounded-xl">
-              {([
-                { id: 'metrics',  icon: BarChart3,      label: t('admin.portal.tabs.metrics')  },
-                { id: 'ai',       icon: MessageSquare,  label: t('admin.portal.tabs.aiLogs')  },
-                { id: 'content',  icon: PackageSearch,  label: t('admin.portal.tabs.content')  },
-                { id: 'experts',  icon: Users,          label: t('admin.portal.tabs.experts')  },
-                { id: 'bookings', icon: CalendarCheck,   label: 'Appointment Requests' },
-                { id: 'discounts', icon: PackageSearch, label: 'Discounts' },
-                { id: 'config',   icon: Settings2,      label: t('admin.portal.tabs.config')   },
-              ] as { id: Tab; icon: React.ElementType; label: string }[]).map(({ id, icon: Icon, label }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    activeTab === id
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </button>
-              ))}
+            <div className="w-full overflow-x-auto">
+              <div className="inline-flex items-center gap-1 bg-gray-50 p-1.5 rounded-xl min-w-max">
+                {([
+                  { id: 'metrics',  icon: BarChart3,      label: t('admin.portal.tabs.metrics')  },
+                  { id: 'ai',       icon: MessageSquare,  label: t('admin.portal.tabs.aiLogs')  },
+                  { id: 'content',  icon: PackageSearch,  label: t('admin.portal.tabs.content')  },
+                  { id: 'experts',  icon: Users,          label: t('admin.portal.tabs.experts')  },
+                  { id: 'bookings', icon: CalendarCheck,   label: 'Appointment Requests' },
+                  { id: 'discounts', icon: PackageSearch, label: 'Discounts' },
+                  { id: 'phi',      icon: Shield,         label: 'PHI Access Log' },
+                  { id: 'config',   icon: Settings2,      label: t('admin.portal.tabs.config')   },
+                ] as { id: Tab; icon: React.ElementType; label: string }[]).map(({ id, icon: Icon, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className={`flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      activeTab === id
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
           </div>
@@ -158,6 +162,7 @@ const SuperAdminPortal: React.FC = () => {
         {activeTab === 'experts'  && <ExpertCurationPanel tenantId={selectedTenantId} />}
         {activeTab === 'bookings' && <ConsultationBookingsPanel tenantId={selectedTenantId} />}
         {activeTab === 'discounts' && <DiscountCodesPanel tenantId={selectedTenantId} />}
+        {activeTab === 'phi'      && <PhiAccessLogPanel />}
         {activeTab === 'config'   && <TenantConfigEditor tenantId={selectedTenantId} />}
       </main>
     </div>
