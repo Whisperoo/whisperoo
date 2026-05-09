@@ -31,9 +31,6 @@ interface ConsultationBooking {
   cancelled_at: string | null;
   discount_code: string | null;
   admin_notes: string | null;
-  profiles?: {
-    phone_number: string | null;
-  };
 }
 
 interface ConsultationBookingsPanelProps {
@@ -53,26 +50,43 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<{ id: string, notes: string } | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<ConsultationBooking | null>(null);
+  const [selectedPhoneNumber, setSelectedPhoneNumber] = useState<string | null | undefined>(null);
 
   const fetchBookings = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('consultation_bookings')
-        .select('*, profiles(phone_number)')
+        .select('*')
         .order('booked_at', { ascending: false });
 
       if (error) throw error;
       setBookings(data || []);
     } catch (err: any) {
       console.error('Error fetching bookings:', err);
-      toast({ title: 'Error', description: 'Failed to load bookings', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to load appointment requests', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => { fetchBookings(); }, []);
+
+  // Lazy-load phone number when a booking row is clicked
+  const handleRowClick = async (booking: ConsultationBooking) => {
+    setSelectedBooking(booking);
+    setSelectedPhoneNumber(undefined as any); // "loading" state
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('phone_number')
+        .eq('id', booking.user_id)
+        .maybeSingle();
+      setSelectedPhoneNumber(data?.phone_number ?? null);
+    } catch {
+      setSelectedPhoneNumber(null);
+    }
+  };
 
   // Unique expert names for filter dropdown
   const expertNames = useMemo(() => {
@@ -318,7 +332,7 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         {[
-          { label: 'Total Bookings', value: stats.total, color: 'text-gray-900', bg: 'bg-white' },
+          { label: 'Total Requests', value: stats.total, color: 'text-gray-900', bg: 'bg-white' },
           { label: 'Pending', value: stats.pending, color: 'text-amber-600', bg: 'bg-amber-50' },
           { label: 'Confirmed', value: stats.confirmed, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Completed', value: stats.completed, color: 'text-emerald-600', bg: 'bg-emerald-50' },
@@ -394,11 +408,11 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
           <CalendarDays className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No bookings found</p>
+          <p className="text-gray-500 font-medium">No appointment requests found</p>
           <p className="text-sm text-gray-400 mt-1">
             {search || statusFilter !== 'all' || resourceFilter !== 'all'
               ? 'Try adjusting your filters'
-              : 'Bookings will appear here when patients book consultations'}
+              : 'Requests will appear here when patients book consultations'}
           </p>
         </div>
       ) : (
@@ -423,7 +437,7 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                     className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer ${
                       booking.status === 'cancelled' ? 'opacity-50' : ''
                     }`}
-                    onClick={() => setSelectedBooking(booking)}
+                    onClick={() => handleRowClick(booking)}
                   >
                     {/* Client + Email (merged) */}
                     <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
@@ -435,14 +449,6 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                         <Mail className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate max-w-[140px]">{booking.user_email || '—'}</span>
                       </a>
-                      {booking.profiles?.phone_number && (
-                        <a
-                          href={`tel:${booking.profiles.phone_number}`}
-                          className="text-[11px] text-gray-500 hover:underline flex items-center gap-1 mt-0.5"
-                        >
-                          <span className="truncate">📞 {booking.profiles.phone_number}</span>
-                        </a>
-                      )}
                     </td>
 
                     {/* Date */}
@@ -582,7 +588,7 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
           {/* Footer */}
           <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
             <p className="text-xs text-gray-500">
-              Showing {filtered.length} of {bookings.length} bookings
+              Showing {filtered.length} of {bookings.length} requests
             </p>
           </div>
         </div>
@@ -592,7 +598,7 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
       <Dialog open={!!selectedBooking} onOpenChange={(open) => !open && setSelectedBooking(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Booking Details</DialogTitle>
+            <DialogTitle>Appointment Request Details</DialogTitle>
           </DialogHeader>
           {selectedBooking && (
             <div className="space-y-4 mt-2">
@@ -610,15 +616,20 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 font-medium">Phone Number</label>
-                  {selectedBooking.profiles?.phone_number ? (
-                    <a href={`tel:${selectedBooking.profiles.phone_number}`} className="text-sm text-blue-600 hover:underline flex items-center gap-1.5 mt-0.5">
+                  {selectedPhoneNumber ? (
+                    <a href={`tel:${selectedPhoneNumber}`} className="text-sm text-blue-600 hover:underline flex items-center gap-1.5 mt-0.5">
                       <Phone className="w-4 h-4" />
-                      {selectedBooking.profiles.phone_number}
+                      {selectedPhoneNumber}
                     </a>
-                  ) : (
-                    <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-0.5">
-                      <Phone className="w-4 h-4 text-gray-400" />
+                  ) : selectedPhoneNumber === null ? (
+                    <p className="text-sm text-gray-400 flex items-center gap-1.5 mt-0.5">
+                      <Phone className="w-4 h-4 text-gray-300" />
                       Not provided
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-400 flex items-center gap-1.5 mt-0.5">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Loading...
                     </p>
                   )}
                 </div>

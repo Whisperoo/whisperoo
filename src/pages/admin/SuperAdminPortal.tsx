@@ -127,7 +127,7 @@ const SuperAdminPortal: React.FC = () => {
                 { id: 'ai',       icon: MessageSquare,  label: t('admin.portal.tabs.aiLogs')  },
                 { id: 'content',  icon: PackageSearch,  label: t('admin.portal.tabs.content')  },
                 { id: 'experts',  icon: Users,          label: t('admin.portal.tabs.experts')  },
-                { id: 'bookings', icon: CalendarCheck,   label: 'Bookings' },
+                { id: 'bookings', icon: CalendarCheck,   label: 'Appointment Requests' },
                 { id: 'discounts', icon: PackageSearch, label: 'Discounts' },
                 { id: 'config',   icon: Settings2,      label: t('admin.portal.tabs.config')   },
               ] as { id: Tab; icon: React.ElementType; label: string }[]).map(({ id, icon: Icon, label }) => (
