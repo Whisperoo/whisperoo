@@ -44,15 +44,15 @@ const Dashboard: React.FC = () => {
     const checkConsultationAppointments = async () => {
       if (!user) return setHasConsultationAppointment(false);
       try {
-        const { data } = await supabase
-          .from('purchases')
-          .select('id, products(*)')
+        const { data, error } = await supabase
+          .from('consultation_bookings')
+          .select('id, status')
           .eq('user_id', user.id)
-          .eq('consultation_completed', false);
+          .in('status', ['pending', 'confirmed']);
+        if (error) throw error;
         const appointments = data || [];
         setConsultationAppointments(appointments);
-        const hasConsult = appointments.some((p: any) => p.products?.product_type === 'consultation');
-        setHasConsultationAppointment(!!hasConsult);
+        setHasConsultationAppointment(appointments.length > 0);
       } catch (err) {
         console.error('Error checking consultation appointments:', err);
         setHasConsultationAppointment(false);

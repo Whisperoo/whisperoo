@@ -270,6 +270,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
                   <option value="video">Video</option>
                   <option value="audio">Audio</option>
                   <option value="course">Course</option>
+                  <option value="consultation">Consultation</option>
                 </select>
               </div>
               <div>
@@ -350,38 +351,40 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
               </div>
             </div>
 
-            {/* URLs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">File (upload or URL)</label>
-                <input
-                  type="file"
-                  onChange={(e) => setResourceFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm mb-2"
-                />
-                <input
-                  value={form.file_url}
-                  onChange={(e) => setForm({ ...form, file_url: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+            {/* URLs / Uploads (not applicable to consultations) */}
+            {form.product_type !== 'consultation' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">File (upload or URL)</label>
+                  <input
+                    type="file"
+                    onChange={(e) => setResourceFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm mb-2"
+                  />
+                  <input
+                    value={form.file_url}
+                    onChange={(e) => setForm({ ...form, file_url: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Thumbnail (upload or URL)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setThumbFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm mb-2"
+                  />
+                  <input
+                    value={form.thumbnail_url}
+                    onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Thumbnail (upload or URL)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setThumbFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm mb-2"
-                />
-                <input
-                  value={form.thumbnail_url}
-                  onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
+            )}
 
             {/* Tags */}
             <div>

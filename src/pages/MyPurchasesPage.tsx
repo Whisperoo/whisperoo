@@ -17,12 +17,11 @@ import { useTranslation } from "react-i18next";
 
 interface PurchaseWithDetails {
   id: string;
-  amount: number;
+  amount: number | null;
   status: string;
   created_at: string;
   stripe_session_id?: string;
   consultation_completed: boolean;
-  consultation_date?: string;
   product?: any;
 }
 
@@ -49,53 +48,95 @@ export const MyPurchasesPage: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from('purchases')
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('consultation_bookings')
         .select(`
           id,
-          amount,
           status,
-          purchased_at,
-          consultation_completed,
-          consultation_date,
-          products (
-            id,
-            title,
-            description,
-            price,
-            product_type,
-            expert_id,
-            experts:profiles!products_expert_id_fkey (
-              id,
-              first_name,
-              last_name,
-              title,
-              profile_image_url
-            )
-          )
+          booked_at,
+          amount_paid,
+          product_id
         `)
         .eq('user_id', user.id)
-        .eq('products.product_type', 'consultation')
-        .order('purchased_at', { ascending: false });
+        .order('booked_at', { ascending: false });
 
-      if (error) throw error;
+      if (bookingsError) throw bookingsError;
 
-      const validAppointments = (data || []).filter(p => p.products !== null);
-      
-      const mappedAppointments: PurchaseWithDetails[] = validAppointments.map(p => ({
-        id: p.id,
-        amount: p.amount,
-        status: p.status,
-        created_at: p.purchased_at,
-        consultation_completed: p.consultation_completed,
-        consultation_date: p.consultation_date,
-        product: p.products
+      const productIds = Array.from(
+        new Set((bookings || []).map((b: any) => b.product_id).filter(Boolean)),
+      ) as string[];
+
+      // Load products separately (NO embedded relationships — avoid PostgREST 400s)
+      const { data: products, error: productsError } = productIds.length
+        ? await supabase
+            .from('products')
+            .select(`
+              id,
+              title,
+              description,
+              price,
+              product_type,
+              expert_id,
+              booking_model,
+              how_to_schedule
+            `)
+            .in('id', productIds)
+        : { data: [], error: null };
+
+      if (productsError) throw productsError;
+
+      const expertIds = Array.from(
+        new Set((products || []).map((p: any) => p.expert_id).filter(Boolean)),
+      ) as string[];
+
+      const { data: experts, error: expertsError } = expertIds.length
+        ? await supabase
+            .from('profiles')
+            .select('id, first_name, profile_image_url')
+            .in('id', expertIds)
+        : { data: [], error: null };
+
+      if (expertsError) throw expertsError;
+
+      const expertById = new Map<string, any>((experts || []).map((e: any) => [e.id, e]));
+
+      const productById = new Map<string, any>(
+        (products || []).map((p: any) => [
+          p.id,
+          {
+            ...p,
+            expert: p.expert_id ? expertById.get(p.expert_id) : null,
+          },
+        ]),
+      );
+
+      const validBookings = (bookings || []).filter((b: any) => productById.has(b.product_id));
+
+      const mappedAppointments: PurchaseWithDetails[] = validBookings.map((b: any) => ({
+        id: b.id,
+        amount: b.amount_paid ?? null,
+        status: b.status,
+        created_at: b.booked_at,
+        consultation_completed: b.status === 'completed',
+        product: productById.get(b.product_id)
       })) as PurchaseWithDetails[];
 
       setAppointments(mappedAppointments);
     } catch (err: any) {
-      console.error('Error fetching appointments:', err);
-      setError(err.message || 'Failed to load appointments');
+      console.error('Error fetching appointments:', err, {
+        message: err?.message,
+        details: err?.details,
+        hint: err?.hint,
+        code: err?.code,
+      });
+      const fallback =
+        (typeof err === 'string' && err) ||
+        err?.message ||
+        err?.details ||
+        err?.hint ||
+        err?.code ||
+        'Failed to load appointments';
+      setError(fallback);
     } finally {
       setLoadingAppointments(false);
     }
@@ -275,7 +316,7 @@ export const MyPurchasesPage: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-bold text-lg text-gray-900 truncate">
-                            {appointment.product?.experts?.first_name ? `${appointment.product.experts.first_name} ${appointment.product.experts.last_name || ''}` : t('purchases.defaultExpert')}
+                            {appointment.product?.expert?.first_name ? `${appointment.product.expert.first_name}` : t('purchases.defaultExpert')}
                           </h3>
                         </div>
                         <div className="bg-blue-50 rounded-lg p-4 text-sm mt-4">

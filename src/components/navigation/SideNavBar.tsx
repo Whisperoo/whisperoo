@@ -137,7 +137,10 @@ const SideNavBar: React.FC<SideNavBarProps> = ({ isMobileOverlay = false }) => {
               variant="ghost"
               size="sm"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="w-full justify-center"
+              className={cn(
+                "w-full justify-center rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 hover:border-gray-300",
+                sidebarCollapsed ? "h-9" : "h-10"
+              )}
             >
               {sidebarCollapsed ? 
                 <ChevronRight className="h-4 w-4" /> : 
