@@ -25,6 +25,9 @@ interface ProductFormData {
   is_hospital_resource: boolean;
   booking_model: 'direct' | 'inquiry' | 'hospital';
   how_to_schedule: string;
+  hospital_prebook_message: string;
+  /** Optional: scope hospital resource to a tenant (defaults to selected expert's tenant) */
+  tenant_id: string;
 }
 
 interface ExpertOption {
@@ -49,6 +52,8 @@ const EMPTY_FORM: ProductFormData = {
   is_hospital_resource: false,
   booking_model: 'direct',
   how_to_schedule: '',
+  hospital_prebook_message: '',
+  tenant_id: '',
 };
 
 const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose, onSaved }) => {
@@ -61,6 +66,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
   const [resourceFile, setResourceFile] = useState<File | null>(null);
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [tenants, setTenants] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -74,11 +80,18 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
         .order('first_name');
       setExperts(expertData ?? []);
 
+      const { data: tenantRows } = await supabase
+        .from('tenants')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+      setTenants((tenantRows ?? []) as { id: string; name: string }[]);
+
       // If editing, fetch product data
       if (!isNew) {
         const { data, error: fetchErr } = await supabase
           .from('products')
-          .select('title, description, product_type, price, is_free, file_url, thumbnail_url, expert_id, status, tags, duration_minutes, difficulty_level, is_hospital_resource, booking_model, how_to_schedule')
+          .select('title, description, product_type, price, is_free, file_url, thumbnail_url, expert_id, status, tags, duration_minutes, difficulty_level, is_hospital_resource, booking_model, how_to_schedule, hospital_prebook_message, tenant_id')
           .eq('id', productId)
           .single();
         if (fetchErr) {
@@ -100,6 +113,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
             is_hospital_resource: data.is_hospital_resource ?? false,
             booking_model: data.booking_model || 'direct',
             how_to_schedule: data.how_to_schedule || '',
+            hospital_prebook_message: data.hospital_prebook_message || '',
           });
         }
       }
@@ -158,9 +172,10 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
       return;
     }
 
-    // Derive tenant_id from the selected expert for hospital resources
     const selectedExpert = experts.find(e => e.id === form.expert_id);
-    const productTenantId = form.is_hospital_resource ? (selectedExpert?.tenant_id || null) : null;
+    const productTenantId = form.is_hospital_resource
+      ? (form.tenant_id.trim() || selectedExpert?.tenant_id || null)
+      : null;
 
     const payload = {
       title: form.title.trim(),
@@ -178,6 +193,8 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
       is_hospital_resource: form.is_hospital_resource,
       booking_model: form.booking_model,
       how_to_schedule: form.booking_model === 'hospital' ? form.how_to_schedule.trim() || null : null,
+      hospital_prebook_message:
+        form.booking_model === 'hospital' ? form.hospital_prebook_message.trim() || null : null,
       tenant_id: productTenantId,
     };
 
@@ -314,6 +331,113 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
               </select>
             </div>
 
+            {/* Hospital pilot: visible path for Super Admin */}
+            <div className="rounded-xl border-2 border-indigo-200 bg-gradient-to-b from-indigo-50/90 to-white p-4 space-y-4 shadow-sm">
+              <div>
+                <h3 className="text-sm font-semibold text-indigo-900">Hospital programs & booking</h3>
+                <p className="text-xs text-indigo-900/85 mt-1 leading-relaxed">
+                  Use this section when publishing content for a hospital pilot: mark it as a Hospital Resource, optionally pick the hospital tenant (or leave default to follow the expert&apos;s hospital), then set how parents book below. Consultations can use Inquiry (expert calls the parent) or Hospital (scheduling instructions only).
+                </p>
+              </div>
+
+              <div className="flex items-start gap-2 p-2 rounded-lg bg-white/80 border border-indigo-100">
+                <input
+                  type="checkbox"
+                  id="is_hospital_resource"
+                  checked={form.is_hospital_resource}
+                  onChange={(e) => {
+                    const isHospital = e.target.checked;
+                    setForm({
+                      ...form,
+                      is_hospital_resource: isHospital,
+                      booking_model: isHospital ? 'hospital' : form.booking_model === 'hospital' ? 'direct' : form.booking_model,
+                      is_free: isHospital ? true : form.is_free,
+                      price: isHospital ? 0 : form.price,
+                      tenant_id: isHospital ? form.tenant_id : '',
+                    });
+                  }}
+                  className="w-4 h-4 mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="is_hospital_resource" className="text-sm text-gray-800 leading-snug">
+                  <span className="font-medium">Hospital Resource</span>
+                  <span className="text-gray-600"> — counts toward hospital utilization; use with a hospital-affiliated expert or pick a tenant below.</span>
+                </label>
+              </div>
+
+              {form.is_hospital_resource && tenants.length > 0 && (
+                <div>
+                  <label className="text-xs font-semibold text-indigo-900 mb-1 block">Hospital tenant (optional)</label>
+                  <select
+                    value={form.tenant_id}
+                    onChange={(e) => setForm({ ...form, tenant_id: e.target.value })}
+                    className="w-full text-sm border border-indigo-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  >
+                    <option value="">Auto — use selected expert&apos;s hospital tenant</option>
+                    {tenants.map((tn) => (
+                      <option key={tn.id} value={tn.id}>{tn.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-indigo-800/80 mt-1">Override when this item should roll up under a specific hospital even if the expert record differs.</p>
+                </div>
+              )}
+
+              {(form.product_type === 'consultation' || form.is_hospital_resource) && (
+                <div className="p-4 bg-white rounded-lg border border-indigo-100 space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold text-indigo-900 mb-1 block">Booking model</label>
+                    <select
+                      value={form.booking_model}
+                      onChange={(e) => {
+                        const model = e.target.value as 'direct' | 'inquiry' | 'hospital';
+                        setForm({
+                          ...form,
+                          booking_model: model,
+                          is_free: model !== 'direct' ? true : form.is_free,
+                          price: model !== 'direct' ? 0 : form.price,
+                          is_hospital_resource: model === 'hospital' ? true : form.is_hospital_resource,
+                        });
+                      }}
+                      className="w-full text-sm border border-indigo-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    >
+                      <option value="direct">Direct (pay in app via Stripe)</option>
+                      <option value="inquiry">Inquiry (no payment — expert contacts parent)</option>
+                      <option value="hospital">Hospital (custom scheduling instructions)</option>
+                    </select>
+                    <p className="text-xs text-indigo-800/90 mt-1">
+                      {form.booking_model === 'direct' && 'Parent pays in the app; use for paid consultations.'}
+                      {form.booking_model === 'inquiry' && 'Free request flow; expert reaches out. Pairs with expert profile inquiry messages.'}
+                      {form.booking_model === 'hospital' && 'Shows your pre-book and “how to schedule” copy; mark Hospital Resource above.'}
+                    </p>
+                  </div>
+
+                  {form.booking_model === 'hospital' && (
+                    <>
+                      <div>
+                        <label className="text-xs font-semibold text-indigo-900 mb-1 block">Pre-book message (optional)</label>
+                        <textarea
+                          value={form.hospital_prebook_message}
+                          onChange={(e) => setForm({ ...form, hospital_prebook_message: e.target.value })}
+                          placeholder="Optional override before parents confirm. Default describes 48-hour outreach."
+                          rows={3}
+                          className="w-full text-sm border border-indigo-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-indigo-900 mb-1 block">How to schedule (after confirm)</label>
+                        <textarea
+                          value={form.how_to_schedule}
+                          onChange={(e) => setForm({ ...form, how_to_schedule: e.target.value })}
+                          placeholder="e.g. Call Labor & Delivery at 555-1234 to schedule."
+                          rows={3}
+                          className="w-full text-sm border border-indigo-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none bg-white"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Pricing */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
               <div className="flex items-center gap-2">
@@ -442,74 +566,6 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
               />
             </div>
 
-            {/* Hospital Resource Flag */}
-            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <input
-                type="checkbox"
-                id="is_hospital_resource"
-                checked={form.is_hospital_resource}
-                onChange={(e) => {
-                  const isHospital = e.target.checked;
-                  setForm({
-                    ...form,
-                    is_hospital_resource: isHospital,
-                    booking_model: isHospital ? 'hospital' : form.booking_model === 'hospital' ? 'direct' : form.booking_model,
-                    is_free: isHospital ? true : form.is_free,
-                    price: isHospital ? 0 : form.price,
-                  });
-                }}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label htmlFor="is_hospital_resource" className="text-sm text-gray-700">
-                Mark as <span className="font-medium">Hospital Resource</span> — will appear in hospital resource utilization metrics
-              </label>
-            </div>
-
-            {/* Booking Model */}
-            {(form.product_type === 'consultation' || form.is_hospital_resource) && (
-              <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100 space-y-4">
-                <div>
-                  <label className="text-xs font-semibold text-blue-800 mb-1 block">Booking Model</label>
-                  <select
-                    value={form.booking_model}
-                    onChange={(e) => {
-                      const model = e.target.value as 'direct' | 'inquiry' | 'hospital';
-                      setForm({
-                        ...form,
-                        booking_model: model,
-                        is_free: model !== 'direct' ? true : form.is_free,
-                        price: model !== 'direct' ? 0 : form.price,
-                        is_hospital_resource: model === 'hospital' ? true : form.is_hospital_resource,
-                      });
-                    }}
-                    className="w-full text-sm border border-blue-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    <option value="direct">💳 Direct Booking (pay in app)</option>
-                    <option value="inquiry">📩 Inquiry Only (expert contacts user)</option>
-                    <option value="hospital">🏥 Hospital Resource (custom instructions)</option>
-                  </select>
-                  <p className="text-xs text-blue-600 mt-1">
-                    {form.booking_model === 'direct' && 'User pays through Stripe and booking is created for admin to manage.'}
-                    {form.booking_model === 'inquiry' && 'User requests appointment (no payment). Expert reaches out directly. Admin tracks connection.'}
-                    {form.booking_model === 'hospital' && 'Shows custom scheduling instructions. No booking/payment through Whisperoo.'}
-                  </p>
-                </div>
-
-                {/* How to Schedule (hospital only) */}
-                {form.booking_model === 'hospital' && (
-                  <div>
-                    <label className="text-xs font-semibold text-blue-800 mb-1 block">How to Schedule</label>
-                    <textarea
-                      value={form.how_to_schedule}
-                      onChange={(e) => setForm({ ...form, how_to_schedule: e.target.value })}
-                      placeholder="Enter scheduling instructions (e.g., 'Call Labor & Delivery at 555-1234 to schedule your appointment')"
-                      rows={3}
-                      className="w-full text-sm border border-blue-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         )}
 

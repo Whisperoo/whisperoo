@@ -24,6 +24,7 @@ import {
   ProductWithDetails,
   ProductFile,
   productService,
+  isConsultationBookingViaExpert,
 } from "@/services/products";
 import { formatCurrency } from "@/lib/utils";
 import { PurchaseModal } from "./PurchaseModal";
@@ -61,6 +62,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const expert = product.expert ?? null;
 
   const isFreeProduct = product.price === 0;
+  const bookingViaExpertProfile = isConsultationBookingViaExpert(product);
   const hasContent = !!(product.primary_file_url || product.file_url);
 
   const currentLang = i18n.language || 'en';
@@ -84,10 +86,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   // Check if user has already saved this free content
   React.useEffect(() => {
-    if (user && isFreeProduct) {
+    if (user && isFreeProduct && !bookingViaExpertProfile) {
       checkSaveStatus();
     }
-  }, [user, product.id, isFreeProduct]);
+  }, [user, product.id, isFreeProduct, bookingViaExpertProfile]);
 
   // Check if user has purchased this paid product
   React.useEffect(() => {
@@ -192,6 +194,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const handleSaveFreeContent = async () => {
+    if (bookingViaExpertProfile) return;
     if (!user) {
       toast({
         title: "Login Required",
@@ -245,6 +248,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const handlePurchaseClick = async () => {
+    if (bookingViaExpertProfile && isFreeProduct) {
+      if (!user) {
+        toast({
+          title: "Login Required",
+          description: "Please log in to request a consultation.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (product.expert?.id) {
+        navigate(`/experts/${product.expert.id}`);
+      }
+      return;
+    }
+
     if (isFreeProduct) {
       handleSaveFreeContent();
       return;
@@ -586,10 +604,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           ) : (
             <Button
               onClick={handlePurchaseClick}
-              disabled={isFreeProduct && (isSaved || isCheckingStatus)}
-              className="w-full bg-[#2E54A5] hover:bg-blue-700 text-[#E7ECFA] font-bold text-[14px] rounded-[8px] h-[44px] py-1.5 px-3 font-['Plus_Jakarta_Sans'] mt-2"
+              disabled={
+                isFreeProduct &&
+                !bookingViaExpertProfile &&
+                (isSaved || isCheckingStatus)
+              }
+              className="w-full bg-[#2E54A5] hover:bg-blue-700 text-[#E7ECFA] font-bold text-[11px] sm:text-[12px] rounded-[8px] min-h-[44px] h-auto py-2 px-2 font-['Plus_Jakarta_Sans'] mt-2 whitespace-normal leading-snug"
             >
-              {isFreeProduct ? (isSaved ? "Saved" : "Save") : " Purchase"}
+              {bookingViaExpertProfile && isFreeProduct
+                ? t("products.requestAppointmentFree")
+                : product.product_type === "consultation" && !isFreeProduct
+                  ? t("products.bookConsultation")
+                  : isFreeProduct
+                    ? isSaved
+                      ? "Saved"
+                      : "Save"
+                    : t("products.purchaseNow")}
             </Button>
           )}
         </div>

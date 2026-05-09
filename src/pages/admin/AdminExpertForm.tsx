@@ -35,6 +35,7 @@ interface ExpertFormData {
   profile_image_url: string;
   expert_bio: string;
   inquiry_confirmation_message: string;
+  inquiry_prebook_message: string;
   expert_specialties: string[];
   expert_credentials: string[];
   expert_experience_years: number;
@@ -50,6 +51,7 @@ const EMPTY_FORM: ExpertFormData = {
   profile_image_url: '',
   expert_bio: '',
   inquiry_confirmation_message: '',
+  inquiry_prebook_message: '',
   expert_specialties: [],
   expert_credentials: [],
   expert_experience_years: 0,
@@ -100,6 +102,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           profile_image_url: data.profile_image_url || '',
           expert_bio: data.expert_bio || '',
           inquiry_confirmation_message: data.inquiry_confirmation_message || '',
+          inquiry_prebook_message: data.inquiry_prebook_message || '',
           expert_specialties: data.expert_specialties || [],
           expert_credentials: data.expert_credentials || [],
           expert_experience_years: data.expert_experience_years || 0,
@@ -180,6 +183,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           p_tenant_id: form.tenant_id,
           p_password: form.password.trim() || null,
           p_inquiry_confirmation_message: form.inquiry_confirmation_message.trim() || null,
+          p_inquiry_prebook_message: form.inquiry_prebook_message.trim() || null,
         });
         if (rpcErr) throw rpcErr;
 
@@ -223,6 +227,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
             profile_image_url: nextUrl,
             expert_bio: form.expert_bio.trim(),
             inquiry_confirmation_message: form.inquiry_confirmation_message.trim() || null,
+            inquiry_prebook_message: form.inquiry_prebook_message.trim() || null,
             expert_specialties: finalSpecialties,
             expert_credentials: finalCredentials,
             expert_experience_years: form.expert_experience_years,
@@ -381,6 +386,24 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
               <p className="text-xs text-gray-400 mt-1">{form.expert_bio.length} characters</p>
+            </div>
+
+            {/* Pre-book modal (optional override; defaults are localized inquiry vs hospital templates) */}
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">
+                Inquiry Pre-Book Message
+                <span className="text-gray-400 ml-1">(optional)</span>
+              </label>
+              <textarea
+                value={form.inquiry_prebook_message}
+                onChange={(e) => setForm({ ...form, inquiry_prebook_message: e.target.value })}
+                placeholder="Overrides the standard two-line text shown before they confirm an inquiry booking. Leave blank for the default (24–48h) template."
+                rows={3}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Applies to experts whose consultation product uses Inquiry booking. Hospital-specific copy is edited on the product (Hospital booking model).
+              </p>
             </div>
 
             {/* Inquiry Confirmation Message */}

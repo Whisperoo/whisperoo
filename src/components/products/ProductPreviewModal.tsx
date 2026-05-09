@@ -24,6 +24,7 @@ import {
 import { ProductWithDetails, ProductFile } from '@/services/products';
 import { formatCurrency } from '@/lib/utils';
 import { ProductContentPreview } from './ProductContentPreview';
+import { useTranslation } from 'react-i18next';
 
 interface ProductPreviewModalProps {
   open: boolean;
@@ -42,7 +43,11 @@ export const ProductPreviewModal: React.FC<ProductPreviewModalProps> = ({
   onPurchase,
   isPurchased = false,
 }) => {
+  const { t } = useTranslation();
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
+  const isConsultation = product.product_type === 'consultation';
+  const consultFree = isConsultation && (product.price ?? 0) === 0;
+  const consultPaid = isConsultation && (product.price ?? 0) > 0;
   
   const formatDuration = (minutes: number | null) => {
     if (!minutes) return '';
@@ -290,7 +295,11 @@ export const ProductPreviewModal: React.FC<ProductPreviewModalProps> = ({
                 Maybe Later
               </Button>
               <Button onClick={handlePurchaseClick} className="bg-blue-600 hover:bg-blue-700" size="sm">
-                Purchase Now
+                {consultFree
+                  ? t('products.requestAppointmentFree')
+                  : consultPaid
+                    ? t('products.bookConsultation')
+                    : t('products.purchaseNow')}
               </Button>
             </div>
           </div>

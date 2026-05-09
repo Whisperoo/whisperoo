@@ -30,6 +30,7 @@ interface ExpertProfile {
   expert_verified: boolean;
   tenant_id?: string | null;
   inquiry_confirmation_message?: string | null;
+  inquiry_prebook_message?: string | null;
 }
 
 const ExpertDetails: React.FC = () => {
@@ -47,6 +48,8 @@ const ExpertDetails: React.FC = () => {
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
   const [showInquiryConfirmation, setShowInquiryConfirmation] = useState(false);
   const [existingBookingStatus, setExistingBookingStatus] = useState<string | null>(null);
+  /** After user confirms pre-book modal (inquiry or hospital scheduling flow) */
+  const [pendingPreBookModel, setPendingPreBookModel] = useState<'inquiry' | 'hospital' | null>(null);
 
   const getBookingModel = (product: ProductWithDetails | null): 'direct' | 'inquiry' | 'hospital' => {
     if (!product) return 'direct';
@@ -79,7 +82,7 @@ const ExpertDetails: React.FC = () => {
       // Note: expertId is profiles.id where account_type = 'expert'
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_total_reviews, expert_availability_status, expert_verified, tenant_id, inquiry_confirmation_message')
+        .select('id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_total_reviews, expert_availability_status, expert_verified, tenant_id, inquiry_confirmation_message, inquiry_prebook_message')
         .eq('id', expertId)
         .eq('account_type', 'expert')
         .eq('expert_verified', true)
@@ -210,95 +213,103 @@ const ExpertDetails: React.FC = () => {
     }
   };
 
-  const handleBookConsultation = async () => {
+  const handleBookConsultation = () => {
     if (!user) {
       navigate('/auth/login');
       return;
     }
-    
+
     if (!consultationProduct || !expert) {
       console.error('Consultation product or expert not available');
       return;
     }
 
     const model = getBookingModel(consultationProduct);
+    if (model === 'direct') {
+      setPurchaseModalOpen(true);
+      return;
+    }
 
-    switch (model) {
-      case 'hospital':
-        // Create booking record for admin tracking, then show scheduling instructions
-        setInquirySubmitting(true);
-        try {
-          const { error: hospitalBookingError } = await supabase
-            .from('consultation_bookings')
-            .insert({
-              user_id: user.id,
-              user_email: user.email || '',
-              user_name: profile?.first_name || 'User',
-              expert_id: expert.id,
-              expert_name: expert.first_name,
-              product_id: consultationProduct.id,
-              appointment_name: consultationProduct.title || `Consultation with ${expert.first_name}`,
-              booking_type: 'inquiry',
-              amount_paid: 0,
-              payment_status: 'free',
-              resource_type: 'hospital',
-              status: 'pending',
-            });
+    setPendingPreBookModel(model);
+  };
 
-          if (hospitalBookingError) {
-            console.error('Hospital booking record error:', hospitalBookingError);
-            // Don't block the modal — still show scheduling instructions
-          }
-        } catch (err) {
-          console.error('Hospital booking record error:', err);
-        } finally {
-          setInquirySubmitting(false);
-        }
-        setShowScheduleModal(true);
-        break;
+  const runHospitalBookingThenScheduleModal = async () => {
+    if (!user || !consultationProduct || !expert) return;
+    setInquirySubmitting(true);
+    try {
+      const { error: hospitalBookingError } = await supabase
+        .from('consultation_bookings')
+        .insert({
+          user_id: user.id,
+          user_email: user.email || '',
+          user_name: profile?.first_name || 'User',
+          expert_id: expert.id,
+          expert_name: expert.first_name,
+          product_id: consultationProduct.id,
+          appointment_name: consultationProduct.title || `Consultation with ${expert.first_name}`,
+          booking_type: 'inquiry',
+          amount_paid: 0,
+          payment_status: 'free',
+          resource_type: 'hospital',
+          status: 'pending',
+        });
 
-      case 'inquiry':
-        // Create booking record for admin — no payment (free consultation)
-        setInquirySubmitting(true);
-        try {
-          const { error: bookingError } = await supabase
-            .from('consultation_bookings')
-            .insert({
-              user_id: user.id,
-              user_email: user.email || '',
-              user_name: profile?.first_name || 'User',
-              expert_id: expert.id,
-              expert_name: expert.first_name,
-              product_id: consultationProduct.id,
-              appointment_name: consultationProduct.title || `Consultation with ${expert.first_name}`,
-              booking_type: 'inquiry',
-              amount_paid: 0,
-              payment_status: 'free',
-              resource_type: expert.tenant_id ? 'hospital' : 'whisperoo',
-              status: 'pending',
-            });
+      if (hospitalBookingError) {
+        console.error('Hospital booking record error:', hospitalBookingError);
+      }
+    } catch (err) {
+      console.error('Hospital booking record error:', err);
+    } finally {
+      setInquirySubmitting(false);
+    }
+    setShowScheduleModal(true);
+  };
 
-          if (bookingError) throw bookingError;
+  const runInquiryBookingThenConfirmation = async () => {
+    if (!user || !consultationProduct || !expert) return;
+    setInquirySubmitting(true);
+    try {
+      const { error: bookingError } = await supabase
+        .from('consultation_bookings')
+        .insert({
+          user_id: user.id,
+          user_email: user.email || '',
+          user_name: profile?.first_name || 'User',
+          expert_id: expert.id,
+          expert_name: expert.first_name,
+          product_id: consultationProduct.id,
+          appointment_name: consultationProduct.title || `Consultation with ${expert.first_name}`,
+          booking_type: 'inquiry',
+          amount_paid: 0,
+          payment_status: 'free',
+          resource_type: expert.tenant_id ? 'hospital' : 'whisperoo',
+          status: 'pending',
+        });
 
-          setExistingBookingStatus('pending');
-          setShowInquiryConfirmation(true);
-        } catch (err: any) {
-          console.error('Inquiry booking error:', err);
-          toast({
-            title: 'Error',
-            description: 'Failed to submit your request. Please try again.',
-            variant: 'destructive',
-          });
-        } finally {
-          setInquirySubmitting(false);
-        }
-        break;
+      if (bookingError) throw bookingError;
 
-      case 'direct':
-      default:
-        // Open Stripe checkout (current behavior)
-        setPurchaseModalOpen(true);
-        break;
+      setExistingBookingStatus('pending');
+      setShowInquiryConfirmation(true);
+    } catch (err: unknown) {
+      console.error('Inquiry booking error:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to submit your request. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setInquirySubmitting(false);
+    }
+  };
+
+  const handlePreBookConfirm = async () => {
+    if (!pendingPreBookModel) return;
+    const model = pendingPreBookModel;
+    setPendingPreBookModel(null);
+    if (model === 'hospital') {
+      await runHospitalBookingThenScheduleModal();
+    } else {
+      await runInquiryBookingThenConfirmation();
     }
   };
 
@@ -320,6 +331,18 @@ const ExpertDetails: React.FC = () => {
 
     return t(`experts.specialties.${key}`, specialty);
   };
+
+  const getExpertDisplayTitle = (): string => {
+    const raw = expert?.expert_specialties?.[0] || '';
+    return translateSpecialty(raw) || t('experts.generalExpert');
+  };
+
+  const getExpertNameAndTitle = (): string =>
+    expert ? `${expert.first_name}, ${getExpertDisplayTitle()}` : '';
+
+  const hospitalPrebookOverride =
+    consultationProduct &&
+    (consultationProduct as { hospital_prebook_message?: string | null }).hospital_prebook_message?.trim();
 
   if (loading) {
     return (
@@ -470,11 +493,10 @@ const ExpertDetails: React.FC = () => {
                               ? '✓ Appointment Confirmed'
                               : existingBookingStatus === 'pending'
                                 ? '⏳ Request Pending'
-                                : getBookingModel(consultationProduct) === 'inquiry'
-                                  ? t('experts.requestAppointment', 'Request Appointment')
-                                  : getBookingModel(consultationProduct) === 'hospital'
-                                    ? t('experts.howToSchedule', 'How to Schedule')
-                                    : t('experts.bookConsultation')}
+                                : getBookingModel(consultationProduct) === 'inquiry' ||
+                                    getBookingModel(consultationProduct) === 'hospital'
+                                  ? t('experts.bookAppointment')
+                                  : t('experts.bookConsultation')}
                         </Button>
                       </div>
                     </div>
@@ -607,6 +629,63 @@ const ExpertDetails: React.FC = () => {
             product={consultationProduct}
             onPurchaseSuccess={handlePurchaseSuccess}
           />
+        )}
+
+        {/* Pre-book confirmation (inquiry & hospital resource flows) */}
+        {pendingPreBookModel && expert && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+              <div className="px-6 pt-6 pb-3">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {t('experts.preBook.title')}
+                  </h3>
+                  {pendingPreBookModel === 'hospital' && (
+                    <Badge className="bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-100">
+                      {t('experts.hospitalResourceTag')}
+                    </Badge>
+                  )}
+                </div>
+                <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
+                  {pendingPreBookModel === 'inquiry' && expert.inquiry_prebook_message?.trim() ? (
+                    <p className="whitespace-pre-wrap">{expert.inquiry_prebook_message.trim()}</p>
+                  ) : pendingPreBookModel === 'hospital' && hospitalPrebookOverride ? (
+                    <p className="whitespace-pre-wrap">{hospitalPrebookOverride}</p>
+                  ) : (
+                    <>
+                      <p>
+                        {pendingPreBookModel === 'inquiry'
+                          ? t('experts.preBook.inquiryIntro', { expertNameAndTitle: getExpertNameAndTitle() })
+                          : t('experts.preBook.hospitalIntro', { expertNameAndTitle: getExpertNameAndTitle() })}
+                      </p>
+                      <p>
+                        {pendingPreBookModel === 'inquiry'
+                          ? t('experts.preBook.inquiryOutreach', { firstName: expert.first_name })
+                          : t('experts.preBook.hospitalOutreach', { firstName: expert.first_name })}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setPendingPreBookModel(null)}
+                  disabled={inquirySubmitting}
+                  className="font-semibold w-full sm:w-auto"
+                >
+                  {t('experts.preBook.cancel')}
+                </Button>
+                <Button
+                  onClick={() => void handlePreBookConfirm()}
+                  disabled={inquirySubmitting}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold w-full sm:w-auto"
+                >
+                  {inquirySubmitting ? t('experts.preBook.submitting') : t('experts.bookAppointment')}
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* How to Schedule Modal (hospital resources) */}

@@ -19,7 +19,12 @@ import {
   Play,
   Users,
 } from "lucide-react";
-import { productService, ProductFile } from "@/services/products";
+import {
+  productService,
+  ProductFile,
+  getConsultationBookingModel,
+  isConsultationBookingViaExpert,
+} from "@/services/products";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -149,6 +154,15 @@ export const ProductDetailPage: React.FC = () => {
     // Navigate to purchase flow (to be implemented with Stripe)
     navigate(`/products/${productId}/purchase`);
   };
+
+  const handleConsultationBookFromProduct = () => {
+    if (!user) {
+      navigate("/auth/login");
+      return;
+    }
+    if (!product?.expert?.id) return;
+    navigate(`/experts/${product.expert.id}`);
+  };
   const handleSaveFreeContent = async () => {
     if (!user || !productId) {
       navigate("/auth/login");
@@ -239,6 +253,59 @@ export const ProductDetailPage: React.FC = () => {
     setShowPreviewModal(true);
   };
   const isFreeProduct = product?.price === 0;
+  const consultationBookingModel = product ? getConsultationBookingModel(product) : "direct";
+  const consultOpensExpertBooking =
+    product && isConsultationBookingViaExpert(product);
+
+  const getConsultationExpertNameAndTitle = () => {
+    const e = product?.expert;
+    if (!e) return "";
+    const spec = e.expert_specialties?.[0];
+    return spec ? `${e.first_name}, ${spec}` : e.first_name;
+  };
+
+  const consultationAboutBody =
+    product?.product_type === "consultation"
+      ? (() => {
+          const e = product.expert;
+          const descLocalized =
+            currentLang === "es" && product.description_es
+              ? product.description_es
+              : currentLang === "vi" && product.description_vi
+                ? product.description_vi
+                : product.description || "";
+          const descTrimmed = descLocalized.trim();
+
+          if (consultationBookingModel === "inquiry") {
+            const expertNameAndTitle = getConsultationExpertNameAndTitle();
+            const firstName = e?.first_name ?? "";
+            const prebook =
+              e?.inquiry_prebook_message?.trim() ||
+              (expertNameAndTitle
+                ? `${t("experts.preBook.inquiryIntro", { expertNameAndTitle })}\n\n${t("experts.preBook.inquiryOutreach", { firstName })}`
+                : descTrimmed);
+            const confirmation = e?.inquiry_confirmation_message?.trim();
+            return { variant: "inquiry" as const, prebook, confirmation, descTrimmed };
+          }
+
+          if (consultationBookingModel === "hospital") {
+            const expertNameAndTitle = getConsultationExpertNameAndTitle();
+            const firstName = e?.first_name ?? "";
+            const hospPre =
+              typeof product.hospital_prebook_message === "string"
+                ? product.hospital_prebook_message.trim()
+                : "";
+            const prebook =
+              hospPre ||
+              (expertNameAndTitle
+                ? `${t("experts.preBook.hospitalIntro", { expertNameAndTitle })}\n\n${t("experts.preBook.hospitalOutreach", { firstName })}`
+                : descTrimmed);
+            return { variant: "hospital" as const, prebook, descTrimmed };
+          }
+
+          return { variant: "direct" as const, descTrimmed };
+        })()
+      : null;
 
   // Course helpers
   const isCourse =
@@ -430,9 +497,62 @@ export const ProductDetailPage: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground leading-relaxed">
-                  {currentLang === 'es' && product.description_es ? product.description_es : currentLang === 'vi' && product.description_vi ? product.description_vi : product.description}
-                </p>
+                {consultationAboutBody?.variant === "inquiry" ? (
+                  <div className="space-y-4">
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {consultationAboutBody.prebook}
+                    </p>
+                    {consultationAboutBody.confirmation ? (
+                      <div className="p-4 rounded-lg border border-indigo-200 bg-indigo-50/70">
+                        <p className="text-xs font-semibold text-indigo-900 mb-1">
+                          {t("products.noteFromExpert", {
+                            name: product.expert?.first_name ?? t("products.expertFallbackName"),
+                          })}
+                        </p>
+                        <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                          {consultationAboutBody.confirmation}
+                        </p>
+                      </div>
+                    ) : null}
+                    {consultationAboutBody.descTrimmed ? (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {t("products.additionalDetails")}
+                        </p>
+                        <p className="text-muted-foreground leading-relaxed mt-1 whitespace-pre-wrap">
+                          {consultationAboutBody.descTrimmed}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : consultationAboutBody?.variant === "hospital" ? (
+                  <div className="space-y-4">
+                    <Badge className="bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-100">
+                      {t("experts.hospitalResourceTag")}
+                    </Badge>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {consultationAboutBody.prebook}
+                    </p>
+                    {consultationAboutBody.descTrimmed ? (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {t("products.additionalDetails")}
+                        </p>
+                        <p className="text-muted-foreground leading-relaxed mt-1 whitespace-pre-wrap">
+                          {consultationAboutBody.descTrimmed}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    {currentLang === "es" && product.description_es
+                      ? product.description_es
+                      : currentLang === "vi" && product.description_vi
+                        ? product.description_vi
+                        : product.description}
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -458,7 +578,12 @@ export const ProductDetailPage: React.FC = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{product.expert.first_name}</p>
+                      <p className="font-medium">
+                        {product.expert.first_name}
+                        {product.expert.expert_specialties?.[0]
+                          ? `, ${product.expert.expert_specialties[0]}`
+                          : ""}
+                      </p>
                       {product.expert.tenant_id ? (
                         <span className="inline-block mt-1 px-2 py-0.5 bg-pink-100 text-pink-700 text-xs font-semibold rounded">
                           {t('experts.tabHospital', 'Hospital Expert')}
@@ -545,6 +670,22 @@ export const ProductDetailPage: React.FC = () => {
                       >
                         <Eye className="h-4 w-4" />
                         {t('products.viewContent')}
+                      </Button>
+                    ) : consultOpensExpertBooking ? (
+                      <Button
+                        onClick={handleConsultationBookFromProduct}
+                        className="flex-1 text-center leading-snug whitespace-normal min-h-[3rem] py-3 h-auto"
+                        size="lg"
+                      >
+                        {t("products.requestAppointmentFreeConsultation")}
+                      </Button>
+                    ) : product.product_type === "consultation" && !isFreeProduct ? (
+                      <Button
+                        onClick={handlePurchase}
+                        className="flex-1"
+                        size="lg"
+                      >
+                        {t("products.bookConsultation")}
                       </Button>
                     ) : (
                       <Button

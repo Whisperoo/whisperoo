@@ -747,6 +747,7 @@ export type Database = {
           file_url: string | null
           has_multiple_files: boolean | null
           how_to_schedule: string | null
+          hospital_prebook_message: string | null
           id: string
           is_active: boolean | null
           page_count: number | null
@@ -777,6 +778,7 @@ export type Database = {
           file_url?: string | null
           has_multiple_files?: boolean | null
           how_to_schedule?: string | null
+          hospital_prebook_message?: string | null
           id?: string
           is_active?: boolean | null
           page_count?: number | null
@@ -807,6 +809,7 @@ export type Database = {
           file_url?: string | null
           has_multiple_files?: boolean | null
           how_to_schedule?: string | null
+          hospital_prebook_message?: string | null
           id?: string
           is_active?: boolean | null
           page_count?: number | null
@@ -880,6 +883,7 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"] | null
           tenant_id: string | null
           inquiry_confirmation_message: string | null
+          inquiry_prebook_message: string | null
           topics_of_interest: string[]
           updated_at: string | null
         }
@@ -928,6 +932,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"] | null
           tenant_id?: string | null
           inquiry_confirmation_message?: string | null
+          inquiry_prebook_message?: string | null
           topics_of_interest?: string[]
           updated_at?: string | null
         }
@@ -976,6 +981,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"] | null
           tenant_id?: string | null
           inquiry_confirmation_message?: string | null
+          inquiry_prebook_message?: string | null
           topics_of_interest?: string[]
           updated_at?: string | null
         }

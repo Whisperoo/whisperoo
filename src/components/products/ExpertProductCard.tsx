@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ export const ExpertProductCard: React.FC<ExpertProductCardProps> = ({
   product,
   onView,
 }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { i18n, t } = useTranslation();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -32,9 +34,16 @@ export const ExpertProductCard: React.FC<ExpertProductCardProps> = ({
                              currentLang === 'vi' && product.description_vi ? product.description_vi : 
                              product.description;
 
-  const handlePurchaseClick = () => {
+  const isConsultation = product.product_type === 'consultation';
+
+  const handlePurchaseClick = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!user) {
-      console.log('User must be logged in to purchase');
+      navigate('/auth/login');
+      return;
+    }
+    if (isConsultation && product.expert?.id && (product.price ?? 0) === 0) {
+      navigate(`/experts/${product.expert.id}`);
       return;
     }
     setShowPurchaseModal(true);
@@ -249,23 +258,35 @@ export const ExpertProductCard: React.FC<ExpertProductCardProps> = ({
           </div>
         </div>
 
-        {/* Price and Purchase Button */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-          <div>
+        {/* Price and primary action */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100 gap-3">
+          <div className="min-w-0">
             <div className="text-xl font-bold text-gray-900">
-              {formatCurrency(product.price)}
+              {(product.price ?? 0) === 0
+                ? t('products.free')
+                : formatCurrency(product.price)}
             </div>
-            <span className="text-xs text-gray-500">One-time purchase</span>
+            <span className="text-xs text-gray-500">
+              {isConsultation
+                ? (product.price ?? 0) === 0
+                  ? t('products.consultationNoUpfront')
+                  : t('products.consultationFee')
+                : t('products.oneTimePurchase')}
+            </span>
           </div>
-          
+
           <Button
             onClick={(e) => {
-              e.stopPropagation(); // Prevent card click when clicking purchase button
-              handlePurchaseClick();
+              e.stopPropagation();
+              handlePurchaseClick(e);
             }}
-            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-6 font-medium rounded-lg h-10 min-h-[44px] touch-manipulation"
+            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 sm:px-6 font-medium rounded-lg h-auto min-h-[44px] py-2 touch-manipulation max-w-[55%] whitespace-normal text-center leading-snug text-xs sm:text-sm"
           >
-            Purchase
+            {isConsultation
+              ? (product.price ?? 0) === 0
+                ? t('products.requestAppointmentFree')
+                : t('products.bookConsultation')
+              : t('products.purchaseNow')}
           </Button>
         </div>
       </CardContent>

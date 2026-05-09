@@ -28,6 +28,29 @@ type ProductFileInsert =
 
 export type { ProductFile, ProductFileInsert };
 
+/** Consultation booking: matches ExpertDetails semantics for marketplace + profile flows */
+export function getConsultationBookingModel(product: {
+  product_type: string;
+  price?: number | null;
+  booking_model?: string | null;
+}): "direct" | "inquiry" | "hospital" {
+  if (product.product_type !== "consultation") return "direct";
+  const configured = product.booking_model;
+  if (configured === "hospital" || configured === "inquiry") return configured;
+  if (Number(product.price || 0) <= 0) return "inquiry";
+  if (configured === "direct") return "direct";
+  return Number(product.price || 0) > 0 ? "direct" : "inquiry";
+}
+
+/** Free/inquiry-style consultations resolve booking on expert profile — not Saved to My Content */
+export function isConsultationBookingViaExpert(product: ProductWithDetails): boolean {
+  return (
+    product.product_type === "consultation" &&
+    Boolean(product.expert?.id) &&
+    getConsultationBookingModel(product) !== "direct"
+  );
+}
+
 export interface ProductWithDetails extends Product {
   expert?: {
     id: string;
@@ -35,6 +58,8 @@ export interface ProductWithDetails extends Product {
     profile_image_url?: string;
     expert_specialties?: string[];
     tenant_id?: string | null;
+    inquiry_prebook_message?: string | null;
+    inquiry_confirmation_message?: string | null;
   };
   categories?: ProductCategory[];
   average_rating?: number;
@@ -243,7 +268,8 @@ export const productService = {
             id,
             first_name,
             profile_image_url,
-            expert_specialties
+            expert_specialties,
+            tenant_id
           ),
           categories:product_category_mappings(
             category:product_categories(*)
@@ -504,7 +530,10 @@ export const productService = {
         id,
         first_name,
         profile_image_url,
-        tenant_id
+        tenant_id,
+        expert_specialties,
+        inquiry_prebook_message,
+        inquiry_confirmation_message
       ),
       categories:product_category_mappings(
         category:product_categories(*)
