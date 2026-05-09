@@ -47,7 +47,7 @@ interface DashboardData {
     total_revenue: number;
   }[];
   qr_metrics?: {
-    totals: { scans: number; signups: number };
+    totals: { scans: number; signups: number; attributed_signups?: number; unattributed_signups?: number };
     by_qr: Array<{
       qr_code_id: string;
       token: string;
@@ -56,6 +56,15 @@ interface DashboardData {
       tenant_id: string;
       scans: number;
       signups: number;
+    }>;
+    unattributed_rows?: Array<{
+      id: string;
+      first_name: string | null;
+      email: string | null;
+      tenant_id: string | null;
+      acquisition_source: string | null;
+      acquisition_department: string | null;
+      created_at: string;
     }>;
   };
 }
@@ -441,7 +450,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
 
       {/* ── QR Signup Attribution ── */}
       {data?.qr_metrics && (
-        <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 flex flex-col">
+        <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 flex flex-col gap-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-[15px] font-semibold text-gray-900">QR Signup Attribution</h3>
@@ -452,6 +461,11 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
             <div className="text-xs text-gray-500">
               <span className="font-semibold text-gray-800">{data.qr_metrics.totals?.scans ?? 0}</span> scans ·{' '}
               <span className="font-semibold text-gray-800">{data.qr_metrics.totals?.signups ?? 0}</span> signups
+              {(data.qr_metrics.totals?.unattributed_signups ?? 0) > 0 && (
+                <span className="ml-2 text-amber-700">
+                  ({data.qr_metrics.totals?.unattributed_signups} unattributed)
+                </span>
+              )}
             </div>
           </div>
 
@@ -496,6 +510,53 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
               </tbody>
             </table>
           </div>
+
+          {(data.qr_metrics.unattributed_rows?.length ?? 0) > 0 && (
+            <div className="border border-amber-200 bg-amber-50/40 rounded-xl p-4">
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold text-amber-900">
+                  Unattributed QR Signups (Needs Reconciliation)
+                </h4>
+                <p className="text-xs text-amber-800">
+                  These users signed up with QR hospital source but are not mapped to a specific QR code yet.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-amber-100/60 text-amber-900">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-semibold">Created</th>
+                      <th className="px-3 py-2 text-left font-semibold">User</th>
+                      <th className="px-3 py-2 text-left font-semibold">Email</th>
+                      <th className="px-3 py-2 text-left font-semibold">Department</th>
+                      <th className="px-3 py-2 text-left font-semibold">User ID</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-200/60">
+                    {data.qr_metrics.unattributed_rows!.map((row) => (
+                      <tr key={row.id}>
+                        <td className="px-3 py-2 text-amber-900/90">
+                          {new Date(row.created_at).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2 text-amber-900/90">
+                          {row.first_name || '—'}
+                        </td>
+                        <td className="px-3 py-2 text-amber-900/90">
+                          {row.email || '—'}
+                        </td>
+                        <td className="px-3 py-2 text-amber-900/90">
+                          {row.acquisition_department || '—'}
+                        </td>
+                        <td className="px-3 py-2 font-mono text-[10px] text-amber-900/80">
+                          {row.id}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
