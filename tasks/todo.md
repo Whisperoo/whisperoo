@@ -24,6 +24,34 @@
 - Updated `useStripePayment` response normalization to support both `clientSecret/paymentIntentId/purchaseId` and `client_secret/payment_intent_id/purchase_id` payloads.
 - This removes the `invalid client secret returned from server` failure mode caused by response key mismatches and hardens backward compatibility.
 
+# Bug Fix — Chat recommendations (experts + tenant-scoped resources)
+
+## Goal
+
+- Ensure **repeated topic questions** reliably surface **relevant expert recommendations**.
+- Ensure **Whisperoo (non-hospital) users never receive hospital-only resources** in chat recommendations.
+
+## Plan (checklist)
+
+- [x] Trace how chat renders expert/resource suggestions (edge function → message metadata → UI).
+- [x] **Tenant-scope expert matching** in `supabase/functions/chat_ai_rag_fixed/index.ts`:
+  - B2C (`tenant_id IS NULL`): only match experts with `tenant_id IS NULL`
+  - Hospital users: match both, but **prioritize** tenant/boosted experts
+- [x] **Tenant-scope product/resource matching** in `supabase/functions/chat_ai_rag_fixed/index.ts`:
+  - B2C: exclude `products.is_hospital_resource = true`
+  - Hospital users: allow both, but prioritize hospital resources
+  - Respect tenant config disabled product ids (if present) for hospital users
+- [x] Strengthen “repeat topic” fallback: if `isRecurringTopic` and no semantic matches, broaden keyword/category-based expert lookup.
+- [x] Verify assistant messages persist `metadata.expert_suggestions` and that `src/components/chat/MessageBubble.tsx` displays cards.
+- [x] Run `npm run lint` (and `npm run build` if needed) to ensure no new TS/ESLint issues.
+
+## Review (fill after)
+
+- [x] Summary of what changed + any follow-ups.
+- Chat Edge Function now tenant-scopes **expert suggestions**: Whisperoo users never get hospital experts; hospital users still see both with hospital/boost prioritization.
+- Chat Edge Function now tenant-scopes **resource suggestions**: Whisperoo users never get `is_hospital_resource` products; hospital users can see both and tenant-disabled products are filtered out.
+- Added repeat-topic seed-phrase fallback so repeated questions are much more likely to surface relevant expert suggestions even when semantic matching misses.
+
 # UI Consistency — Chat + Experts Tabs
 
 ## Plan (checklist)

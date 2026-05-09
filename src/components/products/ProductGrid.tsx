@@ -296,14 +296,24 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     : afterTagFilter;
 
   // Phase 4: Tab-based resource filtering (mirrors ExpertProfiles)
+  // Hospital tab: show only hospital resources belonging to the user's tenant
   const hospitalProducts = afterDisabledFilter.filter((p: any) =>
-    p.is_hospital_resource === true ||
-    (p.expert?.tenant_id && tenant && p.expert.tenant_id === tenant.id)
+    (p.is_hospital_resource === true || (p as any).tenant_id != null) &&
+    // Ensure we only show resources for THIS tenant, not other hospitals
+    (
+      (p as any).tenant_id === tenant?.id ||
+      (p.expert?.tenant_id && tenant && p.expert.tenant_id === tenant.id)
+    )
+  );
+
+  // Whisperoo tab: exclude ALL hospital resources (they belong to hospital tabs only)
+  const whisperooProducts = afterDisabledFilter.filter((p: any) =>
+    p.is_hospital_resource !== true && !(p as any).tenant_id
   );
 
   const displayProducts = activeResourceTab === 'hospital'
     ? hospitalProducts
-    : afterDisabledFilter;
+    : whisperooProducts;
 
   const totalResults = data?.total || 0;
   // console.log(displayProducts, "from grid");

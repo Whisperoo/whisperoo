@@ -34,6 +34,7 @@ interface ExpertFormData {
   password: string;
   profile_image_url: string;
   expert_bio: string;
+  inquiry_confirmation_message: string;
   expert_specialties: string[];
   expert_credentials: string[];
   expert_experience_years: number;
@@ -48,6 +49,7 @@ const EMPTY_FORM: ExpertFormData = {
   password: '',
   profile_image_url: '',
   expert_bio: '',
+  inquiry_confirmation_message: '',
   expert_specialties: [],
   expert_credentials: [],
   expert_experience_years: 0,
@@ -97,6 +99,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           password: '',
           profile_image_url: data.profile_image_url || '',
           expert_bio: data.expert_bio || '',
+          inquiry_confirmation_message: data.inquiry_confirmation_message || '',
           expert_specialties: data.expert_specialties || [],
           expert_credentials: data.expert_credentials || [],
           expert_experience_years: data.expert_experience_years || 0,
@@ -176,6 +179,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           p_expert_availability_status: form.expert_availability_status,
           p_tenant_id: form.tenant_id,
           p_password: form.password.trim() || null,
+          p_inquiry_confirmation_message: form.inquiry_confirmation_message.trim() || null,
         });
         if (rpcErr) throw rpcErr;
 
@@ -218,6 +222,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
             first_name: form.first_name.trim(),
             profile_image_url: nextUrl,
             expert_bio: form.expert_bio.trim(),
+            inquiry_confirmation_message: form.inquiry_confirmation_message.trim() || null,
             expert_specialties: finalSpecialties,
             expert_credentials: finalCredentials,
             expert_experience_years: form.expert_experience_years,
@@ -376,6 +381,24 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
               <p className="text-xs text-gray-400 mt-1">{form.expert_bio.length} characters</p>
+            </div>
+
+            {/* Inquiry Confirmation Message */}
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">
+                Inquiry Confirmation Message
+                <span className="text-gray-400 ml-1">(optional)</span>
+              </label>
+              <textarea
+                value={form.inquiry_confirmation_message}
+                onChange={(e) => setForm({ ...form, inquiry_confirmation_message: e.target.value })}
+                placeholder="Custom message shown to users after they request an appointment. Example: 'Thank you for your interest! I typically respond within 24 hours. Please have your insurance info ready.'"
+                rows={3}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                This message appears in the confirmation modal when a user requests an appointment. Leave blank for the default message.
+              </p>
             </div>
 
             {/* Specialties */}

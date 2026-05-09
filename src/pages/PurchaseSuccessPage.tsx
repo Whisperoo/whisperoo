@@ -178,41 +178,73 @@ export const PurchaseSuccessPage: React.FC = () => {
             <div className="space-y-3">
               {product.product_type === 'consultation' ? (
                 <>
-                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-semibold text-sm">1</span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Expert Will Contact You</p>
-                      <p className="text-sm text-gray-600">
-                        {product.expert?.first_name || 'The expert'} will reach out to you within 24 hours to schedule your appointment
-                      </p>
-                    </div>
-                  </div>
+                  {/* Custom scheduling instructions from expert/admin */}
+                  {product.how_to_schedule ? (
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-blue-600 font-semibold text-sm">📋</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 mb-2">How to Schedule</p>
+                          <p className="text-sm text-blue-900 whitespace-pre-wrap leading-relaxed">
+                            {product.how_to_schedule}
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                      <span className="text-green-600 font-semibold text-sm">2</span>
+                      <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                          <span className="text-purple-600 font-semibold text-sm">💬</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">Get Support</p>
+                          <p className="text-sm text-gray-600">
+                            Have questions? Our support team is here to help
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Prepare for Your Session</p>
-                      <p className="text-sm text-gray-600">
-                        Think about your questions and goals for the consultation
-                      </p>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      {/* Default steps when no custom instructions */}
+                      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-blue-600 font-semibold text-sm">1</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">Expert Will Contact You</p>
+                          <p className="text-sm text-gray-600">
+                            {product.expert?.first_name || 'The expert'} will reach out to you within 24 hours to schedule your appointment
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-purple-600 font-semibold text-sm">3</span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Get Support</p>
-                      <p className="text-sm text-gray-600">
-                        Have questions about your booking? Our support team is here to help
-                      </p>
-                    </div>
-                  </div>
+                      <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                          <span className="text-green-600 font-semibold text-sm">2</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">Prepare for Your Session</p>
+                          <p className="text-sm text-gray-600">
+                            Think about your questions and goals for the consultation
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                          <span className="text-purple-600 font-semibold text-sm">3</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">Get Support</p>
+                          <p className="text-sm text-gray-600">
+                            Have questions about your booking? Our support team is here to help
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <>

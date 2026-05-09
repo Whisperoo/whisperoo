@@ -169,6 +169,7 @@ Deno.serve(async (req) => {
           currency: 'usd',
           payment_method: 'free',
           status: 'completed',
+          discount_code: discount_code || null,
           metadata: {
             product_type: product.product_type,
             product_title: product.title,
@@ -187,10 +188,10 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Failed to create free purchase' }), { status: 500, headers: corsHeaders })
       }
       
-      if (appliedDiscountCodeId) {
-        // Increment use counter
-        await supabaseClient.rpc('increment_discount_usage', { discount_id: appliedDiscountCodeId });
-      }
+      // if (appliedDiscountCodeId) {
+      //   // Increment use counter (Now handled by DB trigger on purchases table)
+      //   // await supabaseClient.rpc('increment_discount_usage', { discount_id: appliedDiscountCodeId });
+      // }
 
       // Create consultation booking record for admin dashboard
       if (product.product_type === 'consultation') {
@@ -209,6 +210,7 @@ Deno.serve(async (req) => {
           purchase_id: purchase.id,
           resource_type: product.is_hospital_resource ? 'hospital' : 'whisperoo',
           status: 'pending',
+          discount_code: discount_code || null,
         })
       }
 
@@ -246,6 +248,7 @@ Deno.serve(async (req) => {
         payment_method: 'stripe',
         payment_intent_id: paymentIntent.id,
         status: 'pending',
+        discount_code: discount_code || null,
         metadata: {
           product_type: product.product_type,
           product_title: product.title,
@@ -276,9 +279,10 @@ Deno.serve(async (req) => {
     }
 
     // Increment discount usage counter for paid purchases too
-    if (appliedDiscountCodeId) {
-      await supabaseClient.rpc('increment_discount_usage', { discount_id: appliedDiscountCodeId });
-    }
+    // if (appliedDiscountCodeId) {
+    //   // Increment discount usage counter for paid purchases too (Now handled by DB trigger)
+    //   // await supabaseClient.rpc('increment_discount_usage', { discount_id: appliedDiscountCodeId });
+    // }
 
     // Create consultation booking record for admin dashboard
     if (product.product_type === 'consultation') {
@@ -297,6 +301,7 @@ Deno.serve(async (req) => {
         purchase_id: purchase.id,
         resource_type: product.is_hospital_resource ? 'hospital' : 'whisperoo',
         status: 'pending',
+        discount_code: discount_code || null,
       })
     }
 

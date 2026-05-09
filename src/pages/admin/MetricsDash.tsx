@@ -90,9 +90,9 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
       );
       if (rpcError) throw rpcError;
 
-      // Appointment checklist engagement (%): reminder_* templates
+      // Appointment booking engagement (%): based on consultation_bookings
       const { data: apptPct, error: apptErr } = await supabase.rpc(
-        'fn_get_appointment_checklist_engagement_pct',
+        'fn_get_appointment_booking_engagement_pct',
         {
           p_tenant_id: tenantId ?? null,
           p_start_date: startDate || null,
@@ -219,11 +219,11 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           tooltip={t('admin.metrics.tooltips.totalEnrolled')}
         />
         <KpiCard
-          title="Appointment checklist engagement"
-          subtitle="Reminder checklist items"
+          title="Appointment Booking Rate"
+          subtitle="Consultation Bookings"
           value={k?.appointment_checklist_engagement_pct ?? null}
           valueSuffix="%"
-          tooltip="Percent of enrolled users who completed at least one appointment reminder checklist item in the selected date range."
+          tooltip="Percent of enrolled users who booked at least one consultation appointment in the selected date range."
         />
         <KpiCard
           title={t('admin.metrics.escalationSignals')}

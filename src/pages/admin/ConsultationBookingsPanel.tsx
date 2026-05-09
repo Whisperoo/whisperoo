@@ -23,6 +23,8 @@ interface ConsultationBooking {
   booked_at: string;
   completed_at: string | null;
   cancelled_at: string | null;
+  discount_code: string | null;
+  admin_notes: string | null;
 }
 
 interface ConsultationBookingsPanelProps {
@@ -40,6 +42,7 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
   const [resourceFilter, setResourceFilter] = useState<ResourceFilter>('all');
   const [expertFilter, setExpertFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [editingNotes, setEditingNotes] = useState<{ id: string, notes: string } | null>(null);
 
   const fetchBookings = async () => {
     setLoading(true);
@@ -137,6 +140,27 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
           : b
       ));
       toast({ title: 'Cancelled', description: 'Booking has been cancelled.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const saveNotes = async (bookingId: string, notes: string) => {
+    setActionLoading(`notes-${bookingId}`);
+    try {
+      const { error } = await supabase
+        .from('consultation_bookings')
+        .update({ admin_notes: notes })
+        .eq('id', bookingId);
+      if (error) throw error;
+
+      setBookings(prev => prev.map(b =>
+        b.id === bookingId ? { ...b, admin_notes: notes } : b
+      ));
+      setEditingNotes(null);
+      toast({ title: 'Success', description: 'Notes updated.' });
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -351,6 +375,7 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Payment</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Resource</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Admin Notes</th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
@@ -390,7 +415,14 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
 
                     {/* Appointment Name */}
                     <td className="px-4 py-3 text-gray-700 max-w-[200px]">
-                      <span className="line-clamp-2">{booking.appointment_name}</span>
+                      <div className="flex flex-col">
+                        <span className="line-clamp-2">{booking.appointment_name}</span>
+                        {booking.discount_code && (
+                          <span className="text-[10px] font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-md self-start mt-1">
+                            🎟️ {booking.discount_code}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Payment Status */}
@@ -406,6 +438,47 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
                     {/* Status */}
                     <td className="px-4 py-3">
                       <StatusBadge status={booking.status} />
+                    </td>
+
+                    {/* Admin Notes */}
+                    <td className="px-4 py-3 min-w-[200px]">
+                      {editingNotes?.id === booking.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={editingNotes.notes}
+                            onChange={(e) => setEditingNotes({ ...editingNotes, notes: e.target.value })}
+                            className="w-full text-xs p-2 border border-blue-200 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none"
+                            rows={2}
+                            placeholder="Coordination notes..."
+                          />
+                          <div className="flex justify-end gap-1">
+                            <button
+                              onClick={() => setEditingNotes(null)}
+                              className="px-2 py-1 text-[10px] text-gray-500 hover:bg-gray-100 rounded"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => saveNotes(booking.id, editingNotes.notes)}
+                              disabled={actionLoading === `notes-${booking.id}`}
+                              className="px-2 py-1 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div 
+                          onClick={() => setEditingNotes({ id: booking.id, notes: booking.admin_notes || '' })}
+                          className="group cursor-pointer"
+                        >
+                          {booking.admin_notes ? (
+                            <p className="text-xs text-gray-600 line-clamp-2 italic">"{booking.admin_notes}"</p>
+                          ) : (
+                            <p className="text-[10px] text-gray-300 italic group-hover:text-blue-400">+ Add notes</p>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     {/* Actions */}

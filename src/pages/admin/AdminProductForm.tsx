@@ -30,6 +30,7 @@ interface ProductFormData {
 interface ExpertOption {
   id: string;
   first_name: string;
+  tenant_id?: string | null;
 }
 
 const EMPTY_FORM: ProductFormData = {
@@ -67,7 +68,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
       // Fetch experts for the dropdown
       const { data: expertData } = await supabase
         .from('profiles')
-        .select('id, first_name')
+        .select('id, first_name, tenant_id')
         .eq('account_type', 'expert')
         .eq('expert_verified', true)
         .order('first_name');
@@ -157,6 +158,10 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
       return;
     }
 
+    // Derive tenant_id from the selected expert for hospital resources
+    const selectedExpert = experts.find(e => e.id === form.expert_id);
+    const productTenantId = form.is_hospital_resource ? (selectedExpert?.tenant_id || null) : null;
+
     const payload = {
       title: form.title.trim(),
       description: form.description.trim(),
@@ -173,6 +178,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
       is_hospital_resource: form.is_hospital_resource,
       booking_model: form.booking_model,
       how_to_schedule: form.booking_model === 'hospital' ? form.how_to_schedule.trim() || null : null,
+      tenant_id: productTenantId,
     };
 
     try {

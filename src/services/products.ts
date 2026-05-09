@@ -34,6 +34,7 @@ export interface ProductWithDetails extends Product {
     first_name: string;
     profile_image_url?: string;
     expert_specialties?: string[];
+    tenant_id?: string | null;
   };
   categories?: ProductCategory[];
   average_rating?: number;
@@ -333,7 +334,8 @@ export const productService = {
         id,
         first_name,
         profile_image_url,
-        expert_specialties
+        expert_specialties,
+        tenant_id
       ),
       categories:product_category_mappings(
         category:product_categories(*)
@@ -501,7 +503,8 @@ export const productService = {
       expert:profiles!products_expert_id_fkey(
         id,
         first_name,
-        profile_image_url
+        profile_image_url,
+        tenant_id
       ),
       categories:product_category_mappings(
         category:product_categories(*)

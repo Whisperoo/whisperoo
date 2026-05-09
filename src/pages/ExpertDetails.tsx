@@ -29,6 +29,7 @@ interface ExpertProfile {
   expert_availability_status: string;
   expert_verified: boolean;
   tenant_id?: string | null;
+  inquiry_confirmation_message?: string | null;
 }
 
 const ExpertDetails: React.FC = () => {
@@ -44,6 +45,7 @@ const ExpertDetails: React.FC = () => {
   const [consultationProduct, setConsultationProduct] = useState<ProductWithDetails | null>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
+  const [showInquiryConfirmation, setShowInquiryConfirmation] = useState(false);
 
   const getBookingModel = (product: ProductWithDetails | null): 'direct' | 'inquiry' | 'hospital' => {
     if (!product) return 'direct';
@@ -75,7 +77,7 @@ const ExpertDetails: React.FC = () => {
       // Note: expertId is profiles.id where account_type = 'expert'
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_total_reviews, expert_availability_status, expert_verified, tenant_id')
+        .select('id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_total_reviews, expert_availability_status, expert_verified, tenant_id, inquiry_confirmation_message')
         .eq('id', expertId)
         .eq('account_type', 'expert')
         .eq('expert_verified', true)
@@ -201,12 +203,40 @@ const ExpertDetails: React.FC = () => {
 
     switch (model) {
       case 'hospital':
-        // Show custom scheduling instructions (informational only)
+        // Create booking record for admin tracking, then show scheduling instructions
+        setInquirySubmitting(true);
+        try {
+          const { error: hospitalBookingError } = await supabase
+            .from('consultation_bookings')
+            .insert({
+              user_id: user.id,
+              user_email: user.email || '',
+              user_name: profile?.first_name || 'User',
+              expert_id: expert.id,
+              expert_name: expert.first_name,
+              product_id: consultationProduct.id,
+              appointment_name: consultationProduct.title || `Consultation with ${expert.first_name}`,
+              booking_type: 'inquiry',
+              amount_paid: 0,
+              payment_status: 'free',
+              resource_type: 'hospital',
+              status: 'pending',
+            });
+
+          if (hospitalBookingError) {
+            console.error('Hospital booking record error:', hospitalBookingError);
+            // Don't block the modal — still show scheduling instructions
+          }
+        } catch (err) {
+          console.error('Hospital booking record error:', err);
+        } finally {
+          setInquirySubmitting(false);
+        }
         setShowScheduleModal(true);
         break;
 
       case 'inquiry':
-        // Create booking record for admin — no payment
+        // Create booking record for admin — no payment (free consultation)
         setInquirySubmitting(true);
         try {
           const { error: bookingError } = await supabase
@@ -220,17 +250,15 @@ const ExpertDetails: React.FC = () => {
               product_id: consultationProduct.id,
               appointment_name: consultationProduct.title || `Consultation with ${expert.first_name}`,
               booking_type: 'inquiry',
-              amount_paid: null,
+              amount_paid: 0,
+              payment_status: 'free',
               resource_type: expert.tenant_id ? 'hospital' : 'whisperoo',
               status: 'pending',
             });
 
           if (bookingError) throw bookingError;
 
-          toast({
-            title: t('experts.inquirySent', 'Request Sent'),
-            description: t('experts.inquiryDesc', "We'll notify the expert directly. They'll reach out within 24-48 hours to coordinate a time that works for you."),
-          });
+          setShowInquiryConfirmation(true);
         } catch (err: any) {
           console.error('Inquiry booking error:', err);
           toast({
@@ -575,6 +603,60 @@ const ExpertDetails: React.FC = () => {
                   className="font-semibold"
                 >
                   Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Inquiry Confirmation Modal */}
+        {showInquiryConfirmation && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+              {/* Header */}
+              <div className="px-6 pt-6 pb-4 text-center">
+                <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle className="w-7 h-7 text-emerald-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Request Created</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Your consultation request with <span className="font-medium text-gray-700">{expert?.first_name}</span> has been submitted.
+                </p>
+              </div>
+
+              {/* Custom or default message */}
+              <div className="px-6 pb-4">
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                  <p className="text-sm text-blue-900 whitespace-pre-wrap leading-relaxed">
+                    {expert?.inquiry_confirmation_message
+                      || `We'll notify ${expert?.first_name || 'the expert'} directly. They'll reach out within 24–48 hours to coordinate a time that works for you.`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status info */}
+              <div className="px-6 pb-5">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Status:</span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                      <Clock className="w-3 h-3" />
+                      Pending
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-400">
+                    {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+                <Button
+                  onClick={() => setShowInquiryConfirmation(false)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6"
+                >
+                  Got it
                 </Button>
               </div>
             </div>

@@ -54,15 +54,18 @@ serve(async (req) => {
     const userPersonalContext: string = userProfile?.personal_context || '';
     const userLanguage: string = userProfile?.language_preference || 'en';
 
-    // If user has tenant, fetch expert_boost_ids from tenant config
+    // If user has tenant, fetch tenant config used for personalization
     let expertBoostIds: string[] = [];
+    let disabledProductIds: string[] = [];
     if (userTenantId) {
       const { data: tenantData } = await supabase
         .from('tenants')
         .select('config')
         .eq('id', userTenantId)
         .single();
-      expertBoostIds = (tenantData?.config as any)?.expert_boost_ids || [];
+      const cfg = (tenantData?.config as any) || {};
+      expertBoostIds = Array.isArray(cfg.expert_boost_ids) ? cfg.expert_boost_ids : [];
+      disabledProductIds = Array.isArray(cfg.disabled_product_ids) ? cfg.disabled_product_ids : [];
     }
 
     const { message, sessionId, childId } = await req.json();
@@ -246,7 +249,19 @@ serve(async (req) => {
 
       // ── Expert/Resource matching: semantic + keyword ──
       matchedExperts = await findMatchingExpertsRAGFirst(supabase, message, userTenantId, expertBoostIds);
-      matchedProducts = await findMatchingProductsRAG(supabase, message, userTopics);
+      matchedProducts = await findMatchingProductsRAG(supabase, message, userTopics, userTenantId, disabledProductIds);
+
+      // If the user is repeating the same topic and semantic matching missed,
+      // broaden the match using a category-specific seed phrase.
+      if (isRecurringTopic && matchedExperts.length === 0 && messageCategory && messageCategory !== 'General Parenting') {
+        const seed = seedPhraseForCategory(messageCategory);
+        matchedExperts = await findMatchingExpertsRAGFirst(
+          supabase,
+          `${message}\n\nTopic: ${messageCategory}\nKeywords: ${seed}`,
+          userTenantId,
+          expertBoostIds,
+        );
+      }
 
       // Generate AI response — now includes user's onboarding interests and products
       const aiResult = await generateEnhancedAIResponse(
@@ -406,7 +421,7 @@ async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = nul
 
   // Fallback to keyword matching if semantic search returns no results
   if (experts.length === 0) {
-    experts = await findMatchingExpertsByKeywords(supabase, message);
+    experts = await findMatchingExpertsByKeywords(supabase, message, userTenantId);
   }
 
   // Sort by similarity then rating
@@ -419,6 +434,10 @@ async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = nul
 
   // Apply tenant prioritization (hospital/boosted experts first)
   if (experts.length > 0) {
+    // B2C users should never see hospital-affiliated experts
+    if (!userTenantId) {
+      experts = experts.filter((e) => !e.tenant_id);
+    }
     experts = prioritizeByTenant(experts, userTenantId, expertBoostIds);
   }
 
@@ -511,7 +530,7 @@ async function findMatchingExpertsBySemantic(supabase, message) {
 }
 
 // Keyword-based fallback for expert matching when semantic search misses
-async function findMatchingExpertsByKeywords(supabase, message) {
+async function findMatchingExpertsByKeywords(supabase, message, userTenantId: string | null = null) {
   const messageLower = message.toLowerCase();
 
   // Specialty keyword maps
@@ -572,8 +591,11 @@ async function findMatchingExpertsByKeywords(supabase, message) {
 
     if (error || !experts) return [];
 
+    // B2C users should never see hospital-affiliated experts
+    const tenantScopedExperts = userTenantId ? experts : experts.filter((e) => !e.tenant_id);
+
     // Filter experts whose specialties overlap with matched keywords
-    const matchingExperts = experts.filter(expert => {
+    const matchingExperts = tenantScopedExperts.filter(expert => {
       const expertSpecs = expert.expert_specialties || [];
       return expertSpecs.some(spec =>
         matchedSpecialties.some(ms =>
@@ -604,9 +626,36 @@ async function findMatchingExpertsByKeywords(supabase, message) {
   }
 }
 
+function seedPhraseForCategory(category: string): string {
+  switch (category) {
+    case 'Baby Feeding':
+      return 'breastfeeding latch milk supply nursing pumping bottle formula';
+    case 'Sleep Coaching':
+      return 'baby sleep bedtime nap night waking sleep training regression';
+    case 'Pelvic Floor':
+      return 'pelvic floor postpartum recovery leaking incontinence prolapse diastasis';
+    case 'Nervous System Regulation':
+      return 'stress overwhelmed anxiety regulation postpartum emotions support';
+    case 'Fitness/yoga':
+      return 'postpartum exercise yoga stretching breathing mindfulness';
+    case 'Pediatric Dentistry':
+      return 'teething brushing teeth dentist cavities';
+    case 'Back to Work':
+      return 'return to work childcare daycare pumping at work schedule';
+    default:
+      return category.toLowerCase();
+  }
+}
+
 
 // Find relevant products/resources using semantic and keyword search
-async function findMatchingProductsRAG(supabase, message, userTopics = []) {
+async function findMatchingProductsRAG(
+  supabase,
+  message,
+  userTopics: string[] = [],
+  userTenantId: string | null = null,
+  disabledProductIds: string[] = [],
+) {
   try {
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) return [];
@@ -618,7 +667,7 @@ async function findMatchingProductsRAG(supabase, message, userTopics = []) {
       body: JSON.stringify({ model: 'text-embedding-3-small', input: message, encoding_format: 'float' })
     });
 
-    let semanticProducts = [];
+    let semanticProducts: any[] = [];
     if (embeddingResponse.ok) {
       const embeddingData = await embeddingResponse.json();
       const queryEmbedding = embeddingData.data[0].embedding;
@@ -631,10 +680,24 @@ async function findMatchingProductsRAG(supabase, message, userTopics = []) {
       if (!error && matches) semanticProducts = matches;
     }
 
+    // Tenant scoping requires knowing whether a product is hospital-only.
+    // `match_products_v2` may not return is_hospital_resource, so we enrich via a lookup by id.
+    const semanticIds = (semanticProducts || []).map((p) => p.id).filter(Boolean);
+    const semanticHospitalMap = new Map<string, boolean>();
+    if (semanticIds.length > 0) {
+      const { data: semanticRows } = await supabase
+        .from('products')
+        .select('id, is_hospital_resource')
+        .in('id', semanticIds);
+      (semanticRows || []).forEach((r: any) => {
+        semanticHospitalMap.set(r.id, Boolean(r.is_hospital_resource));
+      });
+    }
+
     // 2. Keyword Fallback (searching title, tags, description)
     const { data: allProducts } = await supabase
       .from('products')
-      .select('id, title, description, tags, price, product_type')
+      .select('id, title, description, tags, price, product_type, is_hospital_resource')
       .eq('is_active', true)
       .limit(50);
 
@@ -656,17 +719,42 @@ async function findMatchingProductsRAG(supabase, message, userTopics = []) {
     [...semanticProducts, ...keywordProducts].forEach(p => {
       if (!seen.has(p.id)) {
         seen.add(p.id);
+        const isHospitalResource =
+          typeof p.is_hospital_resource === 'boolean'
+            ? Boolean(p.is_hospital_resource)
+            : semanticHospitalMap.get(p.id) || false;
         results.push({
           id: p.id,
           title: p.title,
           type: p.product_type,
           price: p.price,
+          is_hospital_resource: isHospitalResource,
           description: p.description?.substring(0, 100) + '...'
         });
       }
     });
 
-    return results.slice(0, 3);
+    // Enforce tenant scoping:
+    // - B2C users should never be shown hospital-only resources
+    // - Hospital users can see both, but allow per-tenant disable list
+    let scoped = results as any[];
+    if (!userTenantId) {
+      scoped = scoped.filter((p) => !p.is_hospital_resource);
+    } else if (disabledProductIds.length > 0) {
+      scoped = scoped.filter((p) => !disabledProductIds.includes(p.id));
+    }
+
+    // Prioritize hospital resources first for hospital users (still capped to 3)
+    if (userTenantId) {
+      scoped.sort((a, b) => {
+        const aHosp = Boolean(a.is_hospital_resource);
+        const bHosp = Boolean(b.is_hospital_resource);
+        if (aHosp === bHosp) return 0;
+        return aHosp ? -1 : 1;
+      });
+    }
+
+    return scoped.slice(0, 3);
   } catch (err) {
     console.error('Error finding products:', err);
     return [];

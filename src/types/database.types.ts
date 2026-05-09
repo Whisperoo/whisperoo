@@ -325,6 +325,8 @@ export type Database = {
           booked_at: string
           completed_at: string | null
           cancelled_at: string | null
+          discount_code: string | null
+          admin_notes: string | null
           created_at: string
           updated_at: string
         }
@@ -345,6 +347,8 @@ export type Database = {
           booked_at?: string
           completed_at?: string | null
           cancelled_at?: string | null
+          discount_code?: string | null
+          admin_notes?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -365,6 +369,8 @@ export type Database = {
           booked_at?: string
           completed_at?: string | null
           cancelled_at?: string | null
+          discount_code?: string | null
+          admin_notes?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -755,6 +761,8 @@ export type Database = {
           total_files_count: number | null
           updated_at: string | null
           view_count: number | null
+          tenant_id: string | null
+          is_hospital_resource: boolean | null
         }
         Insert: {
           booking_model?: string | null
@@ -783,6 +791,8 @@ export type Database = {
           total_files_count?: number | null
           updated_at?: string | null
           view_count?: number | null
+          tenant_id?: string | null
+          is_hospital_resource?: boolean | null
         }
         Update: {
           booking_model?: string | null
@@ -811,6 +821,8 @@ export type Database = {
           total_files_count?: number | null
           updated_at?: string | null
           view_count?: number | null
+          tenant_id?: string | null
+          is_hospital_resource?: boolean | null
         }
         Relationships: [
           {
@@ -867,6 +879,7 @@ export type Database = {
           profile_image_url: string | null
           role: Database["public"]["Enums"]["user_role"] | null
           tenant_id: string | null
+          inquiry_confirmation_message: string | null
           topics_of_interest: string[]
           updated_at: string | null
         }
@@ -914,6 +927,7 @@ export type Database = {
           profile_image_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           tenant_id?: string | null
+          inquiry_confirmation_message?: string | null
           topics_of_interest?: string[]
           updated_at?: string | null
         }
@@ -961,6 +975,7 @@ export type Database = {
           profile_image_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           tenant_id?: string | null
+          inquiry_confirmation_message?: string | null
           topics_of_interest?: string[]
           updated_at?: string | null
         }
@@ -989,6 +1004,7 @@ export type Database = {
           product_id: string | null
           purchased_at: string | null
           status: string | null
+          discount_code: string | null
           user_id: string | null
         }
         Insert: {
@@ -1005,6 +1021,7 @@ export type Database = {
           product_id?: string | null
           purchased_at?: string | null
           status?: string | null
+          discount_code?: string | null
           user_id?: string | null
         }
         Update: {
@@ -1021,6 +1038,7 @@ export type Database = {
           product_id?: string | null
           purchased_at?: string | null
           status?: string | null
+          discount_code?: string | null
           user_id?: string | null
         }
         Relationships: [
