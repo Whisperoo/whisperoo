@@ -329,21 +329,6 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
         ))}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-        {[
-          { label: 'Total Requests', value: stats.total, color: 'text-gray-900', bg: 'bg-white' },
-          { label: 'Pending', value: stats.pending, color: 'text-amber-600', bg: 'bg-amber-50' },
-          { label: 'Confirmed', value: stats.confirmed, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Completed', value: stats.completed, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Cancelled', value: stats.cancelled, color: 'text-gray-500', bg: 'bg-gray-50' },
-        ].map(s => (
-          <div key={s.label} className={`${s.bg} rounded-xl border border-gray-200 px-4 py-3`}>
-            <p className="text-xs font-medium text-gray-500">{s.label}</p>
-            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-          </div>
-        ))}
-      </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
