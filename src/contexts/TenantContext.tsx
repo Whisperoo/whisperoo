@@ -17,6 +17,8 @@ export interface TenantConfig {
   departments?: TenantDepartment[];
   expert_boost_ids?: string[];
   disabled_product_ids?: string[];   // content curation: products hidden from this tenant's users
+  /** Experts hidden from this hospital's directory, chat suggestions, and deep links */
+  disabled_expert_ids?: string[];
   escalation_triggers?: string[];
   languages?: string[];
 }

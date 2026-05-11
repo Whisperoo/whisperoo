@@ -57,6 +57,7 @@ serve(async (req) => {
     // If user has tenant, fetch tenant config used for personalization
     let expertBoostIds: string[] = [];
     let disabledProductIds: string[] = [];
+    let disabledExpertIds: string[] = [];
     if (userTenantId) {
       const { data: tenantData } = await supabase
         .from('tenants')
@@ -66,6 +67,7 @@ serve(async (req) => {
       const cfg = (tenantData?.config as any) || {};
       expertBoostIds = Array.isArray(cfg.expert_boost_ids) ? cfg.expert_boost_ids : [];
       disabledProductIds = Array.isArray(cfg.disabled_product_ids) ? cfg.disabled_product_ids : [];
+      disabledExpertIds = Array.isArray(cfg.disabled_expert_ids) ? cfg.disabled_expert_ids : [];
     }
 
     const { message, sessionId, childId } = await req.json();
@@ -248,7 +250,7 @@ serve(async (req) => {
       }
 
       // ── Expert/Resource matching: semantic + keyword ──
-      matchedExperts = await findMatchingExpertsRAGFirst(supabase, message, userTenantId, expertBoostIds);
+      matchedExperts = await findMatchingExpertsRAGFirst(supabase, message, userTenantId, expertBoostIds, disabledExpertIds);
       matchedProducts = await findMatchingProductsRAG(supabase, message, userTopics, userTenantId, disabledProductIds);
 
       // If the user is repeating the same topic and semantic matching missed,
@@ -260,6 +262,7 @@ serve(async (req) => {
           `${message}\n\nTopic: ${messageCategory}\nKeywords: ${seed}`,
           userTenantId,
           expertBoostIds,
+          disabledExpertIds,
         );
       }
 
@@ -413,7 +416,7 @@ function prioritizeByTenant(experts, userTenantId, expertBoostIds = []) {
 }
 
 // Expert matching: semantic-first, max 3 experts, NO all-experts fallback
-async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = null, expertBoostIds = []) {
+async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = null, expertBoostIds = [], disabledExpertIds = []) {
   console.log(`=== Expert Matching Started ===`);
 
   // Only use semantic search — no all-experts fallback
@@ -424,6 +427,16 @@ async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = nul
     experts = await findMatchingExpertsByKeywords(supabase, message, userTenantId);
   }
 
+  // Tenant isolation + per-hospital hide list
+  if (userTenantId) {
+    experts = experts.filter((e) => !e.tenant_id || e.tenant_id === userTenantId);
+  } else {
+    experts = experts.filter((e) => !e.tenant_id);
+  }
+  if (disabledExpertIds.length > 0) {
+    experts = experts.filter((e) => !disabledExpertIds.includes(e.id));
+  }
+
   // Sort by similarity then rating
   experts.sort((a, b) => {
     if (a.similarity_score && b.similarity_score) return b.similarity_score - a.similarity_score;
@@ -432,12 +445,7 @@ async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = nul
     return (b.rating || 0) - (a.rating || 0);
   });
 
-  // Apply tenant prioritization (hospital/boosted experts first)
   if (experts.length > 0) {
-    // B2C users should never see hospital-affiliated experts
-    if (!userTenantId) {
-      experts = experts.filter((e) => !e.tenant_id);
-    }
     experts = prioritizeByTenant(experts, userTenantId, expertBoostIds);
   }
 
@@ -591,8 +599,9 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
 
     if (error || !experts) return [];
 
-    // B2C users should never see hospital-affiliated experts
-    const tenantScopedExperts = userTenantId ? experts : experts.filter((e) => !e.tenant_id);
+    const tenantScopedExperts = userTenantId
+      ? experts.filter((e) => !e.tenant_id || e.tenant_id === userTenantId)
+      : experts.filter((e) => !e.tenant_id);
 
     // Filter experts whose specialties overlap with matched keywords
     const matchingExperts = tenantScopedExperts.filter(expert => {

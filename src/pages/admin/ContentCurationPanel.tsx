@@ -5,6 +5,7 @@ import { TenantConfig } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
 import AdminProductForm from './AdminProductForm';
 import { toast } from '@/hooks/use-toast';
+import { productService } from '@/services/products';
 
 interface ContentCurationPanelProps {
   tenantId: string | null;
@@ -19,6 +20,7 @@ interface Product {
   status: string;
   thumbnail_url: string | null;
   is_hospital_resource: boolean;
+  tenant_id: string | null;
 }
 
 const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId }) => {
@@ -36,10 +38,10 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
     try {
       const { data: prods, error: prodError } = await supabase
         .from('products')
-        .select('*')
+        .select('id, title, product_type, price, is_free, status, thumbnail_url, is_hospital_resource, tenant_id')
         .order('title');
       if (prodError) throw prodError;
-      setProducts((prods ?? []).map((p: any) => ({
+      let mapped = (prods ?? []).map((p: any) => ({
         id: p.id,
         title: p.title || '',
         product_type: p.product_type || 'document',
@@ -48,7 +50,12 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
         status: p.status || 'published',
         thumbnail_url: p.thumbnail_url || null,
         is_hospital_resource: p.is_hospital_resource ?? false,
-      })));
+        tenant_id: p.tenant_id ?? null,
+      }));
+      if (tenantId) {
+        mapped = mapped.filter((p) => !p.tenant_id || p.tenant_id === tenantId);
+      }
+      setProducts(mapped);
 
       if (tenantId) {
         const { data: tenantRow, error: tenantError } = await supabase
@@ -116,8 +123,7 @@ const ContentCurationPanel: React.FC<ContentCurationPanelProps> = ({ tenantId })
     if (!confirm('Are you sure you want to delete this product? This cannot be undone.')) return;
     setDeletingId(productId);
     try {
-      const { error } = await supabase.from('products').delete().eq('id', productId);
-      if (error) throw error;
+      await productService.deleteProductPermanently(productId);
       fetchData();
     } catch (err: any) {
       toast({ title: 'Error', description: `Failed to delete: ${err.message}`, variant: 'destructive' });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Filter, Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -58,8 +58,6 @@ const ExpertProfiles: React.FC = () => {
 
       if (error) throw error;
       setExperts(data || []);
-
-      console.log(`Found ${data?.length || 0} visible experts after filtering`);
     } catch (error) {
       console.error("Error fetching experts:", error);
     } finally {
@@ -67,7 +65,19 @@ const ExpertProfiles: React.FC = () => {
     }
   };
 
-  const filteredExperts = experts.filter((expert) => {
+  const tenantScopedExperts = useMemo(() => {
+    const disabled = config?.disabled_expert_ids ?? [];
+    let list = experts;
+    if (isHospitalUser && tenant?.id) {
+      list = list.filter((e) => !e.tenant_id || e.tenant_id === tenant.id);
+    }
+    if (disabled.length > 0) {
+      list = list.filter((e) => !disabled.includes(e.id));
+    }
+    return list;
+  }, [experts, isHospitalUser, tenant?.id, config?.disabled_expert_ids]);
+
+  const filteredExperts = tenantScopedExperts.filter((expert) => {
     const matchesSearch =
       expert.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (expert.expert_specialties || []).some((specialty) =>
@@ -113,7 +123,7 @@ const ExpertProfiles: React.FC = () => {
     );
 
   const specialties = [
-    ...new Set(experts.flatMap((expert) => expert.expert_specialties || [])),
+    ...new Set(tenantScopedExperts.flatMap((expert) => expert.expert_specialties || [])),
   ];
 
   const translateSpecialty = (specialty: string) => {

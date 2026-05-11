@@ -9,8 +9,8 @@ import {
   uploadFile,
   getFileUrl,
   deleteFile,
-  deleteFiles,
 } from "@/services/cloudflare-storage";
+import { removeStoredFileUrl, removeStoredFileUrls } from "@/services/storage-cleanup";
 import { STORAGE_PATHS } from "@/config/cloudflare";
 import { translateToAllLanguages } from "./translationService";
 
@@ -773,19 +773,19 @@ export const productService = {
       .eq("product_id", productId);
 
     if (productFiles?.length) {
-      await deleteFiles(productFiles.map((f) => f.file_url));
+      await removeStoredFileUrls(productFiles.map((f) => f.file_url));
       await supabase.from("product_files").delete().eq("product_id", productId);
     }
 
-    // 2. Delete legacy files
+    // 2. Delete legacy files (Supabase Storage public URLs and/or Cloudflare R2)
     const { data: product } = await supabase
       .from("products")
       .select("file_url, thumbnail_url")
       .eq("id", productId)
       .single();
 
-    if (product?.file_url) await deleteFile(product.file_url);
-    if (product?.thumbnail_url) await deleteFile(product.thumbnail_url);
+    await removeStoredFileUrl(product?.file_url);
+    await removeStoredFileUrl(product?.thumbnail_url);
 
     // 3. HARD DELETE PRODUCT ROW
     const { error } = await supabase

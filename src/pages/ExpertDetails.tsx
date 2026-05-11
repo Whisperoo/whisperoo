@@ -76,6 +76,24 @@ const ExpertDetails: React.FC = () => {
     }
   }, [id, user]);
 
+  /** Hospital programs: block other hospitals' experts and tenant-disabled experts */
+  useEffect(() => {
+    if (!expert || !isHospitalUser || !tenant?.id) return;
+    const disabled = config?.disabled_expert_ids ?? [];
+    const wrongHospital = Boolean(expert.tenant_id && expert.tenant_id !== tenant.id);
+    const hiddenForTenant = disabled.includes(expert.id);
+    if (!wrongHospital && !hiddenForTenant) return;
+    toast({
+      title: t('experts.notInProgramTitle', 'Not available'),
+      description: t(
+        'experts.notInProgramDesc',
+        'This expert is not part of your hospital program.',
+      ),
+      variant: 'destructive',
+    });
+    navigate('/experts');
+  }, [expert, isHospitalUser, tenant?.id, config?.disabled_expert_ids, navigate, toast, t]);
+
   const fetchExpertDetails = async (expertId: string) => {
     try {
       // Fetch specific expert profile from unified profiles table
@@ -89,6 +107,21 @@ const ExpertDetails: React.FC = () => {
         .single();
 
       if (error) throw error;
+      if (isHospitalUser && tenant?.id) {
+        const disabled = config?.disabled_expert_ids ?? [];
+        if ((data.tenant_id && data.tenant_id !== tenant.id) || disabled.includes(data.id)) {
+          toast({
+            title: t('experts.notInProgramTitle', 'Not available'),
+            description: t(
+              'experts.notInProgramDesc',
+              'This expert is not part of your hospital program.',
+            ),
+            variant: 'destructive',
+          });
+          navigate('/experts');
+          return;
+        }
+      }
       setExpert(data);
       
       // Fetch or create consultation product for this expert
