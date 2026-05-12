@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { isComingSoonTenant } from '@/config/comingSoon';
 
 const QR_ANON_STORAGE_KEY = 'whisperoo-qr-anon-id';
 
@@ -61,7 +62,10 @@ const QrLanding: React.FC = () => {
         if (data.department) params.set('dept', data.department);
         params.set('qr', data.token);
 
-        navigate(`/auth/create?${params.toString()}`, { replace: true });
+        const destination = isComingSoonTenant(data.tenants.slug)
+          ? `/coming-soon?${params.toString()}`
+          : `/auth/create?${params.toString()}`;
+        navigate(destination, { replace: true });
       } catch (e: any) {
         console.error('QR landing failed:', e);
         if (!cancelled) {
