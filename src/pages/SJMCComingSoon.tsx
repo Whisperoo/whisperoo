@@ -3,6 +3,17 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { Baby, Heart, Users, ArrowRight, Mail, CheckCircle2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { TermsOfServiceContent, PrivacyPolicyContent } from '@/components/legal/LegalDocuments';
+
+const SUPPORT_EMAIL = 'support@whisperoo.app';
 
 type JourneyStage = 'pregnant' | 'trying' | 'postpartum';
 
@@ -31,8 +42,18 @@ const SJMCComingSoon: React.FC = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [journeyStage, setJourneyStage] = useState<JourneyStage | null>(null);
+  const [expectedDate, setExpectedDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const needsDate = journeyStage === 'pregnant' || journeyStage === 'postpartum';
+  const dateLabel = journeyStage === 'pregnant' ? 'Due date' : "Baby's birthdate";
+  const dateHelper =
+    journeyStage === 'pregnant'
+      ? 'So we can tailor what we send you as your due date approaches.'
+      : journeyStage === 'postpartum'
+      ? 'So we can match resources to where your baby is in their first year.'
+      : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +66,15 @@ const SJMCComingSoon: React.FC = () => {
       toast({ title: 'Please enter a valid email address.', variant: 'destructive' });
       return;
     }
+    if (needsDate && !expectedDate) {
+      toast({
+        title: journeyStage === 'pregnant'
+          ? 'Please enter your due date.'
+          : "Please enter your baby's birthdate.",
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -54,6 +84,7 @@ const SJMCComingSoon: React.FC = () => {
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
         journey_stage: journeyStage,
+        expected_date: needsDate ? expectedDate : null,
         source,
         department,
         qr_token: qrToken,
@@ -89,17 +120,8 @@ const SJMCComingSoon: React.FC = () => {
       {/* Header */}
       <header className="px-6 sm:px-10 py-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-white rounded-md shadow-sm px-3 py-2 flex items-center gap-2">
-            <div className="flex items-center justify-center w-6 h-6 bg-white">
-              <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden>
-                <rect x="10" y="3" width="4" height="18" fill="#D7263D" />
-                <rect x="3" y="10" width="18" height="4" fill="#D7263D" />
-              </svg>
-            </div>
-            <div className="leading-tight">
-              <div className="text-[#0E2A5C] font-extrabold text-sm tracking-tight">HSA</div>
-              <div className="text-[#0E2A5C] text-[8px] font-medium">Healthcare Systems of America</div>
-            </div>
+          <div className="bg-white rounded-md shadow-sm px-3 py-1.5">
+            <img src="/hsa-logo.png" alt="HSA - Healthcare Systems of America" className="h-9 w-auto object-contain" />
           </div>
           <div className="hidden sm:block h-8 w-px bg-white/30" />
           <div className="hidden sm:flex items-center gap-2">
@@ -108,7 +130,7 @@ const SJMCComingSoon: React.FC = () => {
           </div>
         </div>
         <a
-          href="mailto:hello@whisperoo.app"
+          href={`mailto:${SUPPORT_EMAIL}`}
           className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 transition rounded-full px-4 py-2 text-sm font-medium border border-white/15"
         >
           <Mail className="w-4 h-4" />
@@ -261,6 +283,23 @@ const SJMCComingSoon: React.FC = () => {
                   </div>
                 </div>
 
+                {needsDate && (
+                  <div>
+                    <label htmlFor="expected-date" className="block text-sm font-medium text-gray-800 mb-1.5">
+                      {dateLabel}
+                    </label>
+                    <input
+                      id="expected-date"
+                      type="date"
+                      value={expectedDate}
+                      onChange={(e) => setExpectedDate(e.target.value)}
+                      required
+                      className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3460B2] focus:border-transparent"
+                    />
+                    <p className="mt-1.5 text-xs text-gray-500">{dateHelper}</p>
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   disabled={submitting}
@@ -270,9 +309,37 @@ const SJMCComingSoon: React.FC = () => {
                   {!submitting && <ArrowRight className="w-4 h-4" />}
                 </button>
 
-                <p className="text-xs text-gray-500 text-center">
-                  By joining, you agree to receive a single launch text from Whisperoo &amp; St. Joseph.
-                  No spam. <a href="/privacy" className="underline">Privacy</a>.
+                <p className="text-xs text-gray-500 text-center leading-relaxed">
+                  By joining, you agree to receive marketing emails and recurring text messages from
+                  Whisperoo and St. Joseph about our launch, product updates, and parenting resources.
+                  Message frequency varies. Msg &amp; data rates may apply. See our{' '}
+                  <Dialog>
+                    <DialogTrigger className="text-[#3460B2] hover:underline font-medium">
+                      Privacy Policy
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Privacy Policy</DialogTitle>
+                      </DialogHeader>
+                      <DialogDescription className="mt-4 text-left">
+                        <PrivacyPolicyContent />
+                      </DialogDescription>
+                    </DialogContent>
+                  </Dialog>
+                  {' '}and{' '}
+                  <Dialog>
+                    <DialogTrigger className="text-[#3460B2] hover:underline font-medium">
+                      Terms and Conditions
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Terms and Conditions</DialogTitle>
+                      </DialogHeader>
+                      <DialogDescription className="mt-4 text-left">
+                        <TermsOfServiceContent />
+                      </DialogDescription>
+                    </DialogContent>
+                  </Dialog>.
                 </p>
               </form>
             )}
@@ -286,7 +353,7 @@ const SJMCComingSoon: React.FC = () => {
         <div className="flex gap-5">
           <a href="/privacy" className="hover:text-white/90">Privacy</a>
           <a href="/accessibility" className="hover:text-white/90">Accessibility</a>
-          <a href="mailto:hello@whisperoo.app" className="hover:text-white/90">Contact</a>
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-white/90">Contact</a>
         </div>
       </footer>
     </div>

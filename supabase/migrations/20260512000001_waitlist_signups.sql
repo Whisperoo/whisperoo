@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS public.waitlist_signups (
   email         text NOT NULL,
   phone         text NOT NULL,
   journey_stage text CHECK (journey_stage IN ('pregnant','trying','postpartum')),
+  -- Due date when journey_stage='pregnant', baby's birthdate when 'postpartum'
+  expected_date date,
   source        text,
   department    text,
   qr_token      text,
