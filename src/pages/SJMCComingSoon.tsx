@@ -120,8 +120,47 @@ const SJMCComingSoon: React.FC = () => {
       {/* Header */}
       <header className="px-6 sm:px-10 py-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-white rounded-md shadow-sm px-3 py-1.5">
-            <img src="/hsa-logo.png" alt="HSA - Healthcare Systems of America" className="h-9 w-auto object-contain" />
+          <div className="bg-white rounded-md shadow-sm px-3 py-2">
+            <svg
+              viewBox="0 0 260 90"
+              className="h-10 w-auto"
+              role="img"
+              aria-label="HSA — Healthcare Systems of America"
+            >
+              {/* Red plus / cross */}
+              <g>
+                <rect x="4"  y="20" width="46" height="46" rx="4" fill="#E63946" />
+                <rect x="20" y="26" width="14" height="34" fill="#FFFFFF" />
+                <rect x="11" y="35" width="32" height="14" fill="#FFFFFF" />
+              </g>
+              {/* "HSA" wordmark — blue fill with red outline */}
+              <text
+                x="64"
+                y="62"
+                fontFamily="'Plus Jakarta Sans', Arial, sans-serif"
+                fontWeight="900"
+                fontSize="58"
+                letterSpacing="-1"
+                fill="#1F3F8A"
+                stroke="#E63946"
+                strokeWidth="2.5"
+                paintOrder="stroke"
+              >
+                HSA
+              </text>
+              {/* Tagline */}
+              <text
+                x="64"
+                y="80"
+                fontFamily="'Plus Jakarta Sans', Arial, sans-serif"
+                fontWeight="700"
+                fontSize="11"
+                letterSpacing="0.2"
+                fill="#E63946"
+              >
+                Healthcare Systems of America
+              </text>
+            </svg>
           </div>
           <div className="hidden sm:block h-8 w-px bg-white/30" />
           <div className="hidden sm:flex items-center gap-2">
