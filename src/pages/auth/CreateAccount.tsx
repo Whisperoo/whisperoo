@@ -19,6 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { TermsOfServiceContent, PrivacyPolicyContent } from '@/components/legal/LegalDocuments';
+import { isComingSoonTenant } from '@/config/comingSoon';
 
 const CreateAccount: React.FC = () => {
   const { t } = useTranslation();
@@ -43,8 +44,16 @@ const CreateAccount: React.FC = () => {
   const queryQr = searchParams.get('qr');
   const [tenantInfo, setTenantInfo] = useState<any>(null);
 
+  // Redirect coming-soon tenants (e.g. SJMC pre-launch) to the waitlist page
+  // before any signup form renders.
   useEffect(() => {
-    if (tenantSlug) {
+    if (isComingSoonTenant(tenantSlug)) {
+      navigate(`/coming-soon?${searchParams.toString()}`, { replace: true });
+    }
+  }, [tenantSlug, searchParams, navigate]);
+
+  useEffect(() => {
+    if (tenantSlug && !isComingSoonTenant(tenantSlug)) {
       supabase.from('tenants').select('*').eq('slug', tenantSlug).single()
         .then(({ data }) => setTenantInfo(data));
     }
