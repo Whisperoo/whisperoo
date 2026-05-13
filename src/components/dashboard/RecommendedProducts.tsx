@@ -31,12 +31,6 @@ export const RecommendedProducts: React.FC = () => {
         if (cancelled) return;
         // Apply AI/RAG-based personalized sorting
         const sorted = sortPersonalized(fetched);
-        // Debug: show user's selected topics and the top product slugs for QA
-        try {
-          console.debug('RecommendedProducts: topics_of_interest=', profile?.topics_of_interest, 'topIds=', sorted.slice(0,3).map(p => p.id));
-        } catch (e) {
-          // ignore
-        }
         // Take top 3 for dashboard (fallback to newest if no matches)
         setProducts(sorted.slice(0, 3));
       } catch (error) {

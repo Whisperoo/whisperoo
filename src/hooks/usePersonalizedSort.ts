@@ -149,13 +149,6 @@ export function usePersonalizedSort() {
       return { ...product, _score: finalScore };
     });
 
-    if (sorted.length > 0) {
-      console.log('--- Recommendation Scores (Top 5) ---');
-      sorted.slice(0, 5).forEach(p => {
-        console.log(`Product: "${p.title}" | Score: ${(p as any)._score}`);
-      });
-    }
-
     return sorted;
   }, [profile, behavioralSlugs, weights.onboardingWeight, weights.behavioralWeight]);
 
