@@ -9,7 +9,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import PostDeliveryPrompt from "@/components/dashboard/PostDeliveryPrompt";
 import AppointmentReminders from "@/components/dashboard/AppointmentReminders";
 import RecommendedProducts from "@/components/dashboard/RecommendedProducts";
-import RecommendedExperts from "@/components/dashboard/RecommendedExperts";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -75,8 +74,6 @@ const Dashboard: React.FC = () => {
           {t('dashboard.chatCard.description')}
         </p>
       </div>
-
-      <RecommendedExperts />
 
       <RecommendedProducts />
 
