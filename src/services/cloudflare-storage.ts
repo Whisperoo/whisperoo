@@ -1,36 +1,27 @@
 /**
  * Cloudflare R2 Storage Service
- * S3-compatible upload and file management for Cloudflare R2
+ * Upload/delete via Edge Function (no client credentials).
  */
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { CLOUDFLARE_R2_CONFIG, isCloudflareConfigured, getPublicUrl, extractRelativePath } from '@/config/cloudflare';
+import { supabase } from '@/lib/supabase';
 
-// Initialize S3 client for Cloudflare R2
-let s3Client: S3Client | null = null;
+async function presignPutUrl(key: string, contentType?: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke<{ url: string }>('r2-storage', {
+    body: { action: 'presign_put', key, contentType },
+  });
+  if (error) throw error;
+  if (!data?.url) throw new Error('Missing presigned upload url');
+  return data.url;
+}
 
-const getS3Client = (): S3Client => {
-  if (!isCloudflareConfigured()) {
-    throw new Error('Cloudflare R2 is not configured. Please check your environment variables.');
-  }
-
-  if (!s3Client) {
-    // Cloudflare R2 endpoint format: https://<account_id>.r2.cloudflarestorage.com
-    const endpoint = CLOUDFLARE_R2_CONFIG.endpoint ||
-      `https://${CLOUDFLARE_R2_CONFIG.accountId}.r2.cloudflarestorage.com`;
-
-    s3Client = new S3Client({
-      region: 'auto', // R2 uses 'auto' for region
-      endpoint,
-      credentials: {
-        accessKeyId: CLOUDFLARE_R2_CONFIG.accessKeyId,
-        secretAccessKey: CLOUDFLARE_R2_CONFIG.secretAccessKey,
-      },
-    });
-  }
-
-  return s3Client;
-};
+async function deleteObject(key: string): Promise<void> {
+  const { error, data } = await supabase.functions.invoke('r2-storage', {
+    body: { action: 'delete', key },
+  });
+  if (error) throw error;
+  if ((data as any)?.error) throw new Error((data as any).error);
+}
 
 export interface UploadOptions {
   filePath: string; // Relative path in bucket (e.g., "products/user123/file.mp4")
@@ -52,23 +43,21 @@ export const uploadFile = async (options: UploadOptions): Promise<UploadResult> 
   const { filePath, file, contentType, onProgress } = options;
 
   try {
-    const client = getS3Client();
+    if (!isCloudflareConfigured()) {
+      throw new Error('Cloudflare R2 is not configured. Please check your environment variables.');
+    }
 
-    // Read file as ArrayBuffer
-    const fileBuffer = await file.arrayBuffer();
-    const uint8Array = new Uint8Array(fileBuffer);
+    const url = await presignPutUrl(filePath, contentType || file.type);
 
-    // Create upload command
-    const command = new PutObjectCommand({
-      Bucket: CLOUDFLARE_R2_CONFIG.bucketName,
-      Key: filePath,
-      Body: uint8Array,
-      ContentType: contentType || file.type,
-      ContentLength: file.size,
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType || file.type || 'application/octet-stream' },
+      body: file,
     });
-
-    // Execute upload
-    await client.send(command);
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(`Upload failed (HTTP ${res.status}) ${txt}`.trim());
+    }
 
     // Report 100% progress
     if (onProgress) {
@@ -119,17 +108,9 @@ export const uploadFileWithRetry = async (
  */
 export const deleteFile = async (filePath: string): Promise<void> => {
   try {
-    const client = getS3Client();
-
     // Extract relative path if full URL was provided
     const relativePath = extractRelativePath(filePath);
-
-    const command = new DeleteObjectCommand({
-      Bucket: CLOUDFLARE_R2_CONFIG.bucketName,
-      Key: relativePath,
-    });
-
-    await client.send(command);
+    await deleteObject(relativePath);
   } catch (error) {
     console.error('Cloudflare R2 delete error:', error);
     throw new Error(`Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -143,19 +124,12 @@ export const deleteFiles = async (filePaths: string[]): Promise<void> => {
   if (filePaths.length === 0) return;
 
   try {
-    const client = getS3Client();
-
     // Extract relative paths
     const relativePaths = filePaths.map(extractRelativePath);
-
-    const command = new DeleteObjectsCommand({
-      Bucket: CLOUDFLARE_R2_CONFIG.bucketName,
-      Delete: {
-        Objects: relativePaths.map(path => ({ Key: path })),
-      },
-    });
-
-    await client.send(command);
+    // Best-effort sequential deletes (simple + reliable).
+    for (const key of relativePaths) {
+      await deleteObject(key);
+    }
   } catch (error) {
     console.error('Cloudflare R2 batch delete error:', error);
     throw new Error(`Failed to delete files: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -171,6 +145,3 @@ export const isConfigured = isCloudflareConfigured;
  * Get public URL for a file path
  */
 export const getFileUrl = getPublicUrl;
-
-// Export client getter for advanced usage
-export { getS3Client };

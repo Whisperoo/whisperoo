@@ -52,3 +52,7 @@ dist-ssr
 *.tmp
 *.temp
 .cache/
+
+# Claude Code local files
+.claude/worktrees/
+.claude/settings.local.json

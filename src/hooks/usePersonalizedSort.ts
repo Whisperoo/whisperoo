@@ -1,104 +1,14 @@
 import { useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductWithDetails } from '@/services/products';
-
-// Maps each onboarding topic to the product category slugs and tag slugs
-// that are most relevant to that topic. Used for client-side relevance scoring.
-// Maps each onboarding topic (stable keys) to the product category slugs, tag slugs,
-// and expert specialty keywords that are most relevant to that topic.
-const TOPIC_SLUG_MAP: Record<string, string[]> = {
-  'Baby Feeding':              ['Baby Feeding', 'baby-feeding', 'feeding', 'nutrition', 'breastfeeding', 'formula', 'lactation'],
-  'Pelvic Floor':              ['Pelvic Floor', 'pelvic-floor', 'womens-health', 'pelvic-floor-coaching'],
-  'Sleep Coaching':            ['Sleep Coaching', 'sleep-coaching', 'sleep', 'routines', 'nap-transitions', 'bedtime'],
-  'Nervous System Regulation': ['Nervous System Regulation', 'nervous-system', 'mental-health', 'self-care', 'anxiety', 'stress-regulation'],
-  'Nutrition':                 ['Nutrition', 'nutrition', 'dietitian', 'gut-health'],
-  'Pediatric Dentistry':       ['Pediatric Dentistry', 'pediatric-dentistry', 'dental', 'pediatric', 'oral-health', 'teething'],
-  'Lifestyle Coaching':        ['Lifestyle Coaching', 'lifestyle-coaching', 'lifestyle', 'coaching', 'productivity', 'organization'],
-  'Fitness/yoga':              ['Fitness/yoga', 'fitness-yoga', 'fitness', 'yoga', 'exercise', 'prenatal-yoga'],
-  'Back to Work':              ['Back to Work', 'back-to-work', 'career', 'work-life-balance'],
-  'Postpartum Tips':           ['Postpartum Tips', 'postpartum-tips', 'postpartum', 'recovery', 'newborn-care'],
-  'Prenatal Tips':             ['Prenatal Tips', 'prenatal-tips', 'prenatal', 'pregnancy', 'expecting', 'labor-prep', 'birth-plan'],
-};
-
-// Legacy mappings for users who onboarded before keys were implemented (translated strings)
-const LEGACY_TOPIC_MAP: Record<string, string> = {
-  // English
-  'Baby Feeding': 'Baby Feeding',
-  'Pelvic Floor': 'Pelvic Floor',
-  'Sleep Coaching': 'Sleep Coaching',
-  'Nervous System Regulation': 'Nervous System Regulation',
-  'Nutrition': 'Nutrition',
-  'Pediatric Dentistry': 'Pediatric Dentistry',
-  'Lifestyle Coaching': 'Lifestyle Coaching',
-  'Fitness/yoga': 'Fitness/yoga',
-  'Back to Work': 'Back to Work',
-  'Postpartum Tips': 'Postpartum Tips',
-  'Prenatal Tips': 'Prenatal Tips',
-  
-  // Spanish
-  'Alimentación del bebé': 'Baby Feeding',
-  'Suelo Pélvico': 'Pelvic Floor',
-  'Coaching de Sueño': 'Sleep Coaching',
-  'Regulación del Sistema Nervioso': 'Nervous System Regulation',
-  'Nutrición': 'Nutrition',
-  'Odontología Pediátrica': 'Pediatric Dentistry',
-  'Coaching de Estilo de Vida': 'Lifestyle Coaching',
-  // 'Fitness/yoga' is the same in Spanish
-  'Regreso al Trabajo': 'Back to Work',
-  'Consejos Posparto': 'Postpartum Tips',
-  'Consejos Prenatales': 'Prenatal Tips',
-
-  // Vietnamese
-  'Cho bé bú/ăn': 'Baby Feeding',
-  'Sàn Chậu': 'Pelvic Floor',
-  'Huấn luyện Giấc ngủ': 'Sleep Coaching',
-  'Điều hòa Hệ Thần kinh': 'Nervous System Regulation',
-  'Dinh dưỡng': 'Nutrition',
-  'Nha khoa Nhi': 'Pediatric Dentistry',
-  'Huấn luyện Lối sống': 'Lifestyle Coaching',
-  'Thể dục/Yoga': 'Fitness/yoga',
-  'Trở lại Làm việc': 'Back to Work',
-  'Mẹo Sau sinh': 'Postpartum Tips',
-  'Mẹo Trước sinh': 'Prenatal Tips',
-};
+import {
+  TOPIC_SLUG_MAP,
+  LEGACY_TOPIC_MAP,
+  canonicalizeSlug,
+} from '../../supabase/functions/_shared/topicAliases';
 
 const PRENATAL_SLUGS  = new Set(['prenatal-tips', 'prenatal', 'pregnancy', 'expecting', 'labor-prep']);
 const POSTPARTUM_SLUGS = new Set(['postpartum-tips', 'postpartum', 'newborn', 'infant', 'recovery', 'postnatal']);
-
-// Known alias mappings: map common synonyms and non-slug tag forms to canonical tag slugs
-const CANONICAL_ALIAS_MAP: Record<string, string> = {
-  // Fitness aliases
-  'fitness': 'fitness-yoga',
-  'fitness-yoga': 'fitness-yoga',
-  'fitness&yoga': 'fitness-yoga',
-
-  // Baby feeding aliases
-  'breastfeeding': 'baby-feeding',
-  'breast-feeding': 'baby-feeding',
-  'lactation': 'baby-feeding',
-
-  // Postpartum aliases
-  'postnatal': 'postpartum-tips',
-  'post-natal': 'postpartum-tips',
-  'postpartum': 'postpartum-tips',
-
-  // Pelvic floor
-  'pelvicfloor': 'pelvic-floor',
-  'pelvic-floor': 'pelvic-floor',
-
-  // Prenatal
-  'prenatal': 'prenatal-tips',
-  'prenatal-tips': 'prenatal-tips',
-};
-
-function canonicalizeSlug(s: string) {
-  const normalized = String(s || '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '');
-  return CANONICAL_ALIAS_MAP[normalized] || normalized;
-}
 
 /**
  * Returns a function that re-orders a product list by personalised relevance.

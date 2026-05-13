@@ -3,7 +3,6 @@
 
 export interface StripeConfig {
   publishableKey: string;
-  secretKey?: string;
   apiVersion?: string;
 }
 
@@ -226,7 +225,6 @@ class MockStripeService {
 // Export singleton instance
 export const stripeService = new MockStripeService({
   publishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_mock_key_for_development',
-  secretKey: import.meta.env.VITE_STRIPE_SECRET_KEY || 'sk_test_mock_key_for_development',
 });
 
 // Test card numbers for documentation

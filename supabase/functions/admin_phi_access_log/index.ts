@@ -23,11 +23,6 @@ interface Body {
   limit?: number;
 }
 
-const SUPER_ADMIN_EMAILS = new Set([
-  "engineering@whisperoo.app",
-  "sharab.khan101010@gmail.com",
-]);
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -56,13 +51,12 @@ Deno.serve(async (req: Request) => {
     const role = accessorProfile?.account_type || "unknown";
     const isRoleAllowed =
       role === "super_admin" || role === "superadmin" || role === "admin";
-    const isEmailAllowed = SUPER_ADMIN_EMAILS.has((user.email || "").toLowerCase());
-    if (!isRoleAllowed && !isEmailAllowed) {
-      return json(403, { error: "Access denied", role, email: user.email || null });
+    if (!isRoleAllowed) {
+      return json(403, { error: "Access denied", role });
     }
 
     const body = (await req.json()) as Body;
-    const limit = Math.min(Math.max(body.limit ?? 200, 1), 1000);
+    const limit = Math.min(Math.max(body.limit ?? 200, 1), 10000);
 
     let query = supabase
       .from("phi_access_log")

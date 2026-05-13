@@ -6,6 +6,7 @@ interface SkipLinkProps {
 }
 
 const SkipLink: React.FC<SkipLinkProps> = ({ onClick }) => {
+  if (!onClick) return null;
   return (
     <button
       onClick={onClick}

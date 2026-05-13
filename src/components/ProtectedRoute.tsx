@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useMfaStatus } from '@/hooks/useMfaStatus'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
   requireAuth?: boolean
   requireOnboarding?: boolean
+  /** When true, super-admin accounts must have a TOTP factor enrolled & verified (AAL2). See useMfaStatus. */
+  requireMfa?: boolean
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
   requireAuth = true, 
-  requireOnboarding = false 
+  requireOnboarding = false,
+  requireMfa = false,
 }) => {
   const { user, profile, loading, refreshProfile } = useAuth()
+  const location = useLocation()
+  const { mfaStatus, recheckMfa } = useMfaStatus()
   const [profileTimeout, setProfileTimeout] = useState(false)
 
   // Set a timeout for profile loading
@@ -28,15 +34,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }, [requireAuth, user, profile, loading]);
 
-  console.log('ProtectedRoute check:', { 
-    loading, 
-    user: !!user, 
-    profile: !!profile, 
-    requireAuth, 
-    requireOnboarding,
-    profileOnboarded: profile?.onboarded
-  });
-
   // Show loading spinner while auth is initializing
   if (loading) {
     return (
@@ -48,14 +45,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect to login if auth is required but no user
   if (requireAuth && !user) {
-    console.log('ProtectedRoute: redirecting to login - no user');
     return <Navigate to="/auth/login" replace />
   }
 
   // If user exists but no profile yet, show loading
   if (requireAuth && user && !profile) {
-    console.log('ProtectedRoute: user exists but profile loading...');
-    
     if (profileTimeout) {
       return (
         <div className="min-h-screen flex items-center justify-center">
@@ -74,7 +68,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         </div>
       )
     }
-    
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -87,17 +80,56 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check onboarding requirements
   if (requireOnboarding && profile && !profile.onboarded) {
-    console.log('ProtectedRoute: redirecting to onboarding - user not onboarded');
-    console.log('ProtectedRoute: profile data:', { 
-      role: profile.role, 
-      expecting_status: profile.expecting_status, 
-      has_kids: profile.has_kids,
-      onboarded: profile.onboarded 
-    });
     return <Navigate to="/onboarding/role" replace />
   }
 
-  console.log('ProtectedRoute: rendering children');
+  // ── HIPAA B6: MFA gate for staff routes ──────────────────────────────────
+  if (requireMfa && profile) {
+    const returnTo = encodeURIComponent(location.pathname + location.search)
+
+    if (mfaStatus === 'loading') {
+      // Still checking MFA state — show spinner so we don't flash a redirect
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-action-primary"></div>
+        </div>
+      )
+    }
+
+    if (mfaStatus === 'not_enrolled') {
+      // Staff account with no TOTP factor — must enroll first
+      return <Navigate to={`/auth/mfa-enroll?returnTo=${returnTo}`} replace />
+    }
+
+    if (mfaStatus === 'enrolled_unverified') {
+      // Factor exists but session is still AAL1 — must complete challenge
+      return <Navigate to={`/auth/mfa-challenge?returnTo=${returnTo}`} replace />
+    }
+
+    if (mfaStatus === 'mfa_check_failed') {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+          <div className="max-w-md w-full rounded-xl border border-amber-200 bg-amber-50 p-6 text-center space-y-4">
+            <p className="text-sm font-semibold text-amber-900">Could not verify two-factor status</p>
+            <p className="text-xs text-amber-800">
+              For security, this page stays blocked until we can confirm your authenticator setup. Check your connection and try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => recheckMfa()}
+              className="w-full py-2.5 rounded-lg bg-amber-700 text-white text-sm font-semibold hover:bg-amber-800"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    // mfaStatus === 'verified' (AAL2) or 'not_required' — allow through
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   return <>{children}</>
 }
 

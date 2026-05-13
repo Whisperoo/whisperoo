@@ -14,12 +14,10 @@
  *   - 500k–1B characters/month       → $20 per million characters
  *
  * Activation:
- *   Add VITE_GOOGLE_TRANSLATE_API_KEY to your .env file.
- *   Until then, the service runs in passthrough mode (returns original text).
+ *   Do NOT call Google Translate directly from the browser.
+ *   Translation is performed server-side via `supabase/functions/auto-translate`
+ *   (triggered by DB or invoked explicitly) and persisted to translated columns.
  */
-
-const GOOGLE_TRANSLATE_API_KEY = import.meta.env.VITE_GOOGLE_TRANSLATE_API_KEY as string | undefined;
-const GOOGLE_TRANSLATE_URL = 'https://translation.googleapis.com/language/translate/v2';
 
 const TARGET_LANGUAGES = ['es', 'vi'] as const;
 
@@ -43,40 +41,11 @@ export async function translateToAllLanguages(
   text: string,
   sourceLang = 'en'
 ): Promise<TranslationResult> {
-  // ── Passthrough mode (API key not configured yet) ──────────────────────────
-  if (!GOOGLE_TRANSLATE_API_KEY || GOOGLE_TRANSLATE_API_KEY === 'PLACEHOLDER') {
-    console.info(
-      '[translationService] Running in passthrough mode — set VITE_GOOGLE_TRANSLATE_API_KEY to activate.'
-    );
-    return { es: text, vi: text };
-  }
-
-  // ── Live translation ────────────────────────────────────────────────────────
-  try {
-    const requests = TARGET_LANGUAGES.map((target) =>
-      fetch(`${GOOGLE_TRANSLATE_URL}?key=${GOOGLE_TRANSLATE_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          q: text,
-          source: sourceLang,
-          target,
-          format: 'text', // plain text (not HTML)
-        }),
-      }).then((r) => r.json())
-    );
-
-    const [esResponse, viResponse] = await Promise.all(requests);
-
-    return {
-      es: esResponse?.data?.translations?.[0]?.translatedText ?? text,
-      vi: viResponse?.data?.translations?.[0]?.translatedText ?? text,
-    };
-  } catch (err) {
-    console.error('[translationService] Translation API call failed:', err);
-    // Always fall back to original text — never block expert profile saves
-    return { es: text, vi: text };
-  }
+  // Client-side translation is intentionally disabled (security).
+  // The server persists translations via Edge Function + DB triggers.
+  void TARGET_LANGUAGES;
+  void sourceLang;
+  return { es: text, vi: text };
 }
 
 /**

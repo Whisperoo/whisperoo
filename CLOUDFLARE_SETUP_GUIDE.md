@@ -43,15 +43,17 @@ Open `/Users/rubensjunior/Documents/Github/whisperoo/.env` and fill in:
 
 ```env
 VITE_CLOUDFLARE_ACCOUNT_ID=your_account_id_here
-VITE_CLOUDFLARE_R2_ACCESS_KEY_ID=your_access_key_here
-VITE_CLOUDFLARE_R2_SECRET_ACCESS_KEY=your_secret_key_here
 VITE_CLOUDFLARE_R2_BUCKET_NAME=whisperoo-files
 VITE_CLOUDFLARE_R2_PUBLIC_URL=https://pub-xxxxxxxxxxxx.r2.dev
-VITE_CLOUDFLARE_R2_ENDPOINT=https://xxxxxxxxxxxxxxxx.r2.cloudflarestorage.com
 ```
 
-**Note:** The endpoint is usually auto-generated as:
-`https://{ACCOUNT_ID}.r2.cloudflarestorage.com`
+**Important:** Do NOT put R2 access keys in `VITE_` variables. Those are baked into the public JS bundle.
+Store server-only secrets in Supabase Edge Function secrets instead:
+
+- `CLOUDFLARE_R2_ACCESS_KEY_ID`
+- `CLOUDFLARE_R2_SECRET_ACCESS_KEY`
+- `CLOUDFLARE_R2_BUCKET_NAME`
+- `CLOUDFLARE_R2_ENDPOINT` (optional; defaults from account id)
 
 ### Step 5: Test Configuration
 After adding credentials, restart your dev server:

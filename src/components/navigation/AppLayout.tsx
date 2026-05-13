@@ -2,7 +2,6 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 import TopNavBar from './TopNavBar';
 import SideNavBar from './SideNavBar';
 import BottomNavBar from './BottomNavBar';
@@ -22,8 +21,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   const { sidebarCollapsed, isMobileNavOpen } = useNavigation();
   const isMobile = useIsMobile();
   
-  // Initialize HIPAA inactivity timeout for authenticated routes
-  useInactivityTimeout();
 
   if (!profile) {
     return <div>{children}</div>;

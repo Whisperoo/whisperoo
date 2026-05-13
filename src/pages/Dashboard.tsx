@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, MessageCircle, Phone, Building2, Mail } from "lucide-react";
+import { ArrowRight, MessageCircle, Phone, Building2, Mail, Calendar } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 // import AIMomCallModule from "@/components/dashboard/AIMomCallModule"; // Hidden for now
 import PostDeliveryPrompt from "@/components/dashboard/PostDeliveryPrompt";
@@ -21,7 +21,6 @@ const Dashboard: React.FC = () => {
   const isMobile = useIsMobile();
   
   const [expectingKids, setExpectingKids] = useState<any[]>([]);
-  const [hasConsultationAppointment, setHasConsultationAppointment] = useState(false);
   const [consultationAppointments, setConsultationAppointments] = useState<any[]>([]);
 
   const fetchKids = async () => {
@@ -42,20 +41,21 @@ const Dashboard: React.FC = () => {
   // Check whether user has any consultation appointments
   useEffect(() => {
     const checkConsultationAppointments = async () => {
-      if (!user) return setHasConsultationAppointment(false);
+      if (!user) return;
       try {
         const { data, error } = await supabase
           .from('consultation_bookings')
-          .select('id, status')
+          .select('id, status, appointment_name, expert_name, booked_at')
           .eq('user_id', user.id)
-          .in('status', ['pending', 'confirmed']);
+          .in('status', ['pending', 'confirmed'])
+          .order('booked_at', { ascending: false })
+          .limit(3);
         if (error) throw error;
         const appointments = data || [];
         setConsultationAppointments(appointments);
-        setHasConsultationAppointment(appointments.length > 0);
       } catch (err) {
         console.error('Error checking consultation appointments:', err);
-        setHasConsultationAppointment(false);
+        setConsultationAppointments([]);
       }
     };
     checkConsultationAppointments();
@@ -116,6 +116,47 @@ const Dashboard: React.FC = () => {
       <div className="w-full max-w-full overflow-hidden box-border mt-6">
         <AppointmentReminders />
       </div>
+
+      {consultationAppointments.length > 0 && (
+        <div className="bg-white rounded-xl shadow-card border border-blue-100 overflow-hidden mb-6">
+          <div className="px-5 py-4 border-b border-blue-50 flex items-center gap-3 bg-blue-50/40">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <Calendar className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-900">Your 1:1 Bookings</h2>
+              <p className="text-sm text-gray-500">Recent consultation requests and confirmations</p>
+            </div>
+          </div>
+
+          <div className="p-3 space-y-2">
+            {consultationAppointments.map((booking) => (
+              <div
+                key={booking.id}
+                className="rounded-lg border border-gray-100 p-3 flex items-start justify-between gap-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {booking.appointment_name || "Consultation"}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {booking.expert_name ? `with ${booking.expert_name}` : "Expert consultation"}
+                  </p>
+                </div>
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold border ${
+                    booking.status === 'confirmed'
+                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}
+                >
+                  {booking.status === 'confirmed' ? 'Confirmed' : 'Pending'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Explore Card */}
       <div

@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Loader2, Users, Plus, Pencil, Trash2, Star, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Users, Plus, Pencil, Trash2, Star, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { TenantConfig } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
 import AdminExpertForm from './AdminExpertForm';
 import { toast } from '@/hooks/use-toast';
 import { deleteExpertAndResources } from '@/services/expertAdmin';
+import { regenerateAllExpertEmbeddings } from '@/services/expertEmbeddings';
 
 interface ExpertCurationPanelProps {
   tenantId: string | null;
@@ -31,6 +32,7 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
   const [editingExpert, setEditingExpert] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [hidingExpertId, setHidingExpertId] = useState<string | null>(null);
+  const [regeneratingEmbeddings, setRegeneratingEmbeddings] = useState(false);
   const { t } = useTranslation();
 
   const fetchData = useCallback(async () => {
@@ -146,6 +148,26 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
     }
   };
 
+  const handleRegenerateEmbeddings = async () => {
+    setRegeneratingEmbeddings(true);
+    try {
+      const result = await regenerateAllExpertEmbeddings();
+      toast({
+        title: 'Embeddings regenerated',
+        description: `Processed ${result.processed}/${result.total} experts${result.failed ? ` (${result.failed} failed)` : ''}.`,
+      });
+    } catch (err) {
+      console.error('ExpertCurationPanel: regenerate embeddings error', err);
+      toast({
+        title: 'Embedding regeneration failed',
+        description: err instanceof Error ? err.message : 'Could not regenerate expert embeddings',
+        variant: 'destructive',
+      });
+    } finally {
+      setRegeneratingEmbeddings(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -162,7 +184,7 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">{t('admin.experts.title')}</h2>
           <p className="text-sm text-gray-500 mt-1">
@@ -171,13 +193,23 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
             {tenantId && <> · <span className="font-medium text-amber-600">{boostIds.length} featured</span></>}
           </p>
         </div>
-        <button
-          onClick={() => setEditingExpert('new')}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Expert
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRegenerateEmbeddings}
+            disabled={regeneratingEmbeddings}
+            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
+          >
+            {regeneratingEmbeddings ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Regenerate Embeddings
+          </button>
+          <button
+            onClick={() => setEditingExpert('new')}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Expert
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm overflow-hidden">

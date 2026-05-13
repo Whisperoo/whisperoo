@@ -878,6 +878,8 @@ export type Database = {
           onboarded: boolean | null
           parenting_styles: string[]
           personal_context: string | null
+          phone: string | null
+          phone_number: string | null
           preferred_language: string | null
           profile_image_url: string | null
           role: Database["public"]["Enums"]["user_role"] | null
@@ -927,6 +929,8 @@ export type Database = {
           onboarded?: boolean | null
           parenting_styles?: string[]
           personal_context?: string | null
+          phone?: string | null
+          phone_number?: string | null
           preferred_language?: string | null
           profile_image_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
@@ -976,6 +980,8 @@ export type Database = {
           onboarded?: boolean | null
           parenting_styles?: string[]
           personal_context?: string | null
+          phone?: string | null
+          phone_number?: string | null
           preferred_language?: string | null
           profile_image_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null

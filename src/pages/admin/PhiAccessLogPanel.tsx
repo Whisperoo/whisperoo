@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Search, RefreshCw } from "lucide-react";
+import { Search, RefreshCw, Download } from "lucide-react";
 
 type ReasonCode = "user_reported_issue" | "quality_review" | "debugging" | "other";
 
@@ -50,6 +50,84 @@ const PhiAccessLogPanel: React.FC = () => {
     }
   };
 
+  /** HIPAA C5: Export uses current filters and up to 10k rows from the edge function (not UI-limited page). */
+  const exportCsv = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin_phi_access_log", {
+        body: {
+          patient_user_id: patientFilter.trim() || undefined,
+          accessor_user_id: accessorFilter.trim() || undefined,
+          date_from: dateFrom ? new Date(dateFrom).toISOString() : undefined,
+          date_to: dateTo
+            ? new Date(new Date(dateTo).setHours(23, 59, 59, 999)).toISOString()
+            : undefined,
+          limit: 10000,
+        },
+      });
+      if (error) throw error;
+      const exportRows = ((data?.rows || []) as PhiAccessRow[]).filter((r) => {
+        const q = search.trim().toLowerCase();
+        if (!q) return true;
+        const hay = [
+          r.accessor_user_id,
+          r.patient_user_id,
+          r.accessor_role,
+          r.resource_type,
+          r.resource_id,
+          r.action,
+          r.reason_code,
+          r.reason_text || "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(q);
+      });
+      if (exportRows.length === 0) return;
+
+      const headers = [
+        "accessed_at",
+        "accessor_user_id",
+        "accessor_role",
+        "patient_user_id",
+        "resource_type",
+        "resource_id",
+        "action",
+        "reason_code",
+        "reason_text",
+      ];
+      const escapeCell = (val: string | null | undefined) =>
+        `"${String(val ?? "").replace(/"/g, '""')}"`;
+      const csvRows = exportRows.map((r) => [
+        escapeCell(new Date(r.accessed_at).toISOString()),
+        escapeCell(r.accessor_user_id),
+        escapeCell(r.accessor_role),
+        escapeCell(r.patient_user_id),
+        escapeCell(r.resource_type),
+        escapeCell(r.resource_id),
+        escapeCell(r.action),
+        escapeCell(r.reason_code),
+        escapeCell(r.reason_text),
+      ]);
+      const csv = [headers.join(","), ...csvRows.map((row) => row.join(","))].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const stamp = new Date().toISOString().slice(0, 10);
+      const patientSuffix = patientFilter.trim()
+        ? `-patient-${patientFilter.trim().slice(0, 8)}`
+        : "";
+      a.download = `phi-access-log-${stamp}${patientSuffix}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("PHI access log export failed:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
@@ -79,14 +157,26 @@ const PhiAccessLogPanel: React.FC = () => {
             Append-only record of admin accesses to conversation content.
           </p>
         </div>
-        <button
-          onClick={fetchRows}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void exportCsv()}
+            disabled={loading}
+            title="Export access history as CSV (HIPAA accounting of disclosures)"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+          <button
+            onClick={fetchRows}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="px-5 py-3 border-b border-gray-100 grid grid-cols-1 lg:grid-cols-5 gap-3">

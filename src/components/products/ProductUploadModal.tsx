@@ -67,7 +67,7 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useTranslation();
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -454,7 +454,7 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
             />
 
             {/* Hospital Resource Checkbox */}
-            {user?.email === 'engineering@whisperoo.app' && (
+            {(profile?.account_type === 'admin' || profile?.account_type === 'super_admin') && (
               <FormField
                 control={form.control}
                 name="isHospitalResource"

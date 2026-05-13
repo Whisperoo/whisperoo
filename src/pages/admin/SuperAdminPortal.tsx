@@ -14,12 +14,6 @@ import DiscountCodesPanel from './DiscountCodesPanel';
 import ConsultationBookingsPanel from './ConsultationBookingsPanel';
 import PhiAccessLogPanel from './PhiAccessLogPanel';
 
-// ─── Super Admin Access Control ───────────────────────────────────
-const SUPER_ADMIN_EMAILS = [
-  'engineering@whisperoo.app',
-  'sharab.khan101010@gmail.com'
-];
-
 type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'bookings' | 'discounts' | 'phi' | 'config';
 
 const SuperAdminPortal: React.FC = () => {
@@ -40,9 +34,8 @@ const SuperAdminPortal: React.FC = () => {
       return;
     }
 
-    const isAuthorized = 
-      SUPER_ADMIN_EMAILS.includes(user.email || '') || 
-      profile?.account_type === 'admin' || 
+    const isAuthorized =
+      profile?.account_type === 'admin' ||
       profile?.account_type === 'super_admin';
 
     if (isAuthorized) {

@@ -79,29 +79,27 @@ const AuditTrailTable: React.FC<AuditTrailTableProps> = ({ tenantId }) => {
     setLoading(true);
     setError(null);
 
-    let query = supabase
-      .from('admin_ai_audit_trail')
-      .select('message_id, created_at, user_id, cohort, category, summary, escalation, tenant_id')
-      .order('created_at', { ascending: false })
-      .limit(PAGE_SIZE);
+    const end = dateTo ? new Date(dateTo) : null;
+    if (end) end.setHours(23, 59, 59, 999);
 
-    if (tenantId)        query = query.eq('tenant_id', tenantId);
-    if (escalationOnly)  query = query.eq('escalation', true);
-    if (dateFrom) {
-      query = query.gte('created_at', new Date(dateFrom).toISOString());
-    }
-    if (dateTo) {
-      const end = new Date(dateTo);
-      end.setHours(23, 59, 59, 999);
-      query = query.lte('created_at', end.toISOString());
-    }
+    const { data, error: fnErr } = await supabase.functions.invoke('admin_ai_audit_read', {
+      body: {
+        tenant_id: tenantId || undefined,
+        date_from: dateFrom ? new Date(dateFrom).toISOString() : undefined,
+        date_to: end ? end.toISOString() : undefined,
+        escalation_only: escalationOnly,
+        limit: PAGE_SIZE,
+        reason_code: 'quality_review',
+        reason_text: 'Audit trail table fetch',
+      },
+    });
 
-    const { data, error: qErr } = await query;
-    if (qErr) {
-      setError(qErr.message);
+    if (fnErr) {
+      setError(fnErr.message);
     } else {
-      setRows(data ?? []);
-      setFiltered(data ?? []);
+      const returnedRows = (data as any)?.rows ?? [];
+      setRows(returnedRows);
+      setFiltered(returnedRows);
     }
     setLoading(false);
   }, [tenantId, dateFrom, dateTo, escalationOnly]);

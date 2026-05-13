@@ -8,7 +8,7 @@ dotenv.config({ path: resolve(process.cwd(), '.env') });
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 // Use service role key if available, otherwise fallback to anon key
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-const googleKey = process.env.VITE_GOOGLE_TRANSLATE_API_KEY;
+const googleKey = process.env.GOOGLE_TRANSLATE_API_KEY || process.env.VITE_GOOGLE_TRANSLATE_API_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('Missing Supabase credentials in .env file');

@@ -15,8 +15,6 @@ const OnboardingParentingStyles: React.FC = () => {
 
   return (
     <MultiSelectQuestion
-      stepIndex={4}
-      totalSteps={5}
       id="parenting_styles"
       question={t('onboarding.parentingStyles.question')}
       subtitle={t('onboarding.parentingStyles.subtitle')}

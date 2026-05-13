@@ -13,8 +13,6 @@ interface MultiSelectOption {
 }
 
 interface MultiSelectQuestionProps {
-  stepIndex: number;
-  totalSteps: number;
   id: 'parenting_styles' | 'topics_of_interest';
   question: string;
   subtitle?: string;
@@ -25,8 +23,6 @@ interface MultiSelectQuestionProps {
 }
 
 const MultiSelectQuestion: React.FC<MultiSelectQuestionProps> = ({
-  stepIndex,
-  totalSteps,
   id,
   question,
   subtitle,
@@ -108,9 +104,7 @@ const MultiSelectQuestion: React.FC<MultiSelectQuestionProps> = ({
   };
 
   return (
-    <OnboardingLayout 
-      step={stepIndex} 
-      total={totalSteps} 
+    <OnboardingLayout
       onBack={handleBack}
       onSkip={handleSkip}
     >

@@ -57,8 +57,18 @@ const Login: React.FC = () => {
           description: t('auth.login.toast.signedInSuccess'),
         });
 
-        // Specific redirection for super admin
-        if (user.email?.toLowerCase() === "engineering@whisperoo.app") {
+        // Route by role, not hardcoded email.
+        const { data: signedInProfile } = await supabase
+          .from("profiles")
+          .select("account_type")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (
+          signedInProfile?.account_type === "admin" ||
+          signedInProfile?.account_type === "super_admin" ||
+          signedInProfile?.account_type === "superadmin"
+        ) {
           navigate("/admin/super");
         } else {
           // Navigate to dashboard - ProtectedRoute will handle onboarding redirect if needed

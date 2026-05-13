@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { safeLogError } from "../_shared/safeLogError.ts";
+import { topicSpecialtyOverlap } from "../_shared/topicAliases.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +21,29 @@ function detectLanguage(message: string): string | null {
   if (viKeywords.some(kw => m.includes(kw))) return 'vi';
   
   return null;
+}
+
+/** OpenAI Moderation (C4): escalate when flagged for self-harm or violence — complements keyword list. */
+async function shouldEscalateFromOpenAIModeration(apiKey: string, text: string): Promise<boolean> {
+  try {
+    const res = await fetch("https://api.openai.com/v1/moderations", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ model: "text-moderation-latest", input: text }),
+    });
+    if (!res.ok) return false;
+    const mod = await res.json();
+    const r = mod?.results?.[0];
+    if (!r?.flagged) return false;
+    const c = r.categories ?? {};
+    return !!(c["self-harm"] === true || c["violence"] === true);
+  } catch (e) {
+    safeLogError("moderation API", e);
+    return false;
+  }
 }
 
 serve(async (req) => {
@@ -43,7 +68,7 @@ serve(async (req) => {
     // SOW 3.2: Fetch user's tenant_id for expert prioritization
     const { data: userProfile } = await supabase
       .from('profiles')
-      .select('tenant_id, topics_of_interest, expecting_status, parenting_styles, personal_context, language_preference')
+      .select('tenant_id, topics_of_interest, expecting_status, parenting_styles, personal_context, language_preference, created_at')
       .eq('id', user.id)
       .single();
 
@@ -53,6 +78,17 @@ serve(async (req) => {
     const userParentingStyles: string[] = userProfile?.parenting_styles || [];
     const userPersonalContext: string = userProfile?.personal_context || '';
     const userLanguage: string = userProfile?.language_preference || 'en';
+
+    // QA Phase 2.2: Compute the "fresh user" weight that decays linearly from
+    // 1.0 (account age = 0 days) to 0.0 (account age >= 30 days). Used to
+    // blend onboarding-topic signal vs. semantic/behavioral signal in
+    // findMatchingExpertsRAGFirst below.
+    let onboardingWeight = 1.0;
+    if (userProfile?.created_at) {
+      const ageMs = Date.now() - new Date(userProfile.created_at).getTime();
+      const ageDays = ageMs / (1000 * 60 * 60 * 24);
+      onboardingWeight = Math.max(0, Math.min(1, 1 - ageDays / 30));
+    }
 
     // If user has tenant, fetch tenant config used for personalization
     let expertBoostIds: string[] = [];
@@ -185,7 +221,7 @@ serve(async (req) => {
       metadataToStore.flag_reason = `Escalation keywords detected: ${matchedEscalationKeywords.join(', ')}`;
     }
 
-    const { error: messageError } = await supabase
+    const { data: insertedUserMsg, error: messageError } = await supabase
       .from('messages')
       .insert({
         session_id: currentSessionId,
@@ -193,9 +229,12 @@ serve(async (req) => {
         content: message,
         metadata: metadataToStore,
         is_flagged_for_review: isEscalation
-      });
+      })
+      .select('id')
+      .single();
 
     if (messageError) throw messageError;
+    const userMessageId = insertedUserMsg?.id as string;
 
     // Update user interests based on detected category — makes recommendations dynamic
     if (messageCategory && messageCategory !== 'General Parenting') {
@@ -212,6 +251,7 @@ serve(async (req) => {
     let matchedExperts: any[] = [];
     let matchedProducts: any[] = [];
     let debugError: string | null = null;
+    let moderationEscalationForMeta = false;
     
     // SOW 1.1: Compliance context for medical questions
     const complianceContext = isMedicalQuestion ? 
@@ -250,7 +290,15 @@ serve(async (req) => {
       }
 
       // ── Expert/Resource matching: semantic + keyword ──
-      matchedExperts = await findMatchingExpertsRAGFirst(supabase, message, userTenantId, expertBoostIds, disabledExpertIds);
+      matchedExperts = await findMatchingExpertsRAGFirst(
+        supabase,
+        message,
+        userTenantId,
+        expertBoostIds,
+        disabledExpertIds,
+        userTopics,
+        onboardingWeight,
+      );
       matchedProducts = await findMatchingProductsRAG(supabase, message, userTopics, userTenantId, disabledProductIds);
 
       // If the user is repeating the same topic and semantic matching missed,
@@ -263,23 +311,56 @@ serve(async (req) => {
           userTenantId,
           expertBoostIds,
           disabledExpertIds,
+          userTopics,
+          onboardingWeight,
         );
       }
 
-      // Generate AI response — now includes user's onboarding interests and products
-      const aiResult = await generateEnhancedAIResponse(
-        message, context, matchedExperts, matchedProducts, intent, complianceContext,
-        { topics: userTopics, expectingStatus: userExpectingStatus, parentingStyles: userParentingStyles, personalContext: userPersonalContext },
-        userLanguage,
-        isRecurringTopic
-      );
+      const openaiApiKeyModeration = Deno.env.get('OPENAI_API_KEY') ?? '';
+      let moderationEscalation = false;
+      if (openaiApiKeyModeration) {
+        moderationEscalation = await shouldEscalateFromOpenAIModeration(openaiApiKeyModeration, message);
+      }
 
-      // Support returning { response, error } for debugging
-      if (typeof aiResult === 'object' && aiResult !== null && 'response' in aiResult) {
-        aiResponse = aiResult.response;
-        debugError = aiResult.error || null;
+      if (moderationEscalation && userMessageId) {
+        moderationEscalationForMeta = true;
+        await supabase
+          .from('messages')
+          .update({
+            metadata: {
+              ...metadataToStore,
+              intent: 'escalation',
+              flagged: true,
+              moderation_escalation: true,
+              flag_reason: 'OpenAI Moderation flagged self-harm or violence categories.',
+            },
+            is_flagged_for_review: true,
+          })
+          .eq('id', userMessageId);
+
+        aiResponse = buildDeterministicFallbackResponse(
+          message,
+          matchedExperts,
+          matchedProducts,
+          'escalation',
+          userLanguage,
+        );
       } else {
-        aiResponse = aiResult;
+        // Generate AI response — now includes user's onboarding interests and products
+        const aiResult = await generateEnhancedAIResponse(
+          message, context, matchedExperts, matchedProducts, intent, complianceContext,
+          { topics: userTopics, expectingStatus: userExpectingStatus, parentingStyles: userParentingStyles, personalContext: userPersonalContext },
+          userLanguage,
+          isRecurringTopic
+        );
+
+        // Support returning { response, error } for debugging
+        if (typeof aiResult === 'object' && aiResult !== null && 'response' in aiResult) {
+          aiResponse = (aiResult as { response: string }).response;
+          debugError = (aiResult as { error?: string }).error || null;
+        } else {
+          aiResponse = aiResult as string;
+        }
       }
 
       // Handle language sync marker if user spoke in a different language
@@ -300,7 +381,10 @@ serve(async (req) => {
           child_id: childId,
           expert_suggestions: matchedExperts.length > 0 ? matchedExperts : undefined,
           original_user_query: message,
-          ...(debugError ? { ai_error: debugError } : {})
+          ...(debugError ? { ai_error: debugError } : {}),
+          ...(moderationEscalationForMeta
+            ? { intent: 'escalation', moderation_escalation: true }
+            : {}),
         }
       });
 
@@ -329,7 +413,6 @@ serve(async (req) => {
         response: aiResponse,
         sessionId: currentSessionId,
         expertSuggestions: matchedExperts,
-        ...(debugError ? { debug_error: debugError } : {})
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -338,13 +421,12 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in chat_ai function:', error);
+    safeLogError('Error in chat_ai function', error);
     return new Response(
       JSON.stringify({
         response: "I can still help with general parenting guidance right now. If this concern may be urgent or medical, please contact your provider.",
         sessionId: null,
         expertSuggestions: [],
-        debug_error: `Outer catch: ${(error as any)?.message || String(error)}`
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -391,7 +473,7 @@ async function getComplianceTrainingContext(supabase, message) {
     return context + "\n\nCRITICAL: Adjust your response style to align with these approved training examples.";
 
   } catch (err) {
-    console.error('Error fetching compliance context:', err);
+    safeLogError('Error fetching compliance context', err);
     return "";
   }
 }
@@ -415,9 +497,20 @@ function prioritizeByTenant(experts, userTenantId, expertBoostIds = []) {
     });
 }
 
-// Expert matching: semantic-first, max 3 experts, NO all-experts fallback
-async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = null, expertBoostIds = [], disabledExpertIds = []) {
-  console.log(`=== Expert Matching Started ===`);
+// Expert matching: semantic-first, max 3 experts, NO all-experts fallback.
+// QA Phase 2: ranks blend onboarding-topic overlap (weighted by account age,
+// 30-day linear decay) with semantic similarity. Hard-filters cross-tenant
+// and tenant-disabled experts (mirrors ExpertDetails gate semantics).
+async function findMatchingExpertsRAGFirst(
+  supabase,
+  message,
+  userTenantId: string | null = null,
+  expertBoostIds: string[] = [],
+  disabledExpertIds: string[] = [],
+  userTopics: string[] = [],
+  onboardingWeight: number = 1.0,
+) {
+  console.log(`=== Expert Matching Started (onboardingWeight=${onboardingWeight.toFixed(2)}) ===`);
 
   // Only use semantic search — no all-experts fallback
   let experts = await findMatchingExpertsBySemantic(supabase, message);
@@ -427,7 +520,37 @@ async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = nul
     experts = await findMatchingExpertsByKeywords(supabase, message, userTenantId);
   }
 
-  // Tenant isolation + per-hospital hide list
+  // QA Phase 2.1: Topic-aware fallback. If both semantic and keyword paths
+  // miss but the user has onboarding topics selected, pull experts whose
+  // specialties overlap those topics. Important for fresh users on day 0
+  // whose first message is too generic for semantic to bite (e.g. "I'm
+  // anxious") but who clearly told us in onboarding they care about Lactation.
+  if (experts.length === 0 && userTopics.length > 0) {
+    experts = await findMatchingExpertsByUserTopics(supabase, userTopics, userTenantId);
+  }
+
+  // Pull expert_specialties for topic overlap scoring. The semantic + keyword
+  // results above don't always include the full specialties array, so we
+  // hydrate from the profiles table for the matched ids.
+  let specialtiesById: Record<string, string[]> = {};
+  if (experts.length > 0 && userTopics.length > 0) {
+    const ids = experts.map((e: any) => e.id).filter(Boolean);
+    if (ids.length > 0) {
+      const { data: specRows } = await supabase
+        .from('profiles')
+        .select('id, expert_specialties')
+        .in('id', ids);
+      if (specRows) {
+        for (const row of specRows) {
+          specialtiesById[row.id] = (row as any).expert_specialties || [];
+        }
+      }
+    }
+  }
+
+  // Hard-filter: tenant isolation + per-tenant hide list. Matches
+  // src/pages/ExpertDetails.tsx gate semantics so users can never see
+  // an AI-recommended expert that the per-profile view would then block.
   if (userTenantId) {
     experts = experts.filter((e) => !e.tenant_id || e.tenant_id === userTenantId);
   } else {
@@ -437,13 +560,23 @@ async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = nul
     experts = experts.filter((e) => !disabledExpertIds.includes(e.id));
   }
 
-  // Sort by similarity then rating
-  experts.sort((a, b) => {
-    if (a.similarity_score && b.similarity_score) return b.similarity_score - a.similarity_score;
-    if (a.similarity_score && !b.similarity_score) return -1;
-    if (!a.similarity_score && b.similarity_score) return 1;
-    return (b.rating || 0) - (a.rating || 0);
-  });
+  // QA Phase 2.1 + 2.2: blended ranking score.
+  //   topicScore   = 1 if any user-topic overlaps the expert's specialties, else 0
+  //   semanticScore = pgvector similarity, 0 if missing (keyword fallback path)
+  //   finalScore   = onboardingWeight * topicScore + (1 - onboardingWeight) * semanticScore
+  //                  + small rating bonus to break ties
+  for (const e of experts) {
+    const specs = specialtiesById[e.id] ?? (e.specialty ? [e.specialty] : []);
+    const overlaps = userTopics.length > 0 ? topicSpecialtyOverlap(userTopics, specs) : 0;
+    const topicScore = overlaps > 0 ? 1 : 0;
+    const semanticScore = typeof e.similarity_score === 'number' ? e.similarity_score : 0;
+    e._rankScore =
+      onboardingWeight * topicScore +
+      (1 - onboardingWeight) * semanticScore +
+      ((e.rating || 0) / 100); // tiny tiebreaker
+  }
+
+  experts.sort((a: any, b: any) => (b._rankScore ?? 0) - (a._rankScore ?? 0));
 
   if (experts.length > 0) {
     experts = prioritizeByTenant(experts, userTenantId, expertBoostIds);
@@ -451,7 +584,7 @@ async function findMatchingExpertsRAGFirst(supabase, message, userTenantId = nul
 
   // Cap at 3 to avoid overwhelming the prompt with irrelevant suggestions
   const capped = experts.slice(0, 3);
-  console.log(`Expert matching: found ${capped.length} semantic matches`);
+  console.log(`Expert matching: returning ${capped.length} candidates (top=${capped[0]?.name ?? '-'}, score=${capped[0]?._rankScore?.toFixed(3) ?? '-'})`);
   return capped;
 }
 
@@ -479,22 +612,22 @@ async function findMatchingExpertsBySemantic(supabase, message) {
     });
 
     if (!embeddingResponse.ok) {
-      console.error('Failed to generate embedding for user message');
+      safeLogError('Failed to generate embedding for user message', 'no embedding returned');
       return [];
     }
 
     const embeddingData = await embeddingResponse.json();
     const queryEmbedding = embeddingData.data[0].embedding;
 
-    // Search for similar experts with very permissive threshold for initial retrieval
+    // Search for similar experts with moderate threshold for stable relevance
     const { data: similarExperts, error } = await supabase.rpc('find_similar_experts', {
       query_embedding: queryEmbedding,
-      match_threshold: 0.15,  // Very permissive to catch all potential matches
+      match_threshold: 0.25,
       match_count: 10        // Get more potential matches for AI to evaluate
     });
 
     if (error) {
-      console.error('Error finding similar experts:', error);
+      safeLogError('Error finding similar experts', error);
       return [];
     }
 
@@ -509,7 +642,7 @@ async function findMatchingExpertsBySemantic(supabase, message) {
 
     // Filter by similarity score and return formatted results - let AI decide relevance
     const filteredExperts = similarExperts
-      .filter(expert => expert.similarity >= 0.15)  // Lowered to catch colloquial phrasing
+      .filter(expert => expert.similarity >= 0.3)  // Avoid low-relevance false positives (e.g. repeated pelvic-floor suggestions)
       .map(expert => ({
         id: expert.expert_id,
         name: expert.first_name || 'Expert',
@@ -532,7 +665,7 @@ async function findMatchingExpertsBySemantic(supabase, message) {
     return filteredExperts;
 
   } catch (error) {
-    console.error('Error in semantic expert matching:', error);
+    safeLogError('Error in semantic expert matching', error);
     return [];
   }
 }
@@ -558,6 +691,12 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
       specialties: ['Breastfeeding', 'Lactation', 'Feeding'],
       keywords: ['breastfeed', 'nursing', 'lactation', 'latch', 'milk supply',
                  'bottle', 'pumping', 'weaning', 'formula']
+    },
+    {
+      specialties: ['Nutrition', 'Postpartum Nutrition', 'Prenatal Nutrition'],
+      keywords: ['nutrition', 'diet', 'meal', 'meals', 'food', 'eating', 'protein',
+                 'vitamin', 'supplement', 'calorie', 'hydration', 'prenatal nutrition',
+                 'postpartum nutrition', 'healthy eating']
     },
     {
       specialties: ['Chiropractic', 'Pediatric Chiropractic'],
@@ -630,7 +769,62 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
       tenant_id: expert.tenant_id || null
     }));
   } catch (err) {
-    console.error('Error in keyword expert fallback:', err);
+    safeLogError('Error in keyword expert fallback', err);
+    return [];
+  }
+}
+
+/**
+ * QA Phase 2.1: Pull experts whose specialties overlap the user's
+ * `topics_of_interest` (after canonical-alias normalization). Used as a
+ * last-resort fallback when semantic + keyword paths both miss but we
+ * still have a strong onboarding signal we can act on.
+ */
+async function findMatchingExpertsByUserTopics(
+  supabase,
+  userTopics: string[],
+  userTenantId: string | null,
+) {
+  try {
+    const { data: experts, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('account_type', 'expert')
+      .eq('expert_verified', true)
+      .eq('expert_profile_visibility', true)
+      .eq('expert_accepts_new_clients', true);
+
+    if (error || !experts) return [];
+
+    const tenantScoped = userTenantId
+      ? experts.filter((e: any) => !e.tenant_id || e.tenant_id === userTenantId)
+      : experts.filter((e: any) => !e.tenant_id);
+
+    const ranked = tenantScoped
+      .map((expert: any) => ({
+        expert,
+        overlaps: topicSpecialtyOverlap(userTopics, expert.expert_specialties || []),
+      }))
+      .filter((r: any) => r.overlaps > 0)
+      .sort((a: any, b: any) => b.overlaps - a.overlaps);
+
+    return ranked.map(({ expert }: any) => ({
+      id: expert.id,
+      name: expert.first_name || 'Expert',
+      specialty: expert.expert_specialties?.[0] || 'General',
+      bio: expert.expert_bio || 'Experienced professional ready to help.',
+      profile_image_url: expert.profile_image_url,
+      rating: expert.expert_rating || 5.0,
+      total_reviews: expert.expert_total_reviews || 0,
+      consultation_fee: expert.expert_consultation_rate
+        ? Math.round(expert.expert_consultation_rate * 100)
+        : 10000,
+      experience_years: expert.expert_experience_years,
+      location: expert.expert_office_location,
+      tenant_id: expert.tenant_id || null,
+    }));
+  } catch (err) {
+    safeLogError('Error in topic-aware expert fallback', err);
     return [];
   }
 }
@@ -765,7 +959,7 @@ async function findMatchingProductsRAG(
 
     return scoped.slice(0, 3);
   } catch (err) {
-    console.error('Error finding products:', err);
+    safeLogError('Error finding products', err);
     return [];
   }
 }
@@ -783,7 +977,7 @@ async function getAllAvailableExperts(supabase) {
       .order('first_name');
 
     if (error) {
-      console.error('Error getting all experts:', error);
+      safeLogError('Error getting all experts', error);
       return [];
     }
 
@@ -806,7 +1000,7 @@ async function getAllAvailableExperts(supabase) {
     }));
 
   } catch (error) {
-    console.error('Error in getAllAvailableExperts:', error);
+    safeLogError('Error in getAllAvailableExperts', error);
     return [];
   }
 }
@@ -1102,7 +1296,7 @@ GUIDELINES:
     const modelCandidates = ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo'];
     let lastError: string | null = null;
 
-    console.log(`OpenAI API key present: ${!!openaiApiKey}, length: ${openaiApiKey.length}, starts with: ${openaiApiKey.substring(0, 8)}...`);
+    console.log(`OpenAI API key present: ${!!openaiApiKey}, length: ${openaiApiKey.length}`);
     console.log(`System prompt length: ${systemPrompt.length} chars, ~${Math.ceil(systemPrompt.length / 4)} tokens`);
 
     for (const model of modelCandidates) {
@@ -1125,7 +1319,7 @@ GUIDELINES:
         if (!response.ok) {
           const errorText = await response.text();
           lastError = `${model}: HTTP ${response.status} - ${errorText.substring(0, 300)}`;
-          console.error('OpenAI API error:', lastError);
+          safeLogError('OpenAI API error', lastError);
           continue;
         }
 
@@ -1138,16 +1332,16 @@ GUIDELINES:
         lastError = `${model}: empty response content - ${JSON.stringify(data).substring(0, 200)}`;
       } catch (fetchError) {
         lastError = `${model}: fetch exception - ${(fetchError as any)?.message || String(fetchError)}`;
-        console.error('OpenAI fetch error:', lastError);
+        safeLogError('OpenAI fetch error', lastError);
         continue;
       }
     }
 
-    console.error('All OpenAI model attempts failed:', lastError);
+    safeLogError('All OpenAI model attempts failed', lastError);
     console.error('FALLING BACK to deterministic safe response.');
     return { response: buildDeterministicFallbackResponse(message, matchedExperts, matchedProducts, intent, userLanguage), error: `All models failed: ${lastError}` };
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    safeLogError('OpenAI API error (generateEnhancedAIResponse)', error);
     return { response: buildDeterministicFallbackResponse(message, matchedExperts, matchedProducts, intent, userLanguage), error: `Exception: ${(error as any)?.message || String(error)}` };
   }
 }

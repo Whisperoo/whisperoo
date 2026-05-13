@@ -42,6 +42,10 @@ supabase gen types typescript --local > src/types/database.types.ts  # Regenerat
 
 > **Important:** After ANY schema change, you MUST regenerate `src/types/database.types.ts` so TypeScript stays in sync.
 
+> **Migration discipline (HIPAA D4):** All schema changes must go through `supabase db push` and be committed as files under `supabase/migrations/`. Do NOT use the Supabase SQL Editor for migrations — it bypasses the `supabase_migrations.schema_migrations` tracker, which breaks drift detection. If a hotfix forces a Studio change, immediately write the equivalent migration file and reconcile the tracker (see `tasks/MANUAL-STEPS.md` §5.4).
+
+> **No `VITE_` prefix for secrets:** Vite inlines `VITE_*` env vars into the production bundle at build time. Never prefix server-only secrets (API keys, signing secrets, access keys) with `VITE_` — that re-leaks them to the browser. Set those as Supabase Edge Function secrets or Fly secrets instead.
+
 ---
 
 ## Tech Stack
@@ -60,7 +64,7 @@ supabase gen types typescript --local > src/types/database.types.ts  # Regenerat
 | **Edge Functions** | Deno runtime (Supabase Edge Functions) |
 | **Payments** | Stripe (`@stripe/react-stripe-js`) |
 | **Storage** | Cloudflare R2 (product file uploads) + Supabase Storage (profile images) |
-| **Deployment** | Vercel (`vercel.json` configured with SPA rewrites) |
+| **Deployment** | Fly.io (`fly.toml` — frontend served via Fly, backend via Supabase Edge Functions) |
 
 ---
 
@@ -124,7 +128,7 @@ whisperoo/
 │       ├── create-payment/        # Stripe payment intent creation
 │       └── verify-purchase/       # Stripe payment verification
 ├── database-schema.sql            # Legacy standalone schema (reference only)
-├── vercel.json                    # Deployment config with SPA fallback
+├── fly.toml                       # Fly.io deployment config
 ├── tailwind.config.ts             # Tailwind theme + animations
 ├── components.json                # shadcn/ui config
 └── tasks/                         # Task tracking directory
@@ -139,7 +143,7 @@ Migrations live in `supabase/migrations/` and are applied in order. Current tabl
 ### Core Tables
 | Table | Purpose | Key Columns |
 |---|---|---|
-| `profiles` | Parent/user accounts (extends `auth.users`) | `id` (FK to auth.users), `first_name`, `email`, `phone`, `onboarded` |
+| `profiles` | Parent/user accounts (extends `auth.users`) | `id` (FK to auth.users), `first_name`, `phone`, `onboarded` |
 | `kids` (was `children`) | Child profiles under a parent | `parent_id` (FK), `first_name`, `birth_date`, `gender`, `notes`, `age` |
 | `sessions` | Chat conversation sessions | `parent_id`, `child_id`, `summary`, `metadata` (JSONB) |
 | `messages` | Individual chat messages | `session_id`, `parent_id`, `role` (user/assistant/system), `content`, `token_count` |
@@ -174,12 +178,14 @@ OPENAI_API_KEY=<key>
 VITE_STRIPE_PUBLISHABLE_KEY=<key>
 STRIPE_SECRET_KEY=<key>  # Edge Function secret
 
-# Cloudflare R2 (for product file storage)
+# Cloudflare R2 (public config only — credentials are Edge Function secrets)
 VITE_CLOUDFLARE_ACCOUNT_ID=<id>
-VITE_CLOUDFLARE_R2_ACCESS_KEY=<key>
-VITE_CLOUDFLARE_R2_SECRET_KEY=<secret>
 VITE_CLOUDFLARE_R2_BUCKET_NAME=<bucket>
 VITE_CLOUDFLARE_R2_PUBLIC_URL=<url>
+# R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT → set in Supabase Edge Function secrets
+
+# ⚠️ SECURITY RULE: Never use the VITE_ prefix for server-only secrets.
+# VITE_ variables are inlined into the production JS bundle and readable by anyone.
 ```
 
 ---

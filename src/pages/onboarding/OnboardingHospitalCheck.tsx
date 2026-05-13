@@ -129,7 +129,7 @@ const OnboardingHospitalCheck: React.FC = () => {
 
   if (loading) {
     return (
-      <OnboardingLayout step={2} total={6} onBack={handleBack} onSkip={handleSkip}>
+      <OnboardingLayout onBack={handleBack} onSkip={handleSkip}>
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
         </div>
@@ -142,15 +142,10 @@ const OnboardingHospitalCheck: React.FC = () => {
     (isPatient === 'yes' && selectedTenantId && (departments.length === 0 || selectedDept));
 
   return (
-    <OnboardingLayout step={2} total={6} onBack={handleBack} onSkip={handleSkip}>
+    <OnboardingLayout onBack={handleBack} onSkip={handleSkip}>
       <div className="space-y-8">
         {/* Main Card */}
         <div className="bg-white rounded-3xl shadow-lg p-8 space-y-6">
-          {/* Step indicator */}
-          <div className="text-center">
-            <span className="text-sm font-medium text-gray-500">2/6</span>
-          </div>
-
           {/* Question */}
           <div className="text-center space-y-2">
             <div className="flex justify-center mb-4">

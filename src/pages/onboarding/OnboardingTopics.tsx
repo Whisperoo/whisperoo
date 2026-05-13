@@ -6,6 +6,7 @@ const OnboardingTopics: React.FC = () => {
   const { t } = useTranslation();
 
   const topicOptions = [
+    { label: t('onboarding.topics.lactation'), value: 'Lactation' },
     { label: t('onboarding.topics.babyFeeding'), value: 'Baby Feeding' },
     { label: t('onboarding.topics.pelvicFloor'), value: 'Pelvic Floor' },
     { label: t('onboarding.topics.sleepCoaching'), value: 'Sleep Coaching' },
@@ -21,13 +22,11 @@ const OnboardingTopics: React.FC = () => {
 
   return (
     <MultiSelectQuestion
-      stepIndex={4}
-      totalSteps={4}
       id="topics_of_interest"
       question={t('onboarding.topics.question')}
       subtitle={t('onboarding.topics.subtitle')}
       options={topicOptions}
-      nextRoute="/onboarding/complete"
+      nextRoute="/onboarding/personal-context"
       skipRoute="/onboarding/complete"
       backRoute="/onboarding/kids-count"
     />

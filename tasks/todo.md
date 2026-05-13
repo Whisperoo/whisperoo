@@ -486,3 +486,96 @@ Note: product files currently use Cloudflare R2 via `src/services/storage.ts` (c
 - [ ] **Do we want 1 QR per tenant** or **many QRs per tenant** (recommended many, so you can track posters by location)?
 - [ ] **Are resource files public** (simple) or **private + signed URLs** (more control)?
 - [ ] **Should tenant admins be able to upload**, or only superadmins?
+
+# Investigation + Fixes — Booking Visibility and AI Recommendation Relevance
+
+## Plan (checklist)
+
+- [x] Trace 1:1 booking flow from purchase/inquiry to dashboard and identify why bookings are not visible.
+- [x] Improve booking purchase modal copy so direct-paid consultation expectations are explicit and not truncated.
+- [x] Harden expert recommendation relevance (reduce low-similarity matches, add nutrition keyword coverage).
+- [x] Validate touched files compile/lint cleanly.
+
+## Review
+
+- Dashboard now renders recent `consultation_bookings` directly in a `Your 1:1 Bookings` card, so paid/pending bookings are visible without navigating to content tabs.
+- Purchase modal now shows full consultation description (no line clamp for consultations) and explicit post-payment outreach timing copy.
+- Chat expert matching now uses stricter semantic thresholds and includes a dedicated Nutrition keyword map to reduce repeated unrelated pelvic-floor recommendations.
+
+# Embeddings Regeneration — Active Experts
+
+## Plan (checklist)
+
+- [x] Add an edge function to regenerate embeddings for one expert or all active experts.
+- [x] Trigger per-expert embedding regeneration automatically after admin expert save/create.
+- [x] Trigger per-expert embedding regeneration after expert self-profile edits.
+- [x] Add a manual “Regenerate Embeddings” action in Expert Curation for all active experts.
+- [ ] Deploy the new edge function and run one full regeneration in target environment.
+
+## Review
+
+- Added `supabase/functions/generate_expert_embeddings/index.ts` with admin authorization, OpenAI embedding generation, and upsert to `expert_embeddings` (plus compatibility update attempt for `profiles.expert_embedding`).
+- Added `src/services/expertEmbeddings.ts` for centralized invoke calls (`regenerateExpertEmbedding`, `regenerateAllExpertEmbeddings`).
+- `AdminExpertForm` now refreshes the edited expert’s embedding after save.
+- `ExpertProfileEditor` now refreshes the current expert’s embedding after profile update.
+- `ExpertCurationPanel` now includes a one-click “Regenerate Embeddings” action for all active experts.
+
+# HIPAA Stage 1 Follow-up (May 12)
+
+## Plan (checklist)
+
+- [x] Land P0 SQL protections from security review (leaking views + bookings RLS + policy).
+- [x] Remove OpenAI key-prefix logging from chat edge function.
+- [x] Tighten compliance_training RLS to admin/super_admin read/update/delete only.
+- [x] Remove hardcoded super-admin email allowlists in app + edge functions (role-based checks only).
+- [x] Remove client-bundled secret env usage (Stripe secret and browser-side R2 credentials).
+- [x] Deploy all Edge Functions in `supabase/functions/*`.
+- [x] Validate lint/build after changes.
+
+## Review
+
+- Added migration `20260512000001_lockdown_leaking_views_and_consultation_bookings.sql` implementing the production leak lock-down from the compliance report.
+- Added migration `20260512000002_tighten_compliance_training_rls.sql` to enforce admin-only access for compliance training read/update/delete.
+- Updated `chat_ai_rag_fixed` to stop logging the OpenAI key prefix.
+- Replaced email allowlist gates with role checks in:
+  - `src/pages/admin/SuperAdminPortal.tsx`
+  - `src/pages/auth/Login.tsx`
+  - `supabase/functions/admin_phi_conversation/index.ts`
+  - `supabase/functions/admin_phi_access_log/index.ts`
+  - Admin-only product toggles in `ProductUploadModal`/`ProductEditModal`.
+- Added server-side R2 function (`supabase/functions/r2-storage/index.ts`) and updated client upload path to use presigned URLs instead of browser-held R2 credentials.
+- Deployed all edge functions and confirmed project still lints/builds.
+
+# HIPAA Stage 1 Follow-up (May 12) — Structural Hardening
+
+## Plan (checklist)
+
+- [x] Route admin AI audit reads through an audited Edge Function instead of direct view reads.
+- [x] Update admin UI to consume audited function path.
+- [x] Add incident evidence file scaffold for A2/A3/A4 verification artifacts.
+
+## Review
+
+- Added `supabase/functions/admin_ai_audit_read/index.ts`:
+  - admin/super_admin authorization
+  - filtered read path for `admin_ai_audit_trail`
+  - per-row `phi_access_log` inserts for returned records
+- Updated `src/pages/admin/AuditTrailTable.tsx` to use `supabase.functions.invoke('admin_ai_audit_read')` rather than direct `from('admin_ai_audit_trail')`.
+- Added `tasks/hipaa-evidence/incident-1-exposure.md` with required A2/A3/A4 evidence structure and command/query blocks.
+
+# HIPAA Stage 1 — Phase 2 code completion (C3/C4/C5 + D2/D3)
+
+## Plan (checklist)
+
+- [x] C3: `safeLogError` shared helper and sanitize `chat_ai_rag_fixed` error logging.
+- [x] C4: OpenAI Moderation (`text-moderation-latest`) before chat completion; align user + assistant metadata on escalation.
+- [x] C5: PHI access log CSV export fetches up to 10k rows via `admin_phi_access_log` with current filters + search.
+- [x] D2: Add `docs/llm-data-flow.md` (template for legal to finalize BAAs/links).
+- [x] D3: Remove unused `vercel.json` (deployment is Fly + Supabase).
+
+## Review
+
+- Added `supabase/functions/_shared/safeLogError.ts` and wired imports in `chat_ai_rag_fixed/index.ts`.
+- Moderation escalations update the user `messages` row metadata and set assistant metadata `intent` / `moderation_escalation`.
+- `admin_phi_access_log` allows `limit` up to **10000**; `PhiAccessLogPanel` export uses a fresh invoke with that cap.
+- **Manual still required:** `supabase functions deploy chat_ai_rag_fixed admin_phi_access_log`; fill `docs/llm-data-flow.md` BAA table; A2/A3/A4/B4/D1/D4 per master HIPAA checklist.

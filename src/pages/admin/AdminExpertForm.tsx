@@ -3,6 +3,7 @@ import { X, Save, Loader2, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
+import { regenerateExpertEmbedding } from '@/services/expertEmbeddings';
 
 const COMMON_SPECIALTIES = [
   'Lactation', 'Baby Feeding', 'Pelvic Floor', 'Sleep Coaching',
@@ -168,6 +169,8 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
         }
       };
 
+      let savedExpertId: string | null = null;
+
       if (isNew) {
         // Must use server-side function because profiles.id is FK to auth.users
         const { data: newId, error: rpcErr } = await supabase.rpc('fn_admin_create_expert', {
@@ -188,6 +191,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
         if (rpcErr) throw rpcErr;
 
         const createdId = (newId as unknown as string) || null;
+        savedExpertId = createdId;
         if (createdId) {
           let uploadedUrl: string | null = null;
           try {
@@ -209,6 +213,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           }
         }
       } else {
+        savedExpertId = expertId as string;
         let uploadedUrl: string | null = null;
         try {
           uploadedUrl = await uploadProfileImage(expertId as string);
@@ -237,6 +242,19 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           })
           .eq('id', expertId);
         if (updateErr) throw updateErr;
+      }
+
+      if (savedExpertId) {
+        try {
+          await regenerateExpertEmbedding(savedExpertId);
+        } catch (embeddingErr) {
+          console.error('Failed to regenerate expert embedding:', embeddingErr);
+          toast({
+            title: 'Expert saved, embedding refresh failed',
+            description: 'The profile was saved, but recommendations may take longer to update.',
+            variant: 'destructive',
+          });
+        }
       }
       toast({ title: 'Success', description: `Expert successfully ${isNew ? 'added' : 'updated'}.` });
       onSaved();

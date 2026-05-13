@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Edit3, Baby, Heart, Users, Calendar, Globe, Trash2, MessageSquare } from 'lucide-react'
+import { Edit3, Baby, Heart, Users, Calendar, Globe, Trash2, MessageSquare, Shield } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from '@/hooks/use-toast'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { useNavigate } from 'react-router-dom'
+import { STAFF_ACCOUNT_TYPES } from '@/hooks/useMfaStatus'
 
 interface Child {
   id: string
@@ -448,6 +449,32 @@ const ProfilePage: React.FC = () => {
               <LanguageSwitcher />
             </CardContent>
           </Card>
+
+          {!(STAFF_ACCOUNT_TYPES as readonly string[]).includes(profile.account_type ?? '') && (
+              <Card className="bg-white border-indigo-100">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xl text-indigo-700 flex items-center">
+                    <Shield className="w-5 h-5 mr-2" />
+                    Account security
+                  </CardTitle>
+                  <p className="text-sm text-gray-500">
+                    Add an authenticator app as an optional second step when you sign in.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                    onClick={() =>
+                      navigate('/auth/mfa-enroll?optional=true&returnTo=/profile')
+                    }
+                  >
+                    Set up two-factor authentication (optional)
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
           {/* Personal Story */}
           {profile.personal_context && (

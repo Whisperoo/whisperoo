@@ -8,26 +8,19 @@ export const CLOUDFLARE_R2_CONFIG = {
   // Account ID for Cloudflare R2
   accountId: import.meta.env.VITE_CLOUDFLARE_ACCOUNT_ID || '',
 
-  // R2 Access credentials (S3-compatible)
-  accessKeyId: import.meta.env.VITE_CLOUDFLARE_R2_ACCESS_KEY_ID || '',
-  secretAccessKey: import.meta.env.VITE_CLOUDFLARE_R2_SECRET_ACCESS_KEY || '',
-
   // Bucket configuration
   bucketName: import.meta.env.VITE_CLOUDFLARE_R2_BUCKET_NAME || 'whisperoo-files',
 
   // Public URL for accessing files (with CDN)
   publicUrl: import.meta.env.VITE_CLOUDFLARE_R2_PUBLIC_URL || '',
 
-  // R2 endpoint (S3-compatible endpoint format)
-  endpoint: import.meta.env.VITE_CLOUDFLARE_R2_ENDPOINT || '',
+  // R2 endpoint is server-only (edge functions) and must NOT be inlined into the SPA.
 } as const;
 
 // Validate configuration
 export const isCloudflareConfigured = (): boolean => {
   return !!(
     CLOUDFLARE_R2_CONFIG.accountId &&
-    CLOUDFLARE_R2_CONFIG.accessKeyId &&
-    CLOUDFLARE_R2_CONFIG.secretAccessKey &&
     CLOUDFLARE_R2_CONFIG.bucketName &&
     CLOUDFLARE_R2_CONFIG.publicUrl
   );

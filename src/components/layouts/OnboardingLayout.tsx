@@ -4,22 +4,21 @@ import BackButton from '../ui/BackButton';
 import SkipLink from '../ui/SkipLink';
 import PagerDots from '../ui/PagerDots';
 import LanguageSwitcher from '../common/LanguageSwitcher';
+import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 
 interface OnboardingLayoutProps {
   children: React.ReactNode;
-  step: number;
-  total: number;
   onBack?: () => void;
   onSkip?: () => void;
 }
 
-const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({ 
-  children, 
-  step, 
-  total, 
-  onBack, 
-  onSkip 
+const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
+  children,
+  onBack,
+  onSkip,
 }) => {
+  const { step, total } = useOnboardingProgress();
+
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col">
       {/* Header */}

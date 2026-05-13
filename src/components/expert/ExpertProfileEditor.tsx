@@ -31,6 +31,7 @@ import { useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { translateToAllLanguages } from "@/services/translationService";
 import { supabase } from "@/lib/supabase";
+import { regenerateExpertEmbedding } from "@/services/expertEmbeddings";
 
 const expertProfileSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -121,6 +122,15 @@ export const ExpertProfileEditor: React.FC = () => {
         console.error("Profile update error:", error);
       } else {
         console.log("Profile updated successfully");
+
+        if (profile?.id) {
+          regenerateExpertEmbedding(profile.id).catch((embeddingErr) => {
+            console.warn(
+              "[ExpertProfileEditor] Embedding refresh failed (non-blocking):",
+              embeddingErr,
+            );
+          });
+        }
 
         // ── Translate-on-Write ───────────────────────────────────────
         // Fire-and-forget: translate the bio into ES + VI and persist.

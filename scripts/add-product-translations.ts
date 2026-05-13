@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const googleKey = process.env.VITE_GOOGLE_TRANSLATE_API_KEY;
+const googleKey = process.env.GOOGLE_TRANSLATE_API_KEY || process.env.VITE_GOOGLE_TRANSLATE_API_KEY;
 
 if (!googleKey) {
   console.error('Missing Google Translate API key.');

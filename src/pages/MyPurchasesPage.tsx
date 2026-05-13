@@ -5,13 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Download, Receipt, Calendar, CheckCircle, Clock, 
-  BookOpen, Loader2, AlertCircle, RefreshCw, Search 
+import {
+  Download, Receipt, Calendar, CheckCircle, Clock,
+  BookOpen, Loader2, AlertCircle, RefreshCw, Search, Heart
 } from "lucide-react";
 import { ContentGrid } from "@/components/content/ContentGrid";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { productService, ProductWithDetails } from "@/services/products";
 import { formatCurrency } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -32,10 +33,12 @@ export const MyPurchasesPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'en';
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'content' | 'appointments'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'appointments' | 'wishlist'>('content');
   const [appointments, setAppointments] = useState<PurchaseWithDetails[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [wishlistItems, setWishlistItems] = useState<ProductWithDetails[]>([]);
+  const [loadingWishlist, setLoadingWishlist] = useState(false);
 
   const searchParams = new URLSearchParams(location.search);
   const defaultTab = searchParams.get("tab") || "content";
@@ -62,8 +65,13 @@ export const MyPurchasesPage: React.FC = () => {
 
       if (bookingsError) throw bookingsError;
 
+      // Dedupe by booking ID (guards against data-layer double-inserts)
+      const uniqueBookings = Array.from(
+        new Map((bookings || []).map((b: any) => [b.id, b])).values()
+      );
+
       const productIds = Array.from(
-        new Set((bookings || []).map((b: any) => b.product_id).filter(Boolean)),
+        new Set(uniqueBookings.map((b: any) => b.product_id).filter(Boolean)),
       ) as string[];
 
       // Load products separately (NO embedded relationships — avoid PostgREST 400s)
@@ -110,7 +118,7 @@ export const MyPurchasesPage: React.FC = () => {
         ]),
       );
 
-      const validBookings = (bookings || []).filter((b: any) => productById.has(b.product_id));
+      const validBookings = uniqueBookings.filter((b: any) => productById.has(b.product_id));
 
       const mappedAppointments: PurchaseWithDetails[] = validBookings.map((b: any) => ({
         id: b.id,
@@ -145,6 +153,29 @@ export const MyPurchasesPage: React.FC = () => {
   useEffect(() => {
     if (user) fetchAppointments();
   }, [user]);
+
+  const fetchWishlist = async () => {
+    if (!user) return;
+    setLoadingWishlist(true);
+    try {
+      const items = await productService.getUserWishlist(user.id);
+      setWishlistItems(items);
+    } catch (err) {
+      console.error('Error fetching wishlist:', err);
+    } finally {
+      setLoadingWishlist(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && activeTab === 'wishlist') fetchWishlist();
+  }, [user, activeTab]);
+
+  const handleRemoveFromWishlist = async (productId: string) => {
+    if (!user) return;
+    await productService.toggleWishlist(productId, user.id);
+    setWishlistItems(prev => prev.filter(p => p.id !== productId));
+  };
 
   const handleViewProduct = (productId: string) => {
     window.location.href = `/products/${productId}`;
@@ -262,7 +293,7 @@ export const MyPurchasesPage: React.FC = () => {
           <p className="text-black text-lg">{t('purchases.pageSubtitle')}</p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'content' | 'appointments')} className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'content' | 'appointments' | 'wishlist')} className="w-full">
           <TabsList className="w-full sm:w-auto mb-6 bg-white border shadow-sm p-1">
             <TabsTrigger value="content" className="flex-1 sm:flex-none px-6 py-2.5 data-[state=active]:bg-brand-primary/10 data-[state=active]:text-brand-primary data-[state=active]:shadow-none">
               <div className="flex items-center gap-2">
@@ -274,6 +305,12 @@ export const MyPurchasesPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <span>{t('purchases.tabAppointments', { count: appointments.length })}</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="wishlist" className="flex-1 sm:flex-none px-6 py-2.5 data-[state=active]:bg-brand-primary/10 data-[state=active]:text-brand-primary data-[state=active]:shadow-none">
+              <div className="flex items-center gap-2">
+                <Heart className="w-4 h-4" />
+                <span>{t('purchases.tabWishlist', 'Wishlist')} {wishlistItems.length > 0 ? `(${wishlistItems.length})` : ''}</span>
               </div>
             </TabsTrigger>
           </TabsList>
@@ -335,6 +372,61 @@ export const MyPurchasesPage: React.FC = () => {
                       </div>
                     </CardContent>
                   </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="wishlist" className="mt-0">
+            {loadingWishlist ? (
+              <div className="py-12 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-brand-primary" />
+              </div>
+            ) : wishlistItems.length === 0 ? (
+              <div className="py-16 flex flex-col items-center justify-center text-center bg-white rounded-2xl border border-gray-100 shadow-sm px-4">
+                <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mb-6">
+                  <Heart className="h-10 w-10 text-rose-300" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{t('purchases.noWishlistTitle', 'No saved items yet')}</h3>
+                <p className="text-gray-500 max-w-md mx-auto mb-8">
+                  {t('purchases.noWishlistDesc', 'Tap the heart icon on any product to save it here.')}
+                </p>
+                <Button onClick={() => navigate('/products')} className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-full px-8 shadow-md h-12">
+                  {t('purchases.browseProducts', 'Browse Products')}
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {wishlistItems.map((product) => (
+                  <div key={product.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                    <div
+                      className="flex-1 p-5 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => navigate(`/products/${product.id}`)}
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <h3 className="font-semibold text-gray-900 leading-snug line-clamp-2">{product.title}</h3>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRemoveFromWishlist(product.id); }}
+                          className="flex-shrink-0 text-rose-500 hover:text-rose-700 transition-colors mt-0.5"
+                          title="Remove from wishlist"
+                        >
+                          <Heart className="w-5 h-5 fill-current" />
+                        </button>
+                      </div>
+                      {product.expert && (
+                        <p className="text-sm text-gray-500 mb-2">by {product.expert.first_name}</p>
+                      )}
+                      {product.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2">{product.description}</p>
+                      )}
+                    </div>
+                    <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
+                      <span className="font-bold text-brand-primary">{formatCurrency(product.price)}</span>
+                      <Button size="sm" onClick={() => navigate(`/products/${product.id}`)} className="bg-brand-primary hover:bg-brand-primary/90 text-white text-xs h-8 px-4 rounded-full">
+                        View
+                      </Button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

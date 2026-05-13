@@ -215,7 +215,8 @@ export const PurchaseSuccessPage: React.FC = () => {
                         <div>
                           <p className="font-medium text-gray-900">Expert Will Contact You</p>
                           <p className="text-sm text-gray-600">
-                            {product.expert?.first_name || 'The expert'} will reach out to you within 24 hours to schedule your appointment
+                            {(product.expert as any)?.inquiry_confirmation_message ||
+                              `${product.expert?.first_name || 'The expert'} will reach out to you within 24 hours to schedule your appointment`}
                           </p>
                         </div>
                       </div>

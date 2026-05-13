@@ -67,20 +67,13 @@ const OnboardingKidsAges: React.FC = () => {
   const allKidsCompleted = kidsData.every(kid => kid.name.trim() !== '' && kid.birthdate.trim() !== '');
 
   return (
-    <OnboardingLayout 
-      step={5} 
-      total={5} 
+    <OnboardingLayout
       onBack={handleBack}
       onSkip={handleSkip}
     >
       <div className="space-y-8">
         {/* Main Card */}
         <div className="bg-white rounded-3xl shadow-lg p-8 space-y-6">
-          {/* Step indicator */}
-          <div className="text-center">
-            <span className="text-sm font-medium text-gray-500">5/5</span>
-          </div>
-
           {/* Greeting */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-gray-900">

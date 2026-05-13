@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 
+// Policy: 15-minute inactivity timeout. This module is the single source of truth for session expiry.
 const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes for HIPAA compliance
 
 export function useSessionTimeout() {

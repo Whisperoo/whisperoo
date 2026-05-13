@@ -33,6 +33,8 @@ import CreateAccount from "./pages/auth/CreateAccount";
 import Login from "./pages/auth/Login";
 import UpdatePassword from "./pages/auth/UpdatePassword";
 import VerifyOTP from "./pages/auth/VerifyOTP";
+import MfaEnrollPage from "./pages/auth/MfaEnrollPage";
+import MfaChallengePage from "./pages/auth/MfaChallengePage";
 import OnboardingComplete from "./pages/onboarding/OnboardingComplete";
 import OnboardingKids from "./pages/onboarding/OnboardingKids";
 import OnboardingKidsAges from "./pages/onboarding/OnboardingKidsAges";
@@ -40,6 +42,7 @@ import OnboardingKidsCount from "./pages/onboarding/OnboardingKidsCount";
 import OnboardingParentingStyles from "./pages/onboarding/OnboardingParentingStyles";
 import OnboardingRole from "./pages/onboarding/OnboardingRole";
 import OnboardingHospitalCheck from "./pages/onboarding/OnboardingHospitalCheck";
+import OnboardingPersonalContext from "./pages/onboarding/OnboardingPersonalContext";
 import OnboardingTopics from "./pages/onboarding/OnboardingTopics";
 
 const queryClient = new QueryClient();
@@ -63,6 +66,8 @@ const App = () => {
                 <Route path="/auth/create" element={<CreateAccount />} />
                 <Route path="/auth/verify" element={<VerifyOTP />} />
                 <Route path="/auth/login" element={<Login />} />
+                <Route path="/auth/mfa-enroll" element={<MfaEnrollPage />} />
+                <Route path="/auth/mfa-challenge" element={<MfaChallengePage />} />
                 <Route
                   path="/onboarding/kids"
                   element={
@@ -116,6 +121,14 @@ const App = () => {
                   element={
                     <ProtectedRoute requireAuth={true}>
                       <OnboardingTopics />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/onboarding/personal-context"
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <OnboardingPersonalContext />
                     </ProtectedRoute>
                   }
                 />
@@ -231,7 +244,7 @@ const App = () => {
                 <Route
                   path="/expert-dashboard"
                   element={
-                    <ProtectedRoute requireAuth={true} requireOnboarding={true}>
+                    <ProtectedRoute requireAuth={true} requireOnboarding={true} requireMfa={true}>
                       <AppLayout>
                         <ExpertDashboard />
                       </AppLayout>
@@ -241,7 +254,7 @@ const App = () => {
                 <Route
                   path="/expert-settings"
                   element={
-                    <ProtectedRoute requireAuth={true} requireOnboarding={true}>
+                    <ProtectedRoute requireAuth={true} requireOnboarding={true} requireMfa={true}>
                       <AppLayout>
                         <ExpertProfileSettings />
                       </AppLayout>
@@ -251,7 +264,7 @@ const App = () => {
                 <Route
                   path="/admin/products"
                   element={
-                    <ProtectedRoute requireAuth={true}>
+                    <ProtectedRoute requireAuth={true} requireMfa={true}>
                       <AdminProductsPage />
                     </ProtectedRoute>
                   }
@@ -259,7 +272,7 @@ const App = () => {
                 <Route
                   path="/compliance/training"
                   element={
-                    <ProtectedRoute requireAuth={true}>
+                    <ProtectedRoute requireAuth={true} requireMfa={true}>
                       <CompliancePortal />
                     </ProtectedRoute>
                   }
@@ -267,7 +280,7 @@ const App = () => {
                 <Route
                   path="/admin/super"
                   element={
-                    <ProtectedRoute requireAuth={true}>
+                    <ProtectedRoute requireAuth={true} requireMfa={true}>
                       <SuperAdminPortal />
                     </ProtectedRoute>
                   }

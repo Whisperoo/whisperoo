@@ -29,11 +29,6 @@ function json(status: number, body: unknown) {
   });
 }
 
-const SUPER_ADMIN_EMAILS = new Set([
-  "engineering@whisperoo.app",
-  "sharab.khan101010@gmail.com",
-]);
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -78,12 +73,10 @@ Deno.serve(async (req: Request) => {
       accessorRole === "super_admin" ||
       accessorRole === "superadmin" ||
       accessorRole === "admin";
-    const isEmailAllowed = SUPER_ADMIN_EMAILS.has((user.email || "").toLowerCase());
-    if (!isRoleAllowed && !isEmailAllowed) {
+    if (!isRoleAllowed) {
       return json(403, {
         error: "Access denied",
         role: accessorRole,
-        email: user.email || null,
       });
     }
 

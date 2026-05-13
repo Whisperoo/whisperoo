@@ -96,7 +96,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-lg">{product.title}</h3>
                     {product.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2 mt-1">
+                      <p className={`text-sm text-gray-600 mt-1 ${product.product_type === 'consultation' ? '' : 'line-clamp-2'}`}>
                         {product.description}
                       </p>
                     )}
@@ -113,6 +113,14 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                   </div>
                 </div>
               </div>
+
+              {product.product_type === 'consultation' && (
+                <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+                  <p className="text-sm text-blue-900">
+                    After payment, your booking is created and the expert will contact you within 24-48 hours to schedule your session.
+                  </p>
+                </div>
+              )}
 
               {/* Pricing Breakdown */}
               <div className="space-y-3">
