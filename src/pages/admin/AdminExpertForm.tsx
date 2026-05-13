@@ -4,13 +4,9 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { regenerateExpertEmbedding } from '@/services/expertEmbeddings';
+import { CANONICAL_TOPICS, hasCanonicalTopic } from '@/utils/canonicalTopics';
 
-const COMMON_SPECIALTIES = [
-  'Lactation', 'Baby Feeding', 'Pelvic Floor', 'Sleep Coaching',
-  'Nervous System Regulation', 'Nutrition', 'Pediatric Dentistry',
-  'Lifestyle Coaching', 'Fitness/yoga', 'Back to Work',
-  'Postpartum Tips', 'Prenatal Tips'
-];
+const COMMON_SPECIALTIES = CANONICAL_TOPICS;
 
 const COMMON_CREDENTIALS = [
   'Licensed Family Therapist (LFT)', 'Licensed Clinical Social Worker (LCSW)',
@@ -127,6 +123,13 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
     }
     if (isNew && form.password.trim().length < 6) {
       setError('Password must be at least 6 characters');
+      return;
+    }
+    const proposedSpecialties = form.expert_specialties.length > 0
+      ? form.expert_specialties
+      : (newSpecialty ? [newSpecialty] : []);
+    if (!hasCanonicalTopic(proposedSpecialties)) {
+      setError('Pick at least one specialty from the canonical list (so this expert shows up for users who selected that topic during onboarding).');
       return;
     }
     setSaving(true);

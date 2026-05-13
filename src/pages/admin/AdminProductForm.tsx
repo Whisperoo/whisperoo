@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
+import { CANONICAL_TOPICS, hasCanonicalTopic } from '@/utils/canonicalTopics';
 
 interface AdminProductFormProps {
   productId: string | null; // null or 'new' = create, string = edit
@@ -128,6 +129,10 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
     }
     if (!form.expert_id) {
       setError('Please select an expert');
+      return;
+    }
+    if (!hasCanonicalTopic(form.tags)) {
+      setError('Pick at least one tag from the canonical list (so the resource shows up for users who selected that topic during onboarding).');
       return;
     }
     setSaving(true);
@@ -514,11 +519,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
             <div>
               <label className="text-xs font-medium text-gray-600 mb-2 block">Tags (Quick Select)</label>
               <div className="flex flex-wrap gap-2 mb-3">
-                {[
-                  'Baby Feeding', 'Pelvic Floor', 'Sleep Coaching', 'Nervous System Regulation',
-                  'Nutrition', 'Pediatric Dentistry', 'Lifestyle Coaching', 'Fitness/yoga',
-                  'Back to Work', 'Postpartum Tips', 'Prenatal Tips'
-                ].map(tag => (
+                {CANONICAL_TOPICS.map(tag => (
                   <button
                     key={tag}
                     type="button"
