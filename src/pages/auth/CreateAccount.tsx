@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { TermsOfServiceContent, PrivacyPolicyContent } from '@/components/legal/LegalDocuments';
 import { isComingSoonTenant } from '@/config/comingSoon';
+import { formatUsPhone, isValidUsPhone } from '@/utils/phone';
 
 const CreateAccount: React.FC = () => {
   const { t } = useTranslation();
@@ -83,6 +84,12 @@ const CreateAccount: React.FC = () => {
 
     if (!formData.firstName.trim()) {
       newErrors.firstName = t('auth.createAccount.errors.firstNameRequired');
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required.';
+    } else if (!isValidUsPhone(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Enter a 10-digit US phone number — we\'ll format it as (XXX) XXX-XXXX.';
     }
 
     if (!formData.email.trim()) {
@@ -170,8 +177,9 @@ const CreateAccount: React.FC = () => {
     }
   };
 
-  const isFormValid = formData.firstName.trim() && 
-                     formData.email.trim() && 
+  const isFormValid = formData.firstName.trim() &&
+                     isValidUsPhone(formData.phoneNumber) &&
+                     formData.email.trim() &&
                      formData.password.trim() &&
                      formData.agreeToTerms;
 
@@ -236,15 +244,25 @@ const CreateAccount: React.FC = () => {
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              Phone Number (Optional)
+              Phone Number <span className="text-red-500">*</span>
             </label>
             <Input
               type="tel"
+              inputMode="tel"
+              autoComplete="tel"
               value={formData.phoneNumber}
-              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-              placeholder="e.g. +1 234 567 8900"
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200"
+              onChange={(e) => setFormData({ ...formData, phoneNumber: formatUsPhone(e.target.value) })}
+              placeholder="(555) 123-4567"
+              maxLength={14}
+              className={`w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-700 focus:border-transparent transition-colors duration-200 ${
+                errors.phoneNumber ? 'border-red-500' : ''
+              }`}
             />
+            {errors.phoneNumber && (
+              <p className="text-sm text-red-600" role="alert" aria-live="assertive">
+                {errors.phoneNumber}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

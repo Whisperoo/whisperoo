@@ -9,7 +9,6 @@ import { ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrivacyNotice from '../../components/ui/PrivacyNotice';
 import { useTranslation } from 'react-i18next';
-import { formatUsPhone, isValidUsPhone } from '@/utils/phone';
 
 const OnboardingRole: React.FC = () => {
   const { t } = useTranslation();
@@ -17,9 +16,14 @@ const OnboardingRole: React.FC = () => {
   const { profile, updateProfile } = useAuth();
   const [role, setRole] = useState<string>('');
   const [customRole, setCustomRole] = useState<string>('');
-  const [phone, setPhone] = useState<string>('');
 
-  // Load existing values if any
+  // Debug: Log when this component mounts
+  useEffect(() => {
+    console.log('OnboardingRole: Component mounted');
+    console.log('OnboardingRole: Profile data:', profile);
+  }, []);
+
+  // Load existing role if any
   useEffect(() => {
     if (profile?.role) {
       setRole(profile.role);
@@ -27,12 +31,9 @@ const OnboardingRole: React.FC = () => {
         setCustomRole(profile.custom_role);
       }
     }
-    if (profile?.phone_number) {
-      setPhone(formatUsPhone(profile.phone_number));
-    }
   }, [profile]);
 
-  // Auto-save role when selections change
+  // Auto-save when selections change
   useEffect(() => {
     if ((role && role !== 'other') || (role === 'other' && customRole.trim())) {
       const saveData = async () => {
@@ -46,17 +47,11 @@ const OnboardingRole: React.FC = () => {
     }
   }, [role, customRole, updateProfile]);
 
-  const phoneIsValid = isValidUsPhone(phone);
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhone(formatUsPhone(e.target.value));
-  };
-
-  const handleNext = async () => {
+  const handleNext = () => {
     const finalRole = role === 'other' ? customRole : role;
-    if (!finalRole || !phoneIsValid) return;
-    await updateProfile({ phone_number: phone });
-    navigate('/onboarding/hospital-check');
+    if (finalRole) {
+      navigate('/onboarding/hospital-check');
+    }
   };
 
   const handleBack = () => {
@@ -67,8 +62,7 @@ const OnboardingRole: React.FC = () => {
     navigate('/onboarding/complete');
   };
 
-  const roleReady = (role && role !== 'other') || (role === 'other' && customRole.trim());
-  const canProceed = roleReady && phoneIsValid;
+  const canProceed = (role && role !== 'other') || (role === 'other' && customRole.trim());
 
   return (
     <OnboardingLayout
@@ -130,31 +124,6 @@ const OnboardingRole: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Phone number (required) */}
-          <div className="space-y-2">
-            <label htmlFor="phone" className="text-sm font-medium text-gray-700">
-              {t('onboarding.role.phoneLabel')} <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              value={phone}
-              onChange={handlePhoneChange}
-              placeholder={t('onboarding.role.phonePlaceholder')}
-              maxLength={14}
-              required
-              aria-invalid={phone.length > 0 && !phoneIsValid}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-colors duration-200"
-            />
-            {phone.length > 0 && !phoneIsValid && (
-              <p className="text-xs text-red-600">
-                {t('onboarding.role.phoneError')}
-              </p>
-            )}
           </div>
 
           {/* Privacy Notice */}
