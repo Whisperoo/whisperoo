@@ -233,8 +233,12 @@ export const PurchaseSuccessPage: React.FC = () => {
                         : isHospitalBooking
                           ? 'hospitalBooking'
                           : 'consultation';
-                      const step1DefaultDesc = (product.expert as any)?.inquiry_confirmation_message
-                        || t(`purchaseSuccess.${stepsKey}.step1Desc`, { expertName });
+                      const defaultStep1Desc = t(`purchaseSuccess.${stepsKey}.step1Desc`, { expertName });
+                      const step1DefaultDesc = isInquiryBooking
+                        ? (product.expert as any)?.inquiry_confirmation_message?.trim() || defaultStep1Desc
+                        : isDirectBooking
+                          ? (product.expert as any)?.inquiry_prebook_message?.trim() || defaultStep1Desc
+                          : defaultStep1Desc;
                       return (
                         <>
                           {/* Default steps when no custom instructions */}
@@ -247,7 +251,7 @@ export const PurchaseSuccessPage: React.FC = () => {
                                 {t(`purchaseSuccess.${stepsKey}.step1Title`)}
                               </p>
                               <p className="text-sm text-gray-600">
-                                {isInquiryBooking ? step1DefaultDesc : t(`purchaseSuccess.${stepsKey}.step1Desc`, { expertName })}
+                                {(isInquiryBooking || isDirectBooking) ? step1DefaultDesc : defaultStep1Desc}
                               </p>
                             </div>
                           </div>

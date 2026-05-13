@@ -409,39 +409,39 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
               <p className="text-xs text-gray-400 mt-1">{form.expert_bio.length} characters</p>
             </div>
 
-            {/* Pre-book modal (optional override; defaults are localized inquiry vs hospital templates) */}
+            {/* Flat-rate consultation purchase note (direct booking) */}
             <div>
               <label className="text-xs font-medium text-gray-600 mb-1 block">
-                Inquiry Pre-Book Message
+                Consultation Purchase Note
                 <span className="text-gray-400 ml-1">(optional)</span>
               </label>
               <textarea
                 value={form.inquiry_prebook_message}
                 onChange={(e) => setForm({ ...form, inquiry_prebook_message: e.target.value })}
-                placeholder="Overrides the standard two-line text shown before they confirm an inquiry booking. Leave blank for the default (24–48h) template."
+                placeholder="Custom note shown to users after they purchase a paid consultation. Example: 'Thank you for booking. Your expert will follow up shortly with appointment details.'"
                 rows={3}
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
               <p className="text-xs text-gray-400 mt-1">
-                Applies to experts whose consultation product uses Inquiry booking. Hospital-specific copy is edited on the product (Hospital booking model).
+                Used for direct consultation purchases. Leave blank to show the default purchase success instructions.
               </p>
             </div>
 
-            {/* Inquiry Confirmation Message */}
+            {/* Appointment request confirmation message */}
             <div>
               <label className="text-xs font-medium text-gray-600 mb-1 block">
-                Inquiry Confirmation Message
+                Appointment Request Confirmation Message
                 <span className="text-gray-400 ml-1">(optional)</span>
               </label>
               <textarea
                 value={form.inquiry_confirmation_message}
                 onChange={(e) => setForm({ ...form, inquiry_confirmation_message: e.target.value })}
-                placeholder="Custom message shown to users after they request an appointment. Example: 'Thank you for your interest! I typically respond within 24 hours. Please have your insurance info ready.'"
+                placeholder="Custom message shown to users after they request an appointment. Example: 'Thank you for your request! I typically respond within 24 hours.'"
                 rows={3}
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
               <p className="text-xs text-gray-400 mt-1">
-                This message appears in the confirmation modal when a user requests an appointment. Leave blank for the default message.
+                This message appears after a user submits an inquiry request. Leave blank for the default confirmation text.
               </p>
             </div>
 

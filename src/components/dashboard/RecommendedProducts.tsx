@@ -13,16 +13,19 @@ export const RecommendedProducts: React.FC = () => {
   const navigate = useNavigate();
   const { sortPersonalized } = usePersonalizedSort();
   const { profile } = useAuth();
+  const profileTopicsKey = JSON.stringify(profile?.topics_of_interest ?? []);
   
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchRecommendations = async () => {
       setLoading(true);
       try {
         // Fetch latest products
         const { products: fetched } = await productService.getProducts({}, 1, 20);
+        if (cancelled) return;
         // Apply AI/RAG-based personalized sorting
         const sorted = sortPersonalized(fetched);
         // Debug: show user's selected topics and the top product slugs for QA
@@ -34,14 +37,21 @@ export const RecommendedProducts: React.FC = () => {
         // Take top 3 for dashboard (fallback to newest if no matches)
         setProducts(sorted.slice(0, 3));
       } catch (error) {
-        console.error("Failed to load recommended products", error);
+        if (!cancelled) {
+          console.error("Failed to load recommended products", error);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     
     fetchRecommendations();
-  }, [sortPersonalized]);
+    return () => {
+      cancelled = true;
+    };
+  }, [sortPersonalized, profileTopicsKey]);
 
   if (loading) {
     return (
