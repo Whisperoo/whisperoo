@@ -1241,7 +1241,7 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
   // Add session history from previous conversations
   if (context.sessionHistory && context.sessionHistory.length > 0) {
     systemPrompt += `\n\nPREVIOUS CONVERSATION HISTORY:`;
-    context.sessionHistory.forEach((session, index) => {
+    context.sessionHistory.slice(0, 3).forEach((session: any, index: number) => {
       const sessionDate = new Date(session.last_message_at).toLocaleDateString();
       const childContext = session.child_id && context.allChildren ?
         context.allChildren.find(c => c.id === session.child_id)?.first_name : null;
@@ -1260,7 +1260,7 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
   if (context.lastFourMessages && context.lastFourMessages.length > 0) {
     systemPrompt += `\n\nIMMEDIATE CONVERSATION CONTEXT (Last 4 messages):`;
     context.lastFourMessages.forEach((msg, index) => {
-      systemPrompt += `\n${index + 1}. ${msg.role === 'user' ? 'Parent' : 'Assistant'}: ${msg.content.substring(0, 100)}...`;
+      systemPrompt += `\n${index + 1}. ${msg.role === 'user' ? 'Parent' : 'Assistant'}: ${msg.content.substring(0, 60)}...`;
     });
   }
 
@@ -1293,7 +1293,9 @@ GUIDELINES:
   ];
 
   try {
-    const modelCandidates = ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo'];
+    // gpt-4o intentionally excluded — it is 17x more expensive than gpt-4o-mini
+    // and silently falling back to it caused a $33 single-day spike.
+    const modelCandidates = ['gpt-4o-mini', 'gpt-3.5-turbo'];
     let lastError: string | null = null;
 
     console.log(`OpenAI API key present: ${!!openaiApiKey}, length: ${openaiApiKey.length}`);
