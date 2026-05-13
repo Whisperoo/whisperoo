@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useMfaStatus } from '@/hooks/useMfaStatus'
+import MfaEnrollBanner from '@/components/MfaEnrollBanner'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -97,8 +98,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
 
     if (mfaStatus === 'not_enrolled') {
-      // Staff account with no TOTP factor — must enroll first
-      return <Navigate to={`/auth/mfa-enroll?returnTo=${returnTo}`} replace />
+      // Staff account with no TOTP factor yet. While MFA UX is still being
+      // rolled out, allow access but show a non-blocking enrollment reminder.
+      // Once MFA enrollment is required for production, switch this back to:
+      //   return <Navigate to={`/auth/mfa-enroll?returnTo=${returnTo}`} replace />
+      return (
+        <>
+          <MfaEnrollBanner returnTo={location.pathname + location.search} />
+          {children}
+        </>
+      )
     }
 
     if (mfaStatus === 'enrolled_unverified') {

@@ -86,6 +86,30 @@ export const PurchaseSuccessPage: React.FC = () => {
         </div>
       </div>;
   }
+
+  const bookingModel = (product as any).booking_model as string | null | undefined;
+  const isConsultation = product.product_type === 'consultation';
+  const isDirectBooking = isConsultation && bookingModel === 'direct';
+  const isHospitalBooking = isConsultation && bookingModel === 'hospital';
+  const isInquiryBooking = isConsultation && !isDirectBooking && !isHospitalBooking;
+  const expertName = product.expert?.first_name || 'The expert';
+
+  let headerTitle: string;
+  let headerDesc: string;
+  if (isDirectBooking) {
+    headerTitle = t('purchaseSuccess.directBookingTitle');
+    headerDesc = t('purchaseSuccess.directBookingDesc', { expertName });
+  } else if (isHospitalBooking) {
+    headerTitle = t('purchaseSuccess.consultationTitle');
+    headerDesc = t('purchaseSuccess.hospitalBookingDesc');
+  } else if (isInquiryBooking) {
+    headerTitle = t('purchaseSuccess.consultationTitle');
+    headerDesc = t('purchaseSuccess.consultationDesc');
+  } else {
+    headerTitle = t('purchaseSuccess.purchaseTitle');
+    headerDesc = t('purchaseSuccess.purchaseDesc');
+  }
+
   return <div className="min-h-screen bg-gray-50 container mx-auto p-6">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Success Header */}
@@ -94,13 +118,10 @@ export const PurchaseSuccessPage: React.FC = () => {
             <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {product.product_type === 'consultation' ? t('purchaseSuccess.consultationTitle') : t('purchaseSuccess.purchaseTitle')}
+            {headerTitle}
           </h1>
           <p className="text-lg text-gray-600">
-            {product.product_type === 'consultation'
-              ? t('purchaseSuccess.consultationDesc')
-              : t('purchaseSuccess.purchaseDesc')
-            }
+            {headerDesc}
           </p>
         </div>
 
@@ -206,45 +227,61 @@ export const PurchaseSuccessPage: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    <>
-                      {/* Default steps when no custom instructions */}
-                      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-semibold text-sm">1</span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">Expert Will Contact You</p>
-                          <p className="text-sm text-gray-600">
-                            {(product.expert as any)?.inquiry_confirmation_message ||
-                              `${product.expert?.first_name || 'The expert'} will reach out to you within 24 hours to schedule your appointment`}
-                          </p>
-                        </div>
-                      </div>
+                    (() => {
+                      const stepsKey = isDirectBooking
+                        ? 'directBooking'
+                        : isHospitalBooking
+                          ? 'hospitalBooking'
+                          : 'consultation';
+                      const step1DefaultDesc = (product.expert as any)?.inquiry_confirmation_message
+                        || t(`purchaseSuccess.${stepsKey}.step1Desc`, { expertName });
+                      return (
+                        <>
+                          {/* Default steps when no custom instructions */}
+                          <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-blue-600 font-semibold text-sm">1</span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {t(`purchaseSuccess.${stepsKey}.step1Title`)}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {isInquiryBooking ? step1DefaultDesc : t(`purchaseSuccess.${stepsKey}.step1Desc`, { expertName })}
+                              </p>
+                            </div>
+                          </div>
 
-                      <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                          <span className="text-green-600 font-semibold text-sm">2</span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">Prepare for Your Session</p>
-                          <p className="text-sm text-gray-600">
-                            Think about your questions and goals for the consultation
-                          </p>
-                        </div>
-                      </div>
+                          <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                              <span className="text-green-600 font-semibold text-sm">2</span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {t(`purchaseSuccess.${stepsKey}.step2Title`)}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {t(`purchaseSuccess.${stepsKey}.step2Desc`)}
+                              </p>
+                            </div>
+                          </div>
 
-                      <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                          <span className="text-purple-600 font-semibold text-sm">3</span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">Get Support</p>
-                          <p className="text-sm text-gray-600">
-                            Have questions about your booking? Our support team is here to help
-                          </p>
-                        </div>
-                      </div>
-                    </>
+                          <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                              <span className="text-purple-600 font-semibold text-sm">3</span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {t(`purchaseSuccess.${stepsKey}.step3Title`)}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {t(`purchaseSuccess.${stepsKey}.step3Desc`)}
+                              </p>
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()
                   )}
                 </>
               ) : (

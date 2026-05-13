@@ -8,7 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantProvider } from "@/contexts/TenantContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ExpertDashboard } from "./components/expert/ExpertDashboard";
 import { AdminProductsPage } from "./pages/AdminProductsPage";
 import Chat from "./pages/Chat";
@@ -42,7 +42,6 @@ import OnboardingKidsCount from "./pages/onboarding/OnboardingKidsCount";
 import OnboardingParentingStyles from "./pages/onboarding/OnboardingParentingStyles";
 import OnboardingRole from "./pages/onboarding/OnboardingRole";
 import OnboardingHospitalCheck from "./pages/onboarding/OnboardingHospitalCheck";
-import OnboardingPersonalContext from "./pages/onboarding/OnboardingPersonalContext";
 import OnboardingTopics from "./pages/onboarding/OnboardingTopics";
 
 const queryClient = new QueryClient();
@@ -126,11 +125,7 @@ const App = () => {
                 />
                 <Route
                   path="/onboarding/personal-context"
-                  element={
-                    <ProtectedRoute requireAuth={true}>
-                      <OnboardingPersonalContext />
-                    </ProtectedRoute>
-                  }
+                  element={<Navigate to="/onboarding/complete" replace />}
                 />
                 <Route
                   path="/onboarding/complete"

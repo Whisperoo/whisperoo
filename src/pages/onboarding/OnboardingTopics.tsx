@@ -26,7 +26,7 @@ const OnboardingTopics: React.FC = () => {
       question={t('onboarding.topics.question')}
       subtitle={t('onboarding.topics.subtitle')}
       options={topicOptions}
-      nextRoute="/onboarding/personal-context"
+      nextRoute="/onboarding/complete"
       skipRoute="/onboarding/complete"
       backRoute="/onboarding/kids-count"
     />

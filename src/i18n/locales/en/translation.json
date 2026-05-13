@@ -413,7 +413,10 @@
       "mom": "Mom",
       "dad": "Dad",
       "other": "Other",
-      "addRolePlaceholder": "Add role"
+      "addRolePlaceholder": "Add role",
+      "phoneLabel": "Phone number",
+      "phonePlaceholder": "(555) 123-4567",
+      "phoneError": "Enter a 10-digit US phone number — we'll format it as (XXX) XXX-XXXX."
     },
     "kids": {
       "question": "Are you expecting?",
@@ -681,6 +684,9 @@
     "consultationTitle": "Consultation Booked! 🎉",
     "purchaseDesc": "Thank you for your purchase. You now have access to your new resource.",
     "consultationDesc": "Your consultation has been booked successfully. The expert will reach out to you within 24 hours to schedule your appointment.",
+    "directBookingTitle": "Booking Confirmed! 🎉",
+    "directBookingDesc": "Your session is paid up-front and confirmed. {{expertName}} has been notified and will reach out within 24 hours to schedule the exact time slot.",
+    "hospitalBookingDesc": "Your booking is confirmed. Your hospital's intake team will reach out within 24 hours to schedule the exact time slot.",
     "whatYouPurchased": "What You Just Purchased",
     "by": "by {{name}}",
     "pages": "{{count}} pages",
@@ -693,6 +699,22 @@
       "step2Desc": "Think about your questions and goals for the consultation",
       "step3Title": "Get Support",
       "step3Desc": "Have questions about your booking? Our support team is here to help"
+    },
+    "directBooking": {
+      "step1Title": "Your Session Is Booked",
+      "step1Desc": "Payment received. {{expertName}} has been notified and will reach out within 24 hours to confirm the exact time slot.",
+      "step2Title": "Prepare for Your Session",
+      "step2Desc": "Think about your questions and goals for the consultation",
+      "step3Title": "Get Support",
+      "step3Desc": "Need to reschedule or have questions? Our support team is here to help"
+    },
+    "hospitalBooking": {
+      "step1Title": "Your Booking Is Confirmed",
+      "step1Desc": "Your hospital's intake team will reach out within 24 hours to schedule the exact time slot.",
+      "step2Title": "Prepare for Your Visit",
+      "step2Desc": "Think about your questions and any records you'd like to bring",
+      "step3Title": "Get Support",
+      "step3Desc": "Questions about your booking? Our support team is here to help"
     },
     "content": {
       "step1Title": "Access Your Purchase",

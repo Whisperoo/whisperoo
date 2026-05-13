@@ -468,7 +468,10 @@
       "mom": "Mamá",
       "dad": "Papá",
       "other": "Otro",
-      "addRolePlaceholder": "Agregar rol"
+      "addRolePlaceholder": "Agregar rol",
+      "phoneLabel": "Número de teléfono",
+      "phonePlaceholder": "(555) 123-4567",
+      "phoneError": "Ingresa un número de teléfono de EE. UU. de 10 dígitos — lo formatearemos como (XXX) XXX-XXXX."
     },
     "kids": {
       "question": "¿Estás esperando un bebé?",
@@ -676,6 +679,9 @@
     "consultationTitle": "¡Consulta Reservada! 🎉",
     "purchaseDesc": "Gracias por tu compra. Ahora tienes acceso a tu nuevo recurso.",
     "consultationDesc": "Tu consulta ha sido reservada con éxito. El experto se pondrá en contacto contigo en 24 horas para agendar tu cita.",
+    "directBookingTitle": "¡Reserva Confirmada! 🎉",
+    "directBookingDesc": "Tu sesión está pagada y confirmada. {{expertName}} ha sido notificado/a y te contactará en 24 horas para fijar la hora exacta.",
+    "hospitalBookingDesc": "Tu reserva está confirmada. El equipo de admisión de tu hospital se pondrá en contacto contigo en 24 horas para fijar la hora exacta.",
     "whatYouPurchased": "Lo Que Acabas de Comprar",
     "by": "por {{name}}",
     "pages": "{{count}} páginas",
@@ -686,6 +692,22 @@
       "step1Desc": "{{expertName}} se pondrá en contacto contigo en 24 horas para programar tu cita",
       "step2Title": "Prepárate para Tu Sesión",
       "step2Desc": "Piensa en tus preguntas y objetivos para la consulta",
+      "step3Title": "Obtén Apoyo",
+      "step3Desc": "¿Tienes preguntas sobre tu reserva? Nuestro equipo de soporte está aquí para ayudar"
+    },
+    "directBooking": {
+      "step1Title": "Tu Sesión Está Reservada",
+      "step1Desc": "Pago recibido. {{expertName}} ha sido notificado/a y te contactará en 24 horas para confirmar la hora exacta.",
+      "step2Title": "Prepárate para Tu Sesión",
+      "step2Desc": "Piensa en tus preguntas y objetivos para la consulta",
+      "step3Title": "Obtén Apoyo",
+      "step3Desc": "¿Necesitas reprogramar o tienes preguntas? Nuestro equipo de soporte está aquí para ayudar"
+    },
+    "hospitalBooking": {
+      "step1Title": "Tu Reserva Está Confirmada",
+      "step1Desc": "El equipo de admisión de tu hospital se pondrá en contacto contigo en 24 horas para fijar la hora exacta.",
+      "step2Title": "Prepárate para Tu Visita",
+      "step2Desc": "Piensa en tus preguntas y los registros que quieras llevar",
       "step3Title": "Obtén Apoyo",
       "step3Desc": "¿Tienes preguntas sobre tu reserva? Nuestro equipo de soporte está aquí para ayudar"
     },

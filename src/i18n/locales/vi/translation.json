@@ -468,7 +468,10 @@
       "mom": "Mẹ",
       "dad": "Bố",
       "other": "Khác",
-      "addRolePlaceholder": "Thêm vai trò"
+      "addRolePlaceholder": "Thêm vai trò",
+      "phoneLabel": "Số điện thoại",
+      "phonePlaceholder": "(555) 123-4567",
+      "phoneError": "Vui lòng nhập số điện thoại Hoa Kỳ 10 chữ số — chúng tôi sẽ định dạng là (XXX) XXX-XXXX."
     },
     "kids": {
       "question": "Bạn đang mang thai phải không?",
@@ -676,6 +679,9 @@
     "consultationTitle": "Đã Đặt lịch Tư vấn! 🎉",
     "purchaseDesc": "Cảm ơn bạn đã mua hàng. Bạn hiện có quyền truy cập vào tài nguyên mới của mình.",
     "consultationDesc": "Buổi tư vấn của bạn đã được đặt lịch thành công. Chuyên gia sẽ liên hệ với bạn trong vòng 24 giờ để sắp xếp cuộc hẹn.",
+    "directBookingTitle": "Đặt lịch Đã Xác nhận! 🎉",
+    "directBookingDesc": "Buổi của bạn đã được thanh toán trước và xác nhận. {{expertName}} đã được thông báo và sẽ liên hệ trong vòng 24 giờ để sắp xếp khung giờ cụ thể.",
+    "hospitalBookingDesc": "Đặt lịch của bạn đã được xác nhận. Đội tiếp nhận của bệnh viện sẽ liên hệ trong vòng 24 giờ để sắp xếp khung giờ cụ thể.",
     "whatYouPurchased": "Những Gì Bạn Vừa Mua",
     "by": "bởi {{name}}",
     "pages": "{{count}} trang",
@@ -688,6 +694,22 @@
       "step2Desc": "Hãy suy nghĩ về các câu hỏi và mục tiêu của bạn cho buổi tư vấn",
       "step3Title": "Nhận Hỗ trợ",
       "step3Desc": "Có câu hỏi về đặt lịch? Đội ngũ hỗ trợ của chúng tôi luôn sẵn sàng giúp đỡ"
+    },
+    "directBooking": {
+      "step1Title": "Buổi của Bạn Đã Được Đặt",
+      "step1Desc": "Đã nhận thanh toán. {{expertName}} đã được thông báo và sẽ liên hệ trong vòng 24 giờ để xác nhận khung giờ cụ thể.",
+      "step2Title": "Chuẩn bị cho Phiên của Bạn",
+      "step2Desc": "Hãy suy nghĩ về các câu hỏi và mục tiêu của bạn cho buổi tư vấn",
+      "step3Title": "Nhận Hỗ trợ",
+      "step3Desc": "Cần đổi lịch hoặc có thắc mắc? Đội ngũ hỗ trợ luôn sẵn sàng giúp đỡ"
+    },
+    "hospitalBooking": {
+      "step1Title": "Đặt lịch Đã Xác nhận",
+      "step1Desc": "Đội tiếp nhận của bệnh viện sẽ liên hệ trong vòng 24 giờ để sắp xếp khung giờ cụ thể.",
+      "step2Title": "Chuẩn bị cho Buổi Khám",
+      "step2Desc": "Hãy suy nghĩ về các câu hỏi và hồ sơ bạn muốn mang theo",
+      "step3Title": "Nhận Hỗ trợ",
+      "step3Desc": "Có câu hỏi về đặt lịch? Đội ngũ hỗ trợ luôn sẵn sàng giúp đỡ"
     },
     "content": {
       "step1Title": "Truy cập Giao dịch của Bạn",
