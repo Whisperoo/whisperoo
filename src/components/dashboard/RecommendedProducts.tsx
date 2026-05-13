@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -13,15 +13,18 @@ export const RecommendedProducts: React.FC = () => {
   const navigate = useNavigate();
   const { sortPersonalized } = usePersonalizedSort();
   const { profile } = useAuth();
-  const profileTopicsKey = JSON.stringify(profile?.topics_of_interest ?? []);
+  const profileTopicsKey = useMemo(() => JSON.stringify(profile?.topics_of_interest ?? []), [profile?.topics_of_interest]);
   
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const initialLoad = useRef(true);
 
   useEffect(() => {
     let cancelled = false;
     const fetchRecommendations = async () => {
-      setLoading(true);
+      if (initialLoad.current) {
+        setLoading(true);
+      }
       try {
         // Fetch latest products
         const { products: fetched } = await productService.getProducts({}, 1, 20);
@@ -43,6 +46,7 @@ export const RecommendedProducts: React.FC = () => {
       } finally {
         if (!cancelled) {
           setLoading(false);
+          initialLoad.current = false;
         }
       }
     };
@@ -71,7 +75,21 @@ export const RecommendedProducts: React.FC = () => {
     );
   }
 
-  if (products.length === 0) return null;
+  if (!loading && products.length === 0) {
+    return (
+      <div className="mb-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-indigo-500" />
+            <h2 className="text-xl font-bold text-gray-900">Recommended for You</h2>
+          </div>
+        </div>
+        <div className="rounded-3xl border border-gray-200 bg-white p-6 text-sm text-gray-600">
+          No personalized recommendations are available yet. Explore expert resources to get tailored suggestions.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mb-6 space-y-4">
