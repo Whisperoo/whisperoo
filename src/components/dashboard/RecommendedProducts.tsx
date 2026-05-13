@@ -13,43 +13,48 @@ export const RecommendedProducts: React.FC = () => {
   const navigate = useNavigate();
   const { sortPersonalized } = usePersonalizedSort();
   const { profile } = useAuth();
-  const profileTopicsKey = useMemo(() => JSON.stringify(profile?.topics_of_interest ?? []), [profile?.topics_of_interest]);
-  
-  const [products, setProducts] = useState<ProductWithDetails[]>([]);
+
+  // Stable string key — only changes when the user's topic selections actually change.
+  const profileTopicsKey = useMemo(
+    () => JSON.stringify(profile?.topics_of_interest ?? []),
+    [profile?.topics_of_interest],
+  );
+
+  const [rawProducts, setRawProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const initialLoad = useRef(true);
 
+  // Fetch raw products only when topic selections change (or on mount).
+  // sortPersonalized is intentionally NOT a dependency here — sorting is
+  // handled separately as derived state so that a function identity change
+  // never triggers a redundant network round-trip.
   useEffect(() => {
     let cancelled = false;
-    const fetchRecommendations = async () => {
-      if (initialLoad.current) {
-        setLoading(true);
-      }
-      try {
-        // Fetch latest products
-        const { products: fetched } = await productService.getProducts({}, 1, 20);
-        if (cancelled) return;
-        // Apply AI/RAG-based personalized sorting
-        const sorted = sortPersonalized(fetched);
-        // Take top 3 for dashboard (fallback to newest if no matches)
-        setProducts(sorted.slice(0, 3));
-      } catch (error) {
+    if (initialLoad.current) setLoading(true);
+    productService.getProducts({}, 1, 20)
+      .then(({ products: fetched }) => {
         if (!cancelled) {
-          console.error("Failed to load recommended products", error);
-        }
-      } finally {
-        if (!cancelled) {
+          setRawProducts(fetched);
           setLoading(false);
           initialLoad.current = false;
         }
-      }
-    };
-    
-    fetchRecommendations();
-    return () => {
-      cancelled = true;
-    };
-  }, [sortPersonalized, profileTopicsKey]);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error("Failed to load recommended products", err);
+          setLoading(false);
+          initialLoad.current = false;
+        }
+      });
+    return () => { cancelled = true; };
+  }, [profileTopicsKey]); // no sortPersonalized — breaks the re-render cycle
+
+  // Sort is pure derived state: no state mutation, no network call.
+  // Even if sortPersonalized identity changes, this just re-sorts in memory.
+  const products = useMemo(
+    () => sortPersonalized(rawProducts).slice(0, 3),
+    [rawProducts, sortPersonalized],
+  );
 
   if (loading) {
     return (

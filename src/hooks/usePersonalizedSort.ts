@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductWithDetails } from '@/services/products';
 import {
@@ -124,33 +124,46 @@ function productBehavioralScore(
 export function usePersonalizedSort() {
   const { profile } = useAuth();
   const { slugs: behavioralSlugs } = useBehavioralInterests();
-  const weights = getRecommendationWeights(profile?.created_at);
 
-  const sortPersonalized = useCallback((products: ProductWithDetails[]): ProductWithDetails[] => {
-    const scoreMap = new Map<string, number>();
+  // Memoized weight primitives — only recompute when profile.created_at changes (once after login).
+  // This prevents getRecommendationWeights() from returning a new object every render.
+  const { onboardingWeight, behavioralWeight } = useMemo(
+    () => getRecommendationWeights(profile?.created_at),
+    [profile?.created_at],
+  );
 
-    products.forEach((product, index) => {
-      const { slugs, titleLower, descLower } = buildProductSlugSet(product);
-      const onboarding = productOnboardingScore(product, slugs, titleLower, descLower, profile);
-      const behavioral = productBehavioralScore(slugs, behavioralSlugs);
-      const blended =
-        onboarding * weights.onboardingWeight + behavioral * weights.behavioralWeight;
-      // Multiply to dominate over the tie-breaker; keep -index so newest wins ties.
-      const finalScore = blended * 1000 - index;
-      scoreMap.set(product.id, finalScore);
-    });
+  // Refs give the callback access to latest values without making it unstable.
+  // sortPersonalized only needs to be recreated when the day-based weights shift
+  // (i.e., after ~30 days), not on every profile or behavioral state change.
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
+  const behavioralRef = useRef(behavioralSlugs);
+  behavioralRef.current = behavioralSlugs;
 
-    const sorted = [...products].sort((a, b) => {
-      const scoreA = scoreMap.get(a.id) ?? 0;
-      const scoreB = scoreMap.get(b.id) ?? 0;
-      return scoreB - scoreA;
-    }).map(product => {
-      const finalScore = scoreMap.get(product.id) ?? 0;
-      return { ...product, _score: finalScore };
-    });
+  const sortPersonalized = useCallback(
+    (products: ProductWithDetails[]): ProductWithDetails[] => {
+      const p = profileRef.current;
+      const b = behavioralRef.current;
+      const scoreMap = new Map<string, number>();
 
-    return sorted;
-  }, [profile, behavioralSlugs, weights.onboardingWeight, weights.behavioralWeight]);
+      products.forEach((product, index) => {
+        const { slugs, titleLower, descLower } = buildProductSlugSet(product);
+        const onboarding = productOnboardingScore(product, slugs, titleLower, descLower, p);
+        const behavioral = productBehavioralScore(slugs, b);
+        const blended = onboarding * onboardingWeight + behavioral * behavioralWeight;
+        // Scale so personalized order dominates; -index keeps newest as tiebreaker.
+        const finalScore = blended * 1000 - index;
+        scoreMap.set(product.id, finalScore);
+      });
+
+      return [...products].sort((a, b) => {
+        const scoreA = scoreMap.get(a.id) ?? 0;
+        const scoreB = scoreMap.get(b.id) ?? 0;
+        return scoreB - scoreA;
+      });
+    },
+    [onboardingWeight, behavioralWeight], // stable: only changes on the day-0→day-30 weight ramp
+  );
 
   return { sortPersonalized };
 }

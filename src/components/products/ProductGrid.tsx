@@ -20,7 +20,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Grid, List, Search, Building2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProductCard } from "./ProductCard";
 import { usePersonalizedSort } from "@/hooks/usePersonalizedSort";
@@ -232,10 +232,15 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     }
   }, [user]);
 
-  // Apply personalized sort
-  const sortedProducts = filters.sortBy === 'personalized'
-    ? sortPersonalized(data?.products ?? [])
-    : (data?.products ?? []);
+  // Apply personalized sort — memoized so a sortPersonalized identity change
+  // (rare: only when day-based weights shift) doesn't re-run on every render.
+  const sortedProducts = useMemo(
+    () =>
+      filters.sortBy === 'personalized'
+        ? sortPersonalized(data?.products ?? [])
+        : (data?.products ?? []),
+    [data?.products, filters.sortBy, sortPersonalized],
+  );
 
   // Phase 5: Filter out products disabled for this hospital tenant
   const disabledProductIds = config?.disabled_product_ids ?? [];

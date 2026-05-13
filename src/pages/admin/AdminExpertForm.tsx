@@ -409,39 +409,39 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
               <p className="text-xs text-gray-400 mt-1">{form.expert_bio.length} characters</p>
             </div>
 
-            {/* Flat-rate consultation purchase note (direct booking) */}
+            {/* Inquiry booking — post-request notification */}
             <div>
               <label className="text-xs font-medium text-gray-600 mb-1 block">
-                Consultation Purchase Note
-                <span className="text-gray-400 ml-1">(optional)</span>
-              </label>
-              <textarea
-                value={form.inquiry_prebook_message}
-                onChange={(e) => setForm({ ...form, inquiry_prebook_message: e.target.value })}
-                placeholder="Custom note shown to users after they purchase a paid consultation. Example: 'Thank you for booking. Your expert will follow up shortly with appointment details.'"
-                rows={3}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                Used for direct consultation purchases. Leave blank to show the default purchase success instructions.
-              </p>
-            </div>
-
-            {/* Appointment request confirmation message */}
-            <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">
-                Appointment Request Confirmation Message
+                Inquiry Request — Confirmation Message
                 <span className="text-gray-400 ml-1">(optional)</span>
               </label>
               <textarea
                 value={form.inquiry_confirmation_message}
                 onChange={(e) => setForm({ ...form, inquiry_confirmation_message: e.target.value })}
-                placeholder="Custom message shown to users after they request an appointment. Example: 'Thank you for your request! I typically respond within 24 hours.'"
+                placeholder="Shown to the user right after they submit an inquiry/appointment request. E.g. 'Thank you! I typically respond within 24 hours. Please have your insurance info ready.'"
                 rows={3}
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
               <p className="text-xs text-gray-400 mt-1">
-                This message appears after a user submits an inquiry request. Leave blank for the default confirmation text.
+                Inquiry bookings only. Leave blank to show the default "we'll be in touch" message.
+              </p>
+            </div>
+
+            {/* Flat-rate / direct booking — post-purchase custom note */}
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">
+                Flat-Rate Purchase — Custom Note
+                <span className="text-gray-400 ml-1">(optional)</span>
+              </label>
+              <textarea
+                value={form.inquiry_prebook_message}
+                onChange={(e) => setForm({ ...form, inquiry_prebook_message: e.target.value })}
+                placeholder="Shown on the purchase success page after a user buys a flat-rate consultation. E.g. 'Your session is confirmed! Check your email for a calendar invite. Bring any relevant records.'"
+                rows={3}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Flat-rate (direct) purchases only. Leave blank to show the default booking confirmation note.
               </p>
             </div>
 
