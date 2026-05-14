@@ -1295,7 +1295,8 @@ GUIDELINES:
   try {
     // gpt-4o intentionally excluded — it is 17x more expensive than gpt-4o-mini
     // and silently falling back to it caused a $33 single-day spike.
-    const modelCandidates = ['gpt-4o-mini', 'gpt-3.5-turbo'];
+    // gpt-3.5-turbo removed — it is being retired by OpenAI and gpt-4o-mini is cheaper and better.
+    const modelCandidates = ['gpt-4o-mini'];
     let lastError: string | null = null;
 
     console.log(`OpenAI API key present: ${!!openaiApiKey}, length: ${openaiApiKey.length}`);
