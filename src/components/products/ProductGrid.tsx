@@ -200,17 +200,20 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   const [userPurchases, setUserPurchases] = useState<Set<string>>(new Set());
   const [activeResourceTab, setActiveResourceTab] = useState<'whisperoo' | 'hospital'>('whisperoo');
 
-  // ✅ Fixed: Added refetch to useQuery
+  const isPersonalized = filters.sortBy === 'personalized';
+
+  // In personalized mode fetch a large pool so client-side scoring can rank
+  // ALL products (not just the 12 newest ones from page 1).
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["products", filters, page, searchQuery],
+    queryKey: ["products", filters, isPersonalized ? 1 : page, searchQuery],
     queryFn: () =>
       productService.getProducts(
         {
           ...filters,
           searchQuery: searchQuery.trim() || undefined,
         },
-        page,
-        12,
+        isPersonalized ? 1 : page,
+        isPersonalized ? 200 : 12,
       ),
   });
 
@@ -711,8 +714,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             </div>
           )}
 
-          {/* ✅ Use PaginationControls component */}
-          {displayProducts?.length > 0 && (
+          {/* Pagination — only shown when not in personalized mode (which loads the full pool) */}
+          {!isPersonalized && displayProducts?.length > 0 && (
             <PaginationControls
               currentPage={page}
               totalResults={totalResults}
