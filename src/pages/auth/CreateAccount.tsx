@@ -121,7 +121,11 @@ const CreateAccount: React.FC = () => {
     console.log('Creating account...');
     
     try {
-      const acquisitionSource = querySource || (tenantSlug ? 'qr_hospital' : 'organic');
+      // Only classify as 'qr_hospital' when a QR token is actually present in
+      // the URL (i.e. the user genuinely scanned a QR code). A direct hospital
+      // URL with only a tenant slug but no QR token is 'hospital_direct' so it
+      // never appears as an unattributed QR signup.
+      const acquisitionSource = querySource || (queryQr ? 'qr_hospital' : tenantSlug ? 'hospital_direct' : 'organic');
       const acquisitionDept = queryDept || null;
       const { user, error } = await signUp(
         formData.email,
