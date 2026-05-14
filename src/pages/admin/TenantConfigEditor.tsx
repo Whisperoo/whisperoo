@@ -29,6 +29,14 @@ interface TenantRow {
 
 const EMPTY_DEPT: TenantDepartment = { name: '', phone: '', email: '' };
 
+interface QrCodeRow {
+  id: string;
+  token: string;
+  label: string | null;
+  department: string | null;
+  is_active: boolean;
+}
+
 const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => {
   const [tenant, setTenant] = useState<TenantRow | null>(null);
   const [loading, setLoading] = useState(false);
@@ -37,6 +45,8 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
   const [newHospitalName, setNewHospitalName] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [qrCodes, setQrCodes] = useState<QrCodeRow[]>([]);
+  const [creatingQr, setCreatingQr] = useState(false);
   const { t } = useTranslation();
 
   // Form state mirrors TenantConfig
@@ -69,6 +79,41 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
   }, [tenantId]);
 
   useEffect(() => { fetchTenant(); }, [fetchTenant]);
+
+  // Fetch tracked QR codes for this tenant from the qr_codes table.
+  const fetchQrCodes = useCallback(async () => {
+    if (!tenantId) { setQrCodes([]); return; }
+    const { data } = await supabase
+      .from('qr_codes')
+      .select('id, token, label, department, is_active')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: true });
+    setQrCodes((data as QrCodeRow[]) ?? []);
+  }, [tenantId]);
+
+  useEffect(() => { fetchQrCodes(); }, [fetchQrCodes]);
+
+  const handleCreateQrCode = async () => {
+    if (!tenantId) return;
+    setCreatingQr(true);
+    try {
+      const token = crypto.randomUUID().replace(/-/g, '');
+      const { error } = await supabase.from('qr_codes').insert({
+        tenant_id: tenantId,
+        token,
+        label: tenant?.name ?? 'Hospital QR',
+        source: 'qr_hospital',
+        is_active: true,
+      });
+      if (error) throw error;
+      await fetchQrCodes();
+      toast({ title: 'QR Code Created', description: 'A tracked QR token has been generated.' });
+    } catch (err: any) {
+      toast({ title: 'Failed to create QR code', description: err?.message ?? 'Unknown error', variant: 'destructive' });
+    } finally {
+      setCreatingQr(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!tenant) return;
@@ -335,46 +380,63 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
 
       {/* ── QR Code Generator ── */}
       <section className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 space-y-5">
-        <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-          <Link className="w-4 h-4 text-blue-500" /> Hospital QR Code
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <Link className="w-4 h-4 text-blue-500" /> Hospital QR Codes
+          </h3>
+          <button
+            onClick={handleCreateQrCode}
+            disabled={creatingQr}
+            className="flex items-center gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors disabled:opacity-60"
+          >
+            {creatingQr ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+            New QR Code
+          </button>
+        </div>
         <p className="text-sm text-gray-500">
-          Print or display this QR code in the hospital. When users scan it, they will automatically be affiliated with {tenant?.name} during signup.
+          Each QR code has a unique tracked token. Scans and signups are attributed per token in the Metrics dashboard.
         </p>
-        {(() => {
-          const signupUrl = `${window.location.origin}/auth/create?tenant=${tenant?.slug || tenantId}`;
-          return (
-            <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
-              <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(signupUrl)}`} 
-                  alt="Hospital QR Code"
-                  className="w-32 h-32"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <p className="text-xs font-medium text-gray-600">Signup Link:</p>
-                <code className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-800 break-all">
-                  {signupUrl}
-                </code>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(signupUrl); toast({ title: 'Link Copied', description: 'Signup link copied to clipboard.' }); }}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-1 inline-flex w-max"
-                >
-                  Copy Link
-                </button>
-                <a 
-                  href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(signupUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                >
-                  Download High-Res QR Code &rarr;
-                </a>
-              </div>
-            </div>
-          );
-        })()}
+
+        {qrCodes.length === 0 ? (
+          <div className="text-center py-6 text-sm text-gray-400 border border-dashed border-gray-200 rounded-xl">
+            No tracked QR codes yet. Click "New QR Code" to create one.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {qrCodes.map((qr) => {
+              const qrUrl = `${window.location.origin}/q/${qr.token}`;
+              const qrImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrUrl)}`;
+              return (
+                <div key={qr.id} className="flex items-center gap-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 flex-shrink-0">
+                    <img src={qrImgSrc} alt="Hospital QR Code" className="w-32 h-32" />
+                  </div>
+                  <div className="flex flex-col gap-2 min-w-0">
+                    <p className="text-xs font-semibold text-gray-700">{qr.label || 'General'}{qr.department ? ` · ${qr.department}` : ''}</p>
+                    <p className="text-xs font-medium text-gray-600">Scan URL:</p>
+                    <code className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-800 break-all">{qrUrl}</code>
+                    <div className="flex items-center gap-3 mt-1">
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(qrUrl); toast({ title: 'Link Copied', description: 'Tracked QR link copied to clipboard.' }); }}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Copy Link
+                      </button>
+                      <a
+                        href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrUrl)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                      >
+                        Download High-Res &rarr;
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* ── Actions ── */}
