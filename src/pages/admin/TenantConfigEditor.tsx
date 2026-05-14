@@ -145,12 +145,22 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
     setDeleting(true);
     try {
       const { error } = await supabase.from('tenants').delete().eq('id', tenantId);
-      if (error) throw error;
-      toast({ title: 'Tenant Deleted', description: 'The hospital tenant was successfully deleted.' });
+      if (error) {
+        // Common causes: missing DELETE RLS policy or FK constraint.
+        // Migration 20260514000001 adds the policy + ON DELETE SET NULL on profiles.
+        if (error.code === '42501') {
+          throw new Error('Permission denied. Ensure migration 20260514000001 has been applied in Supabase.');
+        }
+        if (error.code === '23503') {
+          throw new Error('Foreign key constraint — other records still reference this tenant. Ensure migration 20260514000001 (ON DELETE SET NULL) is applied.');
+        }
+        throw error;
+      }
+      toast({ title: 'Hospital Deleted', description: `${tenant?.name} has been permanently removed.` });
       window.location.reload();
     } catch (err: any) {
       console.error('Error deleting tenant:', err);
-      toast({ title: 'Error', description: `Failed to delete: ${err.message}`, variant: 'destructive' });
+      toast({ title: 'Delete Failed', description: err.message || 'Failed to delete hospital tenant.', variant: 'destructive' });
     } finally {
       setDeleting(false);
     }

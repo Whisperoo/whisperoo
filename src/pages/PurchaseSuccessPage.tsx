@@ -94,9 +94,16 @@ export const PurchaseSuccessPage: React.FC = () => {
   const isInquiryBooking = isConsultation && !isDirectBooking && !isHospitalBooking;
   const expertName = product.expert?.first_name || 'The expert';
 
+  // Per-product overrides set by super admin (booking_confirmation_title / _desc).
+  const customTitle = ((product as any).booking_confirmation_title as string | null | undefined)?.trim();
+  const customDesc  = ((product as any).booking_confirmation_desc  as string | null | undefined)?.trim();
+
   let headerTitle: string;
   let headerDesc: string;
-  if (isDirectBooking) {
+  if (customTitle) {
+    headerTitle = customTitle;
+    headerDesc  = customDesc || (isConsultation ? t('purchaseSuccess.consultationDesc') : t('purchaseSuccess.purchaseDesc'));
+  } else if (isDirectBooking) {
     headerTitle = t('purchaseSuccess.directBookingTitle');
     headerDesc = t('purchaseSuccess.directBookingDesc', { expertName });
   } else if (isHospitalBooking) {

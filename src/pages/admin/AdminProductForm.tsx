@@ -27,6 +27,8 @@ interface ProductFormData {
   booking_model: 'direct' | 'inquiry' | 'hospital';
   how_to_schedule: string;
   hospital_prebook_message: string;
+  booking_confirmation_title: string;
+  booking_confirmation_desc: string;
   /** Optional: scope hospital resource to a tenant (defaults to selected expert's tenant) */
   tenant_id: string;
 }
@@ -54,6 +56,8 @@ const EMPTY_FORM: ProductFormData = {
   booking_model: 'direct',
   how_to_schedule: '',
   hospital_prebook_message: '',
+  booking_confirmation_title: '',
+  booking_confirmation_desc: '',
   tenant_id: '',
 };
 
@@ -92,7 +96,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
       if (!isNew) {
         const { data, error: fetchErr } = await supabase
           .from('products')
-          .select('title, description, product_type, price, is_free, file_url, thumbnail_url, expert_id, status, tags, duration_minutes, difficulty_level, is_hospital_resource, booking_model, how_to_schedule, hospital_prebook_message, tenant_id')
+          .select('title, description, product_type, price, is_free, file_url, thumbnail_url, expert_id, status, tags, duration_minutes, difficulty_level, is_hospital_resource, booking_model, how_to_schedule, hospital_prebook_message, booking_confirmation_title, booking_confirmation_desc, tenant_id')
           .eq('id', productId)
           .single();
         if (fetchErr) {
@@ -115,6 +119,8 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
             booking_model: data.booking_model || 'direct',
             how_to_schedule: data.how_to_schedule || '',
             hospital_prebook_message: data.hospital_prebook_message || '',
+            booking_confirmation_title: (data as any).booking_confirmation_title || '',
+            booking_confirmation_desc: (data as any).booking_confirmation_desc || '',
           });
         }
       }
@@ -200,6 +206,8 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
       how_to_schedule: form.booking_model === 'hospital' ? form.how_to_schedule.trim() || null : null,
       hospital_prebook_message:
         form.booking_model === 'hospital' ? form.hospital_prebook_message.trim() || null : null,
+      booking_confirmation_title: form.product_type === 'consultation' ? form.booking_confirmation_title.trim() || null : null,
+      booking_confirmation_desc: form.product_type === 'consultation' ? form.booking_confirmation_desc.trim() || null : null,
       tenant_id: productTenantId,
     };
 
@@ -439,6 +447,31 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
                       </div>
                     </>
                   )}
+
+                  {/* Confirmation page headline — applies to all consultation booking models */}
+                  <div className="border-t border-indigo-100 pt-4 space-y-3">
+                    <p className="text-xs font-semibold text-indigo-900">Confirmation page message (optional)</p>
+                    <p className="text-xs text-indigo-800/80">Override the title and description shown at the top of the success screen after booking. Leave blank to use the default text.</p>
+                    <div>
+                      <label className="text-xs font-medium text-indigo-900 mb-1 block">Headline</label>
+                      <input
+                        value={form.booking_confirmation_title}
+                        onChange={(e) => setForm({ ...form, booking_confirmation_title: e.target.value })}
+                        placeholder='e.g. "Your lactation session is confirmed! 🎉"'
+                        className="w-full text-sm border border-indigo-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-indigo-900 mb-1 block">Sub-headline</label>
+                      <textarea
+                        value={form.booking_confirmation_desc}
+                        onChange={(e) => setForm({ ...form, booking_confirmation_desc: e.target.value })}
+                        placeholder='e.g. "Franice will reach out within 2 hours to set a time."'
+                        rows={2}
+                        className="w-full text-sm border border-indigo-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none bg-white"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

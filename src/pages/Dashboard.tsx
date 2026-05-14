@@ -9,6 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import PostDeliveryPrompt from "@/components/dashboard/PostDeliveryPrompt";
 import AppointmentReminders from "@/components/dashboard/AppointmentReminders";
 import RecommendedProducts from "@/components/dashboard/RecommendedProducts";
+import RecentBookings from "@/components/dashboard/RecentBookings";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -77,6 +78,10 @@ const Dashboard: React.FC = () => {
 
       <RecommendedProducts />
 
+      {/* Recent Bookings — shows pending/confirmed consultations the user has booked */}
+      <div className="w-full max-w-full overflow-hidden box-border mt-6">
+        <RecentBookings />
+      </div>
 
       {/* Post-Delivery Prompt (Has your baby arrived?) */}
       {expectingKids.length > 0 && (
