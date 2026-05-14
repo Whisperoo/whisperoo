@@ -112,7 +112,6 @@ export const ExpertDashboard: React.FC = () => {
           user:profiles!purchases_user_id_fkey (
             id,
             first_name,
-            email,
             profile_image_url
           )
         `,
@@ -676,9 +675,6 @@ export const ExpertDashboard: React.FC = () => {
                                 <div className="font-medium">
                                   {(consultation as any).user?.first_name ||
                                     "Client"}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {(consultation as any).user?.email}
                                 </div>
                               </div>
                             </div>

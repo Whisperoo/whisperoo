@@ -35,8 +35,8 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
   const [regeneratingEmbeddings, setRegeneratingEmbeddings] = useState(false);
   const { t } = useTranslation();
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
       const { data: expertData, error: expertError } = await supabase
         .from('profiles')
@@ -357,8 +357,8 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
       {editingExpert && (
         <AdminExpertForm
           expertId={editingExpert}
-          onClose={() => setEditingExpert(null)}
-          onSaved={() => fetchData()}
+          onClose={() => { setEditingExpert(null); fetchData(false); }}
+          onSaved={() => fetchData(false)}
         />
       )}
     </div>
