@@ -121,11 +121,25 @@ const CreateAccount: React.FC = () => {
     console.log('Creating account...');
     
     try {
-      // Only classify as 'qr_hospital' when a QR token is actually present in
-      // the URL (i.e. the user genuinely scanned a QR code). A direct hospital
-      // URL with only a tenant slug but no QR token is 'hospital_direct' so it
-      // never appears as an unattributed QR signup.
-      const acquisitionSource = querySource || (queryQr ? 'qr_hospital' : tenantSlug ? 'hospital_direct' : 'organic');
+      // If the URL has an explicit QR token use it directly.
+      // Otherwise, for old-style physical QR codes that point to
+      // /auth/create?tenant=<slug> (no token), look up the tenant's first
+      // active tracked QR code and auto-attribute to it. This means printing
+      // new QR codes is optional — existing hospital QR posters keep working
+      // and will be counted in the metrics once a qr_codes record exists.
+      let effectiveQrToken = queryQr || null;
+      if (!effectiveQrToken && tenantInfo?.id) {
+        const { data: autoQr } = await supabase
+          .from('qr_codes')
+          .select('token')
+          .eq('tenant_id', tenantInfo.id)
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle();
+        if (autoQr?.token) effectiveQrToken = autoQr.token;
+      }
+
+      const acquisitionSource = querySource || (effectiveQrToken ? 'qr_hospital' : tenantSlug ? 'hospital_direct' : 'organic');
       const acquisitionDept = queryDept || null;
       const { user, error } = await signUp(
         formData.email,
@@ -135,7 +149,7 @@ const CreateAccount: React.FC = () => {
         tenantInfo?.id,
         acquisitionSource,
         acquisitionDept,
-        queryQr || null
+        effectiveQrToken
       );
       
       if (error) {
