@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Loader2, Plus, Trash2 } from 'lucide-react';
+import { X, Save, Loader2, Plus, Copy, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
@@ -70,6 +70,8 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageUploadWarning, setImageUploadWarning] = useState<string | null>(null);
+  const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
 
   // Load tenants
   useEffect(() => {
@@ -175,26 +177,36 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
       let savedExpertId: string | null = null;
 
       if (isNew) {
-        // Must use server-side function because profiles.id is FK to auth.users
-        const { data: newId, error: rpcErr } = await supabase.rpc('fn_admin_create_expert', {
-          p_first_name: form.first_name.trim(),
-          p_email: normalizedEmail || null,
-          p_profile_image_url: null,
-          p_expert_bio: form.expert_bio.trim() || null,
-          p_expert_specialties: finalSpecialties,
-          p_expert_credentials: finalCredentials,
-          p_expert_experience_years: form.expert_experience_years,
-          p_expert_consultation_rate: form.expert_consultation_rate,
-          p_expert_availability_status: form.expert_availability_status,
-          p_tenant_id: form.tenant_id,
-          p_password: form.password.trim() || null,
-          p_inquiry_confirmation_message: form.inquiry_confirmation_message.trim() || null,
-          p_inquiry_prebook_message: form.inquiry_prebook_message.trim() || null,
+        // Use the Edge Function so GoTrue handles auth user creation properly
+        // (direct SQL inserts into auth.users produced incompatible password hashes)
+        const { data: { session } } = await supabase.auth.getSession();
+        const fnRes = await supabase.functions.invoke('admin-create-expert', {
+          body: {
+            email: normalizedEmail,
+            password: form.password.trim(),
+            first_name: form.first_name.trim(),
+            profile_image_url: null,
+            expert_bio: form.expert_bio.trim() || null,
+            inquiry_confirmation_message: form.inquiry_confirmation_message.trim() || null,
+            inquiry_prebook_message: form.inquiry_prebook_message.trim() || null,
+            expert_specialties: finalSpecialties,
+            expert_credentials: finalCredentials,
+            expert_experience_years: form.expert_experience_years,
+            expert_consultation_rate: form.expert_consultation_rate,
+            expert_availability_status: form.expert_availability_status,
+            tenant_id: form.tenant_id,
+          },
+          headers: session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : undefined,
         });
-        if (rpcErr) throw rpcErr;
 
-        const createdId = (newId as unknown as string) || null;
+        if (fnRes.error) throw new Error(fnRes.error.message);
+        if (fnRes.data?.error) throw new Error(fnRes.data.error);
+
+        const createdId: string = fnRes.data.id;
         savedExpertId = createdId;
+        setCreatedCredentials({ email: normalizedEmail, password: form.password.trim() });
         if (createdId) {
           let uploadedUrl: string | null = null;
           try {
@@ -259,9 +271,14 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           });
         }
       }
-      toast({ title: 'Success', description: `Expert successfully ${isNew ? 'added' : 'updated'}.` });
-      onSaved();
-      onClose();
+      if (isNew) {
+        onSaved();
+        // Keep the modal open to show credentials — user dismisses manually
+      } else {
+        toast({ title: 'Success', description: 'Expert successfully updated.' });
+        onSaved();
+        onClose();
+      }
     } catch (err: any) {
       let msg = err?.message || 'Failed to save';
       if (typeof msg === 'string' && msg.includes('users_email_partial_key')) {
@@ -297,7 +314,57 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           </button>
         </div>
 
-        {loading ? (
+        {createdCredentials ? (
+          <div className="px-8 py-8 space-y-6">
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-7 h-7 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Expert account created</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Share these credentials with the expert. They can change their password after logging in.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { label: 'Email', value: createdCredentials.email, field: 'email' as const },
+                { label: 'Password', value: createdCredentials.password, field: 'password' as const },
+              ].map(({ label, value, field }) => (
+                <div key={field} className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+                  <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <code className="text-sm font-mono text-gray-900 break-all">{value}</code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(value);
+                        setCopiedField(field);
+                        setTimeout(() => setCopiedField(null), 2000);
+                      }}
+                      className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-200 transition-colors"
+                      title={`Copy ${label}`}
+                    >
+                      {copiedField === field
+                        ? <CheckCircle className="w-4 h-4 text-green-600" />
+                        : <Copy className="w-4 h-4 text-gray-400" />}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
           </div>
@@ -586,20 +653,21 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           </div>
         )}
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || loading || uploadingImage}
-            className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            {(saving || uploadingImage) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {isNew ? 'Create Expert' : 'Save Changes'}
-          </button>
-        </div>
+        {!createdCredentials && (
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || loading || uploadingImage}
+              className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {(saving || uploadingImage) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isNew ? 'Create Expert' : 'Save Changes'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
