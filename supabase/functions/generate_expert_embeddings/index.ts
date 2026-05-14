@@ -164,10 +164,9 @@ serve(async (req) => {
         processed += 1;
       } catch (err) {
         failed += 1;
-        errors.push({
-          expert_id: expert.id,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error(`[generate_expert_embeddings] Failed for expert ${expert.id}:`, errMsg);
+        errors.push({ expert_id: expert.id, error: errMsg });
       }
     }
 

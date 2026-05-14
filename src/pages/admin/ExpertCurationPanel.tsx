@@ -153,13 +153,16 @@ const ExpertCurationPanel: React.FC<ExpertCurationPanelProps> = ({ tenantId }) =
     try {
       const result = await regenerateAllExpertEmbeddings();
       const allFailed = result.failed > 0 && result.processed === 0;
+      const firstError = result.errors?.[0]?.error;
       toast({
         title: allFailed
           ? 'Embedding regeneration failed'
           : result.failed > 0
             ? 'Embeddings partially updated'
             : 'Embeddings regenerated',
-        description: `Processed ${result.processed}/${result.total} experts${result.failed ? ` (${result.failed} failed — check Edge Function logs for details)` : '.'}`,
+        description: allFailed && firstError
+          ? `Error: ${firstError}`
+          : `Processed ${result.processed}/${result.total} experts${result.failed ? ` (${result.failed} failed)` : '.'}`,
         variant: allFailed ? 'destructive' : 'default',
       });
     } catch (err) {
