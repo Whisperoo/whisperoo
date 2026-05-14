@@ -79,7 +79,7 @@ BEGIN
     v_user_id,
     '00000000-0000-0000-0000-000000000000',
     v_email,
-    extensions.crypt(v_password, extensions.gen_salt('bf')),
+    extensions.crypt(v_password, extensions.gen_salt('bf', 10)),
     now(),
     jsonb_build_object('provider', 'email', 'providers', ARRAY['email']),
     jsonb_build_object('first_name', p_first_name),
