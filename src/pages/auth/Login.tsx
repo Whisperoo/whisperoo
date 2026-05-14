@@ -41,17 +41,28 @@ const Login: React.FC = () => {
       const { user, error } = await signIn(formData.email, formData.password);
 
       if (error) {
-        console.error("Sign-in error:", error);
-        toast({
-          title: t('auth.login.toast.errorSigningIn'),
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
+        // GoTrue occasionally returns a 500 "Database error querying schema"
+        // even though the session was created successfully (the error occurs
+        // in a post-login step). Check if we actually have a valid session
+        // before surfacing the error to the user.
+        const { data: sessionCheck } = await supabase.auth.getSession();
+        if (!sessionCheck.session) {
+          console.error("Sign-in error:", error);
+          toast({
+            title: t('auth.login.toast.errorSigningIn'),
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+        // Session exists despite the error — fall through to navigate.
+        console.warn("Sign-in returned error but session exists, continuing:", error.message);
       }
 
-      if (user) {
-        console.log("Sign-in successful:", user.id);
+      const resolvedUser = user ?? (await supabase.auth.getUser()).data.user;
+
+      if (resolvedUser) {
+        console.log("Sign-in successful:", resolvedUser.id);
         toast({
           title: t('auth.login.toast.welcomeBack'),
           description: t('auth.login.toast.signedInSuccess'),
@@ -61,7 +72,7 @@ const Login: React.FC = () => {
         const { data: signedInProfile } = await supabase
           .from("profiles")
           .select("account_type")
-          .eq("id", user.id)
+          .eq("id", resolvedUser.id)
           .maybeSingle();
 
         if (
