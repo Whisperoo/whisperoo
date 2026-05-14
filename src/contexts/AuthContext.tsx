@@ -64,16 +64,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Profile fetched successfully:', data)
       setProfile(data)
       
-      // Apply language preference deterministically, preferring the latest local choice.
-      const localLanguage = typeof window !== 'undefined'
-        ? window.localStorage.getItem(LANGUAGE_STORAGE_KEY)
-        : null
-      const profileLanguage = data.language_preference || data.preferred_language
-      const nextLanguage = localLanguage || profileLanguage
-      if (nextLanguage && nextLanguage !== i18n.language) {
-        i18n.changeLanguage(nextLanguage)
+      // Profile is the source of truth for language when authenticated.
+      // localStorage is only used as a within-session cache (cleared on logout).
+      const profileLanguage = data.language_preference || data.preferred_language || 'en'
+      if (profileLanguage !== i18n.language) {
+        i18n.changeLanguage(profileLanguage)
       }
-      if (profileLanguage && profileLanguage !== localLanguage && typeof window !== 'undefined') {
+      if (typeof window !== 'undefined') {
         window.localStorage.setItem(LANGUAGE_STORAGE_KEY, profileLanguage)
       }
       
@@ -268,6 +265,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null)
         setProfile(null)
         setSession(null)
+        // Reset to English and remove the cached language key so pre-auth
+        // pages (login, sign-up) always render in English, not the last
+        // authenticated user's language preference.
+        i18n.changeLanguage('en')
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem(LANGUAGE_STORAGE_KEY)
+        }
       }
       return { error }
     } catch (error) {
