@@ -287,29 +287,29 @@ export const MyPurchasesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-6 max-w-7xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-[#1C3263] mb-2">{t('purchases.pageTitle')}</h1>
-          <p className="text-black text-lg">{t('purchases.pageSubtitle')}</p>
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 max-w-7xl">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold text-[#1C3263] mb-1 sm:mb-2">{t('purchases.pageTitle')}</h1>
+          <p className="text-black text-base sm:text-lg">{t('purchases.pageSubtitle')}</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'content' | 'appointments' | 'wishlist')} className="w-full">
-          <TabsList className="w-full sm:w-auto mb-6 bg-white border shadow-sm p-1">
-            <TabsTrigger value="content" className="flex-1 sm:flex-none px-6 py-2.5 data-[state=active]:bg-brand-primary/10 data-[state=active]:text-brand-primary data-[state=active]:shadow-none">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4" />
+          <TabsList className="w-full mb-6 bg-white border shadow-sm p-1 overflow-x-auto flex">
+            <TabsTrigger value="content" className="flex-1 whitespace-nowrap px-3 sm:px-6 py-2.5 text-xs sm:text-sm data-[state=active]:bg-brand-primary/10 data-[state=active]:text-brand-primary data-[state=active]:shadow-none">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                 <span>{t('purchases.tabContent', { count: filteredPurchases.length })}</span>
               </div>
             </TabsTrigger>
-            <TabsTrigger value="appointments" className="flex-1 sm:flex-none px-6 py-2.5 data-[state=active]:bg-brand-primary/10 data-[state=active]:text-brand-primary data-[state=active]:shadow-none">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+            <TabsTrigger value="appointments" className="flex-1 whitespace-nowrap px-3 sm:px-6 py-2.5 text-xs sm:text-sm data-[state=active]:bg-brand-primary/10 data-[state=active]:text-brand-primary data-[state=active]:shadow-none">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                 <span>{t('purchases.tabAppointments', { count: appointments.length })}</span>
               </div>
             </TabsTrigger>
-            <TabsTrigger value="wishlist" className="flex-1 sm:flex-none px-6 py-2.5 data-[state=active]:bg-brand-primary/10 data-[state=active]:text-brand-primary data-[state=active]:shadow-none">
-              <div className="flex items-center gap-2">
-                <Heart className="w-4 h-4" />
+            <TabsTrigger value="wishlist" className="flex-1 whitespace-nowrap px-3 sm:px-6 py-2.5 text-xs sm:text-sm data-[state=active]:bg-brand-primary/10 data-[state=active]:text-brand-primary data-[state=active]:shadow-none">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                 <span>{t('purchases.tabWishlist', 'Wishlist')} {wishlistItems.length > 0 ? `(${wishlistItems.length})` : ''}</span>
               </div>
             </TabsTrigger>
@@ -319,7 +319,7 @@ export const MyPurchasesPage: React.FC = () => {
             {isLoading ? (
               <div className="text-center py-16"><Loader2 className="animate-spin h-8 w-8 mx-auto text-blue-600" /></div>
             ) : filteredPurchases.length === 0 ? (
-              <Card className="p-16 text-center"><p>{t('purchases.noContentTitle')}</p></Card>
+              <Card className="p-8 sm:p-16 text-center"><p>{t('purchases.noContentTitle')}</p></Card>
             ) : (
               <ContentGrid purchases={filteredPurchases} onViewProduct={handleViewProduct} onDownload={handleDownload} downloadingId={downloadingId} />
             )}
