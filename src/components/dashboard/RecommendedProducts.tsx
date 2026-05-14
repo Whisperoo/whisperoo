@@ -31,7 +31,7 @@ export const RecommendedProducts: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     if (initialLoad.current) setLoading(true);
-    productService.getProducts({}, 1, 20)
+    productService.getProducts({}, 1, 100)
       .then(({ products: fetched }) => {
         if (!cancelled) {
           setRawProducts(fetched);
