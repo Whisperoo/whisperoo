@@ -10,7 +10,15 @@ async function presignPutUrl(key: string, contentType?: string): Promise<string>
   const { data, error } = await supabase.functions.invoke<{ url: string }>('r2-storage', {
     body: { action: 'presign_put', key, contentType },
   });
-  if (error) throw error;
+  if (error) {
+    // Extract the actual error body from the Edge Function response (e.g. "Forbidden", "R2 not configured")
+    let detail: string | undefined;
+    try {
+      const body = await (error as any).context?.json?.();
+      detail = body?.error;
+    } catch {}
+    throw new Error(detail ? `r2-storage: ${detail}` : error.message);
+  }
   if (!data?.url) throw new Error('Missing presigned upload url');
   return data.url;
 }
