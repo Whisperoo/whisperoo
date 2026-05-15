@@ -90,11 +90,12 @@ serve(async (req) => {
 
     const userId = newUser.user.id;
 
-    // The handle_new_user trigger will have created a basic profiles row.
-    // Now set all expert-specific fields on it.
+    // Upsert the profile so it's always created with the right fields even if
+    // the handle_new_user trigger races with this request on the remote instance.
     const { error: profileErr } = await adminClient
       .from("profiles")
-      .update({
+      .upsert({
+        id: userId,
         first_name: first_name.trim(),
         profile_image_url: profile_image_url || null,
         expert_bio: expert_bio?.trim() || null,
@@ -112,8 +113,7 @@ serve(async (req) => {
         expert_accepts_new_clients: true,
         onboarded: true,
         tenant_id: tenant_id || null,
-      })
-      .eq("id", userId);
+      }, { onConflict: "id" });
 
     if (profileErr) {
       // Auth user was created — clean it up to avoid orphaned records
