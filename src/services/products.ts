@@ -657,8 +657,8 @@ export const productService = {
 
       return updatedProduct;
     } catch (error) {
-      // If file upload fails, delete the product record
-      await this.deleteProduct(product.id);
+      // If file upload fails, clean up the product record
+      await this.deleteProductPermanently(product.id).catch(() => {});
       throw error;
     }
   },
