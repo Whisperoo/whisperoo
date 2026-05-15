@@ -69,7 +69,11 @@ const ExpertProfiles: React.FC = () => {
     const disabled = config?.disabled_expert_ids ?? [];
     let list = experts;
     if (isHospitalUser && tenant?.id) {
+      // Hospital users: see their hospital's experts + Whisperoo experts (no tenant)
       list = list.filter((e) => !e.tenant_id || e.tenant_id === tenant.id);
+    } else {
+      // B2C users: only see Whisperoo experts (no tenant affiliation)
+      list = list.filter((e) => !e.tenant_id);
     }
     if (disabled.length > 0) {
       list = list.filter((e) => !disabled.includes(e.id));
@@ -140,14 +144,12 @@ const ExpertProfiles: React.FC = () => {
     return t(`experts.specialties.${key}`, specialty);
   };
 
-  // Tab-based display:
-  // - Whisperoo tab: only independent Whisperoo experts for hospital users
-  // - Hospital tab: only hospital-affiliated/boosted experts
-  const whisperooExperts = isHospitalUser
-    ? sortedExperts.filter((expert) => !isExpertBoosted(expert))
-    : sortedExperts;
-  const hospitalExperts = isHospitalUser
-    ? sortedExperts.filter(expert => isExpertBoosted(expert))
+  // Tab split: tenant_id is the single source of truth.
+  // Whisperoo tab: experts with no tenant affiliation (always)
+  // Hospital tab: experts affiliated with THIS tenant only
+  const whisperooExperts = sortedExperts.filter((expert) => !expert.tenant_id);
+  const hospitalExperts = isHospitalUser && tenant
+    ? sortedExperts.filter((expert) => expert.tenant_id === tenant.id)
     : [];
 
   const handleExpertClick = (expertId: string) => {
