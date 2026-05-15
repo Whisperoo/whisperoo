@@ -556,7 +556,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 {expert?.first_name || t('experts.defaultName', 'Expert')}
               </p>
               <div className="mt-0.5">
-                {expert?.tenant_id ? (
+                {product.is_hospital_resource ? (
                   <span className="inline-block px-1.5 py-0.5 bg-pink-100 text-pink-700 text-[10px] font-semibold rounded">
                     {t('experts.tabHospital', 'Hospital Content')}
                   </span>

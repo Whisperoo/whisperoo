@@ -303,22 +303,24 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     ? afterTagFilter.filter((p) => !disabledProductIds.includes(p.id))
     : afterTagFilter;
 
-  // Phase 4: Tab-based resource filtering (mirrors ExpertProfiles)
-  // Hospital tab: products explicitly belonging to the user's tenant OR created by
-  // a hospital-affiliated expert for this tenant. Either the product's own tenant_id
-  // matches, or the linked expert's tenant_id matches.
+  // Phase 4: Tab-based resource filtering
+  // Hospital tab: ONLY explicitly marked hospital resources scoped to this tenant.
+  // is_hospital_resource must be true — expert affiliation alone is not enough.
   const hospitalProducts = afterDisabledFilter.filter((p: any) => {
-    if (!tenant) return false;
+    if (!tenant || !p.is_hospital_resource) return false;
     const productTenantId = (p as any).tenant_id;
     const expertTenantId = p.expert?.tenant_id;
-    return productTenantId === tenant.id || expertTenantId === tenant.id;
+    return (
+      productTenantId === tenant.id ||
+      expertTenantId === tenant.id ||
+      // is_hospital_resource=true but no explicit tenant → show for all hospital users
+      (productTenantId == null && expertTenantId == null)
+    );
   });
 
-  // Whisperoo tab: products not affiliated with any hospital
+  // Whisperoo tab: everything not explicitly marked as hospital resource
   const whisperooProducts = afterDisabledFilter.filter((p: any) =>
-    p.is_hospital_resource !== true &&
-    !(p as any).tenant_id &&
-    !p.expert?.tenant_id
+    !p.is_hospital_resource
   );
 
   const displayProducts = activeResourceTab === 'hospital'
