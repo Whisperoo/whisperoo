@@ -121,6 +121,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
             hospital_prebook_message: data.hospital_prebook_message || '',
             booking_confirmation_title: (data as any).booking_confirmation_title || '',
             booking_confirmation_desc: (data as any).booking_confirmation_desc || '',
+            tenant_id: (data as any).tenant_id || '',
           });
         }
       }
@@ -144,30 +145,29 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
     setSaving(true);
     setError(null);
 
-    const uploadPublic = async (bucket: 'resource-files' | 'resource-thumbnails', file: File, prefix: string) => {
-      setUploading(true);
-      try {
-        const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
-        const fileName = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
-        const path = `${prefix}/${fileName}`;
-
-        const { error: upErr } = await supabase.storage.from(bucket).upload(path, file, {
-          upsert: true,
-          contentType: file.type || undefined,
-        });
-        if (upErr) throw upErr;
-        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-        return data.publicUrl || null;
-      } finally {
-        setUploading(false);
-      }
-    };
-
-    let nextFileUrl = form.file_url.trim() || null;
-    let nextThumbUrl = form.thumbnail_url.trim() || null;
-
-    // If uploads provided, upload and override URLs
     try {
+      const uploadPublic = async (bucket: 'resource-files' | 'resource-thumbnails', file: File, prefix: string) => {
+        setUploading(true);
+        try {
+          const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+          const fileName = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
+          const path = `${prefix}/${fileName}`;
+
+          const { error: upErr } = await supabase.storage.from(bucket).upload(path, file, {
+            upsert: true,
+            contentType: file.type || undefined,
+          });
+          if (upErr) throw upErr;
+          const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+          return data.publicUrl || null;
+        } finally {
+          setUploading(false);
+        }
+      };
+
+      let nextFileUrl = form.file_url.trim() || null;
+      let nextThumbUrl = form.thumbnail_url.trim() || null;
+
       if (resourceFile) {
         const prefix = `resources/${form.expert_id || 'unknown'}/${isNew ? 'new' : productId}`;
         nextFileUrl = await uploadPublic('resource-files', resourceFile, prefix);
@@ -176,42 +176,35 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
         const prefix = `resources/${form.expert_id || 'unknown'}/${isNew ? 'new' : productId}`;
         nextThumbUrl = await uploadPublic('resource-thumbnails', thumbFile, prefix);
       }
-    } catch (e: any) {
-      setSaving(false);
-      setError(e?.message || 'Failed to upload file');
-      toast({ title: 'Upload failed', description: e?.message || 'Failed to upload file', variant: 'destructive' });
-      return;
-    }
 
-    const selectedExpert = experts.find(e => e.id === form.expert_id);
-    const productTenantId = form.is_hospital_resource
-      ? (form.tenant_id.trim() || selectedExpert?.tenant_id || null)
-      : null;
+      const selectedExpert = experts.find(e => e.id === form.expert_id);
+      const productTenantId = form.is_hospital_resource
+        ? ((form.tenant_id || '').trim() || selectedExpert?.tenant_id || null)
+        : null;
 
-    const payload = {
-      title: form.title.trim(),
-      description: form.description.trim(),
-      product_type: form.product_type,
-      price: form.is_free ? 0 : form.price,
-      is_free: form.is_free,
-      file_url: nextFileUrl,
-      thumbnail_url: nextThumbUrl,
-      expert_id: form.expert_id,
-      status: form.status,
-      tags: form.tags,
-      duration_minutes: form.duration_minutes || null,
-      difficulty_level: form.difficulty_level || null,
-      is_hospital_resource: form.is_hospital_resource,
-      booking_model: form.booking_model,
-      how_to_schedule: form.booking_model === 'hospital' ? form.how_to_schedule.trim() || null : null,
-      hospital_prebook_message:
-        form.booking_model === 'hospital' ? form.hospital_prebook_message.trim() || null : null,
-      booking_confirmation_title: form.product_type === 'consultation' ? form.booking_confirmation_title.trim() || null : null,
-      booking_confirmation_desc: form.product_type === 'consultation' ? form.booking_confirmation_desc.trim() || null : null,
-      tenant_id: productTenantId,
-    };
+      const payload = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        product_type: form.product_type,
+        price: form.is_free ? 0 : form.price,
+        is_free: form.is_free,
+        file_url: nextFileUrl,
+        thumbnail_url: nextThumbUrl,
+        expert_id: form.expert_id,
+        status: form.status,
+        tags: form.tags,
+        duration_minutes: form.duration_minutes || null,
+        difficulty_level: form.difficulty_level || null,
+        is_hospital_resource: form.is_hospital_resource,
+        booking_model: form.booking_model,
+        how_to_schedule: form.booking_model === 'hospital' ? form.how_to_schedule.trim() || null : null,
+        hospital_prebook_message:
+          form.booking_model === 'hospital' ? form.hospital_prebook_message.trim() || null : null,
+        booking_confirmation_title: form.product_type === 'consultation' ? form.booking_confirmation_title.trim() || null : null,
+        booking_confirmation_desc: form.product_type === 'consultation' ? form.booking_confirmation_desc.trim() || null : null,
+        tenant_id: productTenantId,
+      };
 
-    try {
       if (isNew) {
         const { error: insertErr } = await supabase.from('products').insert([payload]);
         if (insertErr) throw insertErr;
@@ -223,7 +216,9 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
       onSaved();
       onClose();
     } catch (err: any) {
+      console.error('AdminProductForm save error:', err);
       setError(err.message || 'Failed to save');
+      toast({ title: 'Save failed', description: err.message || 'Failed to save', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
