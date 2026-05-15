@@ -553,11 +553,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {/* Expert Info */}
             <div className="flex flex-col flex-1 min-w-0">
               <p className="font-semibold text-[14px] text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
-                {expert?.first_name || "Expert"}
+                {expert?.first_name || t('experts.defaultName', 'Expert')}
               </p>
-              <p className="font-normal text-[12px] text-[#393939] font-['Plus_Jakarta_Sans'] truncate">
-                {expert?.expert_specialties?.[0] || (expert?.tenant_id ? t('experts.tabHospital', 'Hospital Expert') : 'Whisperoo')}
-              </p>
+              <div className="mt-0.5">
+                {expert?.tenant_id ? (
+                  <span className="inline-block px-1.5 py-0.5 bg-pink-100 text-pink-700 text-[10px] font-semibold rounded">
+                    {t('experts.tabHospital', 'Hospital Content')}
+                  </span>
+                ) : (
+                  <span className="inline-block px-1.5 py-0.5 bg-blue-50 text-brand-primary text-[10px] font-semibold rounded">
+                    Whisperoo
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
