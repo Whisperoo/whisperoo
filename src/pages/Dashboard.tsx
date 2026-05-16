@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, MessageCircle, Phone, Building2, Mail } from "lucide-react";
+import { ArrowRight, MessageCircle, Phone, Building2, Mail, Copy, Check } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useToast } from "@/hooks/use-toast";
 // import AIMomCallModule from "@/components/dashboard/AIMomCallModule"; // Hidden for now
 import PostDeliveryPrompt from "@/components/dashboard/PostDeliveryPrompt";
 import AppointmentReminders from "@/components/dashboard/AppointmentReminders";
@@ -18,9 +19,25 @@ const Dashboard: React.FC = () => {
   const { profile, user } = useAuth();
   const { isHospitalUser, tenant, config } = useTenant();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const firstName = profile?.first_name || "there";
   const isMobile = useIsMobile();
-  
+  const conciergeEmail = (config as any)?.branding?.contact_email || 'support@whisperoo.app';
+
+  const handleConciergeClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const mailtoUrl = `mailto:${conciergeEmail}?subject=Support%20Request`;
+    window.location.href = mailtoUrl;
+    // Clipboard fallback for desktop users without a configured mail client
+    setTimeout(() => {
+      navigator.clipboard.writeText(conciergeEmail).catch(() => {});
+      toast({
+        title: t('dashboard.contactCard.copiedTitle', 'Email address copied'),
+        description: t('dashboard.contactCard.copiedDesc', `${conciergeEmail} — paste it into your email app`, { email: conciergeEmail }),
+      });
+    }, 600);
+  };
+
   const [expectingKids, setExpectingKids] = useState<any[]>([]);
 
   const fetchKids = async () => {
@@ -127,20 +144,20 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
         </div>
-        <a
-          href={`mailto:${(config as any)?.branding?.contact_email || 'support@whisperoo.app'}?subject=Support%20Request`}
+        <button
+          onClick={handleConciergeClick}
           className="flex items-center justify-center w-full bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 shadow-sm mb-3"
         >
           {t('dashboard.contactCard.button')}
-        </a>
+        </button>
         <p className="text-center text-sm text-gray-500">
           {t('dashboard.contactCard.orEmail')} {" "}
-          <a
-            href={`mailto:${(config as any)?.branding?.contact_email || 'support@whisperoo.app'}`}
+          <button
+            onClick={handleConciergeClick}
             className="font-semibold text-brand-primary underline underline-offset-2 hover:opacity-80 transition-opacity"
           >
-            {(config as any)?.branding?.contact_email || 'support@whisperoo.app'}
-          </a>
+            {conciergeEmail}
+          </button>
         </p>
       </div>
     </main>
