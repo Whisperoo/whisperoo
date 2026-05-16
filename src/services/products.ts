@@ -7,6 +7,7 @@ import {
 } from "@/config/upload";
 import {
   uploadFile,
+  uploadFileWithRetry,
   getFileUrl,
   deleteFile,
 } from "@/services/cloudflare-storage";
@@ -849,12 +850,12 @@ export const productService = {
     // Calculate file size in MB
     const fileSizeMB = file.size / (1024 * 1024);
 
-    // Upload to Cloudflare R2
-    const uploadResult = await uploadFile({
+    // Upload to Cloudflare R2 — retry up to 3 times for transient R2 errors
+    const uploadResult = await uploadFileWithRetry({
       filePath,
       file,
       contentType: file.type,
-    });
+    }, 3);
 
     // Store file metadata in product_files table
     const fileType = file.type.startsWith("video/")
@@ -893,12 +894,12 @@ export const productService = {
       fileExt,
     );
 
-    // Upload to Cloudflare R2
-    const uploadResult = await uploadFile({
+    // Upload to Cloudflare R2 — retry for transient errors
+    const uploadResult = await uploadFileWithRetry({
       filePath,
       file,
       contentType: file.type,
-    });
+    }, 3);
 
     return uploadResult.publicUrl;
   },
@@ -1572,10 +1573,9 @@ export const productService = {
       return "";
     }
 
-    // If it's a Supabase Storage URL, ignore it (legacy files)
+    // Supabase Storage URLs (used by admin uploads) — return as-is
     if (filePath.includes("supabase.co/storage")) {
-      console.warn("Ignoring legacy Supabase Storage URL:", filePath);
-      return "";
+      return filePath;
     }
 
     // If it's already a Cloudflare R2 URL, return as-is
