@@ -172,13 +172,18 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
       // Get the user's profile to ensure they're an expert
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, account_type')
+        .select('id, account_type, tenant_id')
         .eq('id', user.id)
         .single();
 
       if (!profile) {
         throw new Error('User profile not found');
       }
+
+      // Hospital-affiliated experts: products are always hospital resources for their tenant
+      const isHospitalExpert = !!profile.tenant_id;
+      const resolvedIsHospitalResource = isHospitalExpert ? true : data.isHospitalResource;
+      const resolvedTenantId = profile.tenant_id ?? null;
 
       setUploadProgress(40);
 
@@ -211,12 +216,13 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
               product_type: data.productType === 'consultation' ? 'document' : data.productType as any,
               expert_id: profile.id,
               content_type: data.contentType,
-              is_hospital_resource: data.isHospitalResource,
+              is_hospital_resource: resolvedIsHospitalResource,
+              tenant_id: resolvedTenantId,
             },
             filesToUpload,
             fileTitles,
             thumbnailFile || undefined,
-            handleFileProgress // Pass progress callback
+            handleFileProgress
           )
         : await productService.createProductWithFile(
             {
@@ -227,7 +233,8 @@ export const ProductUploadModal: React.FC<ProductUploadModalProps> = ({
               expert_id: profile.id,
               duration_minutes: data.durationMinutes,
               page_count: data.pageCount,
-              is_hospital_resource: data.isHospitalResource,
+              is_hospital_resource: resolvedIsHospitalResource,
+              tenant_id: resolvedTenantId,
             },
             filesToUpload[0],
             thumbnailFile || undefined

@@ -1,0 +1,45 @@
+A2 — Outside-in curl verification (post-lockdown)
+==================================================
+
+Date:  2026-05-13
+Tool:  curl 8.x with the public anon key from .env (VITE_SUPABASE_ANON_KEY)
+       The anon key has the `anon` Postgres role, exactly what a casual visitor
+       would have if they extracted it from the SPA bundle.
+
+Command (run once per object):
+  curl -sS "https://wznevejkaefokgibkknt.supabase.co/rest/v1/<OBJ>?select=*" \
+       -H "apikey: $ANON_KEY"
+
+Raw results
+-----------
+
+=== flagged_messages_view ===
+HTTP 401 | bytes=104
+Body: {"code":"42501","details":null,"hint":null,"message":"permission denied for view flagged_messages_view"}
+
+=== admin_ai_audit_trail ===
+HTTP 401 | bytes=103
+Body: {"code":"42501","details":null,"hint":null,"message":"permission denied for view admin_ai_audit_trail"}
+
+=== tenant_user_details ===
+HTTP 401 | bytes=102
+Body: {"code":"42501","details":null,"hint":null,"message":"permission denied for view tenant_user_details"}
+
+=== consultation_bookings ===
+HTTP 401 | bytes=105
+Body: {"code":"42501","details":null,"hint":null,"message":"permission denied for table consultation_bookings"}
+
+Interpretation
+--------------
+All four objects return HTTP 401 + Postgres error code 42501 ("permission denied
+for view/table"). This is the strongest possible failure mode: the request never
+reaches RLS because the `anon` role no longer has SELECT privilege on the objects.
+
+Pre-lockdown, these endpoints would have returned HTTP 200 with full row data
+(see audit doc: 7 rows on flagged_messages_view, 469 rows on admin_ai_audit_trail,
+90 rows on consultation_bookings).
+
+A2 status: ✅ PASS — lockdown took effect end-to-end from outside.
+
+Verified by: Claude Code (CLI), via the curl command above
+Reproduce:   See `tasks/MANUAL-STEPS.md` §1.1 for the loop syntax

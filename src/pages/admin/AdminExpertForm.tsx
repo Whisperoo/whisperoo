@@ -61,6 +61,7 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
   const isNew = expertId === 'new';
   const { t } = useTranslation();
   const [form, setForm] = useState<ExpertFormData>(EMPTY_FORM);
+  const [bookingMode, setBookingMode] = useState<'inquiry' | 'direct'>('inquiry');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!isNew);
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +110,10 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
           expert_availability_status: data.expert_availability_status || 'available',
           tenant_id: data.tenant_id || null,
         });
+        // Infer booking mode from which message field is populated
+        if (data.inquiry_prebook_message && !data.inquiry_confirmation_message) {
+          setBookingMode('direct');
+        }
       }
       setLoading(false);
     })();
@@ -476,41 +481,73 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
               <p className="text-xs text-gray-400 mt-1">{form.expert_bio.length} characters</p>
             </div>
 
-            {/* Inquiry booking — post-request notification */}
+            {/* Booking type selector */}
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">
-                Inquiry Request — Confirmation Message
-                <span className="text-gray-400 ml-1">(optional)</span>
-              </label>
-              <textarea
-                value={form.inquiry_confirmation_message}
-                onChange={(e) => setForm({ ...form, inquiry_confirmation_message: e.target.value })}
-                placeholder="Shown to the user right after they submit an inquiry/appointment request. E.g. 'Thank you! I typically respond within 24 hours. Please have your insurance info ready.'"
-                rows={3}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                Inquiry bookings only. Leave blank to show the default "we'll be in touch" message.
-              </p>
+              <label className="text-xs font-medium text-gray-600 mb-2 block">Consultation Type</label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setBookingMode('inquiry')}
+                  className={`flex-1 py-2.5 px-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+                    bookingMode === 'inquiry'
+                      ? 'border-brand-primary bg-brand-primary/5 text-brand-primary'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  Inquiry-Based
+                  <span className="block text-xs font-normal mt-0.5 opacity-70">Expert contacts parent</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingMode('direct')}
+                  className={`flex-1 py-2.5 px-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+                    bookingMode === 'direct'
+                      ? 'border-brand-primary bg-brand-primary/5 text-brand-primary'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  Flat-Rate
+                  <span className="block text-xs font-normal mt-0.5 opacity-70">Parent pays upfront</span>
+                </button>
+              </div>
             </div>
 
-            {/* Flat-rate / direct booking — post-purchase custom note */}
-            <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">
-                Flat-Rate Purchase — Custom Note
-                <span className="text-gray-400 ml-1">(optional)</span>
-              </label>
-              <textarea
-                value={form.inquiry_prebook_message}
-                onChange={(e) => setForm({ ...form, inquiry_prebook_message: e.target.value })}
-                placeholder="Shown on the purchase success page after a user buys a flat-rate consultation. E.g. 'Your session is confirmed! Check your email for a calendar invite. Bring any relevant records.'"
-                rows={3}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                Flat-rate (direct) purchases only. Leave blank to show the default booking confirmation note.
-              </p>
-            </div>
+            {/* Conditional confirmation message based on booking type */}
+            {bookingMode === 'inquiry' ? (
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">
+                  Inquiry Request — Confirmation Message
+                  <span className="text-gray-400 ml-1">(optional)</span>
+                </label>
+                <textarea
+                  value={form.inquiry_confirmation_message}
+                  onChange={(e) => setForm({ ...form, inquiry_confirmation_message: e.target.value })}
+                  placeholder="Shown right after the parent submits an inquiry. E.g. 'Thank you! I typically respond within 24 hours. Please have your insurance info ready.'"
+                  rows={3}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Leave blank to show the default "we'll be in touch" message.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">
+                  Flat-Rate Purchase — Confirmation Note
+                  <span className="text-gray-400 ml-1">(optional)</span>
+                </label>
+                <textarea
+                  value={form.inquiry_prebook_message}
+                  onChange={(e) => setForm({ ...form, inquiry_prebook_message: e.target.value })}
+                  placeholder="Shown after a parent buys a flat-rate session. E.g. 'Your session is confirmed! Check your email for a calendar invite. Bring any relevant records.'"
+                  rows={3}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Leave blank to show the default booking confirmation note.
+                </p>
+              </div>
+            )}
 
             {/* Specialties */}
             <div>

@@ -198,7 +198,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   });
   const [page, setPage] = useState(1);
   const [userPurchases, setUserPurchases] = useState<Set<string>>(new Set());
-  const [activeResourceTab, setActiveResourceTab] = useState<'whisperoo' | 'hospital'>('whisperoo');
+  const [activeResourceTab, setActiveResourceTab] = useState<'all' | 'whisperoo' | 'hospital'>('all');
 
   const isPersonalized = filters.sortBy === 'personalized';
 
@@ -323,9 +323,12 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     !p.is_hospital_resource
   );
 
+  const allProducts = afterDisabledFilter;
   const displayProducts = activeResourceTab === 'hospital'
     ? hospitalProducts
-    : whisperooProducts;
+    : activeResourceTab === 'whisperoo'
+      ? whisperooProducts
+      : allProducts;
 
   const totalResults = data?.total || 0;
   // console.log(displayProducts, "from grid");
@@ -636,33 +639,44 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       {/* Whisperoo / Hospital Tabs */}
       <Tabs
         value={activeResourceTab}
-        onValueChange={(v) => setActiveResourceTab(v as 'whisperoo' | 'hospital')}
+        onValueChange={(v) => setActiveResourceTab(v as 'all' | 'whisperoo' | 'hospital')}
         className="w-full"
       >
         <TabsList className="w-full sm:w-auto mb-4 bg-gray-100 rounded-xl p-1">
           <TabsTrigger
+            value="all"
+            className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
+          >
+            {t('resources.tabAll', 'All Resources')}
+          </TabsTrigger>
+          <TabsTrigger
             value="whisperoo"
             className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
           >
-            {t('experts.tabWhisperoo', 'Whisperoo Resources')}
+            {t('experts.tabWhisperoo', 'Whisperoo')}
           </TabsTrigger>
-          {isHospitalUser && tenant && (
+          {isHospitalUser && tenant && hospitalProducts.length > 0 && (
             <TabsTrigger
               value="hospital"
               className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
             >
               <Building2 className="w-3.5 h-3.5 mr-1.5 inline-block" />
-              {t('experts.tabHospital', 'Hospital Resources')}
+              {t('experts.tabHospital', 'Hospital')}
             </TabsTrigger>
           )}
         </TabsList>
 
         <TabsContent value={activeResourceTab} className="mt-0">
-          <p className="text-xs text-brand-primary/80 font-medium mb-4 leading-relaxed">
-            {activeResourceTab === 'hospital'
-              ? t('experts.hospitalDisclaimer', 'These resources are provided by your hospital partner.')
-              : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
-          </p>
+          {activeResourceTab === 'hospital' && (
+            <p className="text-xs text-brand-primary/80 font-medium mb-4 leading-relaxed">
+              {t('experts.hospitalDisclaimer', 'These resources are provided by your hospital partner.')}
+            </p>
+          )}
+          {activeResourceTab === 'whisperoo' && (
+            <p className="text-xs text-brand-primary/80 font-medium mb-4 leading-relaxed">
+              {t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
+            </p>
+          )}
         </TabsContent>
       </Tabs>
 

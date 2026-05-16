@@ -450,12 +450,12 @@ const ExpertDetails: React.FC = () => {
                   {/* Left Column: Info & Disclaimer */}
                   <div className="flex-1 w-full">
                     {expert.tenant_id ? (
-                      <span className="inline-block px-2 py-1 bg-pink-100 text-pink-700 text-xs font-semibold rounded mb-2">
-                        {t('experts.tabHospital', 'Hospital Expert')}
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-brand-primary/10 text-brand-dark border border-brand-primary/30 text-xs font-semibold rounded mb-2">
+                        {t('experts.hospitalExpertTag', 'Hospital Expert')}
                       </span>
                     ) : (
-                      <span className="inline-block px-2 py-1 bg-blue-50 text-brand-primary text-xs font-semibold rounded mb-2">
-                        {t('experts.tabWhisperoo', 'Whisperoo Expert')}
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-brand-primary border border-brand-primary/20 text-xs font-semibold rounded mb-2">
+                        {t('experts.whisperooExpertTag', 'Whisperoo Expert')}
                       </span>
                     )}
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 break-words">

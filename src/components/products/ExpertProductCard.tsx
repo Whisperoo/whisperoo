@@ -198,16 +198,32 @@ export const ExpertProductCard: React.FC<ExpertProductCardProps> = ({
           
           {/* Expert Info */}
           {product.expert && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
               <Avatar className="h-6 w-6">
                 <AvatarImage src={product.expert.profile_image_url || undefined} />
                 <AvatarFallback className="text-xs bg-blue-100 text-blue-600 font-medium">
                   {product.expert.first_name?.[0] || 'E'}
                 </AvatarFallback>
               </Avatar>
-              <span>{product.expert.first_name || 'Expert'}</span>
+              <div className="flex flex-col min-w-0">
+                <span className="truncate">{product.expert.first_name || 'Expert'}</span>
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded w-fit mt-0.5 border ${
+                  (product as any).is_hospital_resource
+                    ? 'bg-brand-primary/10 text-brand-dark border-brand-primary/20'
+                    : 'bg-blue-50 text-brand-primary border-brand-primary/10'
+                }`}>
+                  {(product as any).is_hospital_resource ? t('experts.hospitalResourceTag', 'Hospital Resource') : 'Whisperoo'}
+                </span>
+              </div>
             </div>
           )}
+
+          {/* Truncated affiliation disclaimer — full text on the expert profile */}
+          <p className="text-[11px] text-gray-500 line-clamp-1 leading-tight mb-3">
+            {(product as any).is_hospital_resource
+              ? t('experts.hospitalDisclaimer', 'These resources are provided by your hospital partner.')
+              : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
+          </p>
 
           {displayDescription && displayDescription.trim() && displayDescription !== 'testtestesese' && (
             <p className="text-sm text-gray-600 line-clamp-3 mb-4 leading-relaxed">

@@ -521,9 +521,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <CardContent className="flex flex-col gap-3 p-4 flex-1">
         {/* Title Section */}
         <div className="flex flex-col gap-3 w-full">
-          {/* Title */}
+          {/* Title — consultations that route through the expert profile skip the product detail page */}
           <Link
-            to={`/products/${product.id}`}
+            to={bookingViaExpertProfile && expert?.id
+              ? `/experts/${expert.id}`
+              : `/products/${product.id}`}
             className="font-semibold text-[18px] leading-normal text-[#393939] font-['Plus_Jakarta_Sans'] md:truncate"
           >
             {displayTitle}
@@ -557,15 +559,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               </p>
               <div className="mt-0.5">
                 {product.is_hospital_resource ? (
-                  <span className="inline-block px-1.5 py-0.5 bg-brand-dark/10 text-brand-dark text-[10px] font-semibold rounded">
-                    {t('experts.tabHospital', 'Hospital Content')}
+                  <span className="inline-block px-1.5 py-0.5 bg-brand-primary/10 text-brand-dark border border-brand-primary/20 text-[10px] font-semibold rounded">
+                    {t('experts.hospitalResourceTag', 'Hospital Resource')}
                   </span>
                 ) : (
-                  <span className="inline-block px-1.5 py-0.5 bg-blue-50 text-brand-primary text-[10px] font-semibold rounded">
+                  <span className="inline-block px-1.5 py-0.5 bg-blue-50 text-brand-primary border border-brand-primary/10 text-[10px] font-semibold rounded">
                     Whisperoo
                   </span>
                 )}
               </div>
+
+              {/* Truncated affiliation disclaimer — full text on profile/detail page */}
+              <p className="text-[11px] text-gray-500 line-clamp-1 leading-tight mt-1">
+                {product.is_hospital_resource
+                  ? t('experts.hospitalDisclaimer', 'These resources are provided by your hospital partner.')
+                  : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
+              </p>
             </div>
           </div>
 

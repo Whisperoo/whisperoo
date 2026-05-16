@@ -34,7 +34,7 @@ const ExpertProfiles: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
   const [activeTags, setActiveTags] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'whisperoo' | 'hospital'>('whisperoo');
+  const [activeTab, setActiveTab] = useState<'all' | 'whisperoo' | 'hospital'>('all');
 
   useEffect(() => {
     fetchExperts();
@@ -264,38 +264,60 @@ const ExpertProfiles: React.FC = () => {
           );
         })()}
 
-        {/* Tabs: Whisperoo Experts / Hospital Experts */}
+        {/* Tabs: All / Whisperoo / Hospital */}
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as 'whisperoo' | 'hospital')}
+          onValueChange={(v) => setActiveTab(v as 'all' | 'whisperoo' | 'hospital')}
           className="w-full"
         >
           <TabsList className="w-full sm:w-auto mb-2 bg-gray-100 rounded-xl p-1">
             <TabsTrigger
+              value="all"
+              className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
+            >
+              {t('experts.tabAllExperts', 'All Experts')}
+            </TabsTrigger>
+            <TabsTrigger
               value="whisperoo"
               className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
             >
-              {t('experts.tabWhisperoo')}
+              {t('experts.tabWhisperooExperts', 'Whisperoo Experts')}
             </TabsTrigger>
-            {isHospitalUser && (expertBoostIds.length > 0 || tenant) && (
+            {isHospitalUser && hospitalExperts.length > 0 && (
               <TabsTrigger
                 value="hospital"
                 className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
               >
                 <Building2 className="w-3.5 h-3.5 mr-1.5 inline-block" />
-                {t('experts.tabHospital')}
+                {t('experts.tabHospitalExperts', 'Hospital Experts')}
               </TabsTrigger>
             )}
           </TabsList>
 
+          {/* All Experts Tab */}
+          <TabsContent value="all" className="mt-0">
+            <div className="mb-4 flex items-center border-b border-gray-100 pb-3">
+              <p className="text-xs sm:text-sm font-semibold text-gray-500">
+                {sortedExperts.length === 1
+                  ? t('experts.expertFound', { count: 1 })
+                  : t('experts.expertsFound', { count: sortedExperts.length })}
+              </p>
+            </div>
+            <ExpertGrid
+              experts={sortedExperts}
+              isExpertBoosted={isExpertBoosted}
+              handleExpertClick={handleExpertClick}
+              translateSpecialty={translateSpecialty}
+              i18n={i18n}
+              t={t}
+            />
+          </TabsContent>
+
           {/* Whisperoo Experts Tab */}
           <TabsContent value="whisperoo" className="mt-0">
-            {/* Disclaimer */}
             <p className="text-xs text-brand-primary/80 font-medium mb-4 leading-relaxed">
               {t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
             </p>
-
-            {/* Results Count */}
             <div className="mb-4 flex items-center border-b border-gray-100 pb-3">
               <p className="text-xs sm:text-sm font-semibold text-gray-500">
                 {whisperooExperts.length === 1
@@ -303,7 +325,6 @@ const ExpertProfiles: React.FC = () => {
                   : t('experts.expertsFound', { count: whisperooExperts.length })}
               </p>
             </div>
-
             <ExpertGrid
               experts={whisperooExperts}
               isExpertBoosted={isExpertBoosted}
@@ -315,12 +336,11 @@ const ExpertProfiles: React.FC = () => {
           </TabsContent>
 
           {/* Hospital Experts Tab */}
-          {isHospitalUser && (expertBoostIds.length > 0 || tenant) && (
+          {isHospitalUser && hospitalExperts.length > 0 && (
             <TabsContent value="hospital" className="mt-0">
               <p className="text-xs text-brand-primary/80 font-medium mb-4 leading-relaxed">
                 {t('experts.hospitalDisclaimer', 'Hospital Experts are affiliated with your hospital partner and curated for your care journey.')}
               </p>
-              {/* Results Count */}
               <div className="mb-4 flex items-center border-b border-gray-100 pb-3">
                 <p className="text-xs sm:text-sm font-semibold text-gray-500">
                   {hospitalExperts.length === 1
@@ -331,7 +351,6 @@ const ExpertProfiles: React.FC = () => {
                   {t('experts.showingHospitalOnly')}
                 </span>
               </div>
-
               <ExpertGrid
                 experts={hospitalExperts}
                 isExpertBoosted={isExpertBoosted}
@@ -414,8 +433,15 @@ const ExpertGrid: React.FC<ExpertGridProps> = ({
                 <p className="text-indigo-600 font-semibold text-xs sm:text-sm mb-1 break-words">
                   {translateSpecialty(expert.expert_specialties?.[0] || '') || t('experts.generalExpert')}
                 </p>
-                <p className="text-gray-600 text-xs leading-relaxed line-clamp-3 mb-3 break-words">
+                <p className="text-gray-600 text-xs leading-relaxed line-clamp-3 mb-2 break-words">
                   {getLocalizedBio(expert, i18n.language)}
+                </p>
+
+                {/* Affiliation disclaimer — truncated; full text visible on the expert profile */}
+                <p className="text-[11px] text-gray-500 line-clamp-1 mb-3 leading-tight">
+                  {expert.tenant_id
+                    ? t('experts.hospitalDisclaimer', 'Hospital Experts are affiliated with your hospital partner and curated for your care journey.')
+                    : t('experts.whisperooDisclaimer', 'Whisperoo connects you with independent providers who are not employed by Whisperoo or endorsed by any hospital partner.')}
                 </p>
 
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">

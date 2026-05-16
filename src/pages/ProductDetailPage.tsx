@@ -360,6 +360,16 @@ export const ProductDetailPage: React.FC = () => {
       </div>
     );
   }
+  // Non-paid consultations (inquiry / hospital) have their full booking flow
+  // on the expert's profile page — redirect there to avoid the circular loop.
+  if (
+    product.product_type === 'consultation' &&
+    isConsultationBookingViaExpert(product) &&
+    product.expert?.id
+  ) {
+    navigate(`/experts/${product.expert.id}`, { replace: true });
+    return null;
+  }
   return (
     <div className="container mx-auto p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -585,12 +595,12 @@ export const ProductDetailPage: React.FC = () => {
                           : ""}
                       </p>
                       {product.expert.tenant_id ? (
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-pink-100 text-pink-700 text-xs font-semibold rounded">
-                          {t('experts.tabHospital', 'Hospital Expert')}
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-brand-primary/10 text-brand-dark border border-brand-primary/20 text-xs font-semibold rounded">
+                          {t('experts.hospitalExpertTag', 'Hospital Expert')}
                         </span>
                       ) : (
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-brand-primary text-xs font-semibold rounded">
-                          {t('experts.tabWhisperoo', 'Whisperoo Expert')}
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-brand-primary border border-brand-primary/10 text-xs font-semibold rounded">
+                          {t('experts.whisperooExpertTag', 'Whisperoo Expert')}
                         </span>
                       )}
                     </div>

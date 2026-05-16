@@ -339,7 +339,7 @@ export const PurchaseSuccessPage: React.FC = () => {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
           <Button 
-            onClick={() => navigate(product.product_type === 'consultation' ? '/my-purchases?tab=bookings' : '/my-purchases')}
+            onClick={() => navigate(product.product_type === 'consultation' ? '/my-purchases?tab=appointments' : '/my-purchases')}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2 h-12"
             size="lg"
           >

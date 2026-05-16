@@ -51,7 +51,7 @@ export const RecentBookings: React.FC = () => {
           </div>
         </div>
         <button
-          onClick={() => navigate('/my-purchases?tab=bookings')}
+          onClick={() => navigate('/my-purchases?tab=appointments')}
           className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
         >
           {t('dashboard.bookings.viewAll', { defaultValue: 'View all' })} <ArrowRight className="w-3.5 h-3.5" />
@@ -63,7 +63,7 @@ export const RecentBookings: React.FC = () => {
           <div
             key={booking.id}
             className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-            onClick={() => navigate('/my-purchases?tab=bookings')}
+            onClick={() => navigate('/my-purchases?tab=appointments')}
           >
             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
               <Clock className="w-4 h-4 text-blue-600" />

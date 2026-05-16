@@ -94,13 +94,14 @@ export const ExpertProductsSection: React.FC<ExpertProductsSectionProps> = ({
   };
 
   if (!isOwnProfile) {
-    // Filter products for viewing - exclude consultation products if expert is unavailable
-    const filteredProducts = products?.filter(product => {
-      if (product.product_type === 'consultation' && expertAvailabilityStatus !== 'available') {
-        return false;
-      }
-      return true;
-    }) || [];
+    // Consultations are always excluded from the product grid on an expert's public profile —
+    // booking is handled by the booking box at the top of the profile page, not a product card.
+    const filteredProducts = products?.filter(product =>
+      product.product_type !== 'consultation'
+    ) || [];
+
+    // If no non-consultation products exist, render nothing — the expert profile already shows the booking box
+    if (!isLoading && filteredProducts.length === 0) return null;
 
     // For viewing other experts' products, use the regular ProductGrid
     return (

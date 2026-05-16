@@ -609,6 +609,7 @@ export const productService = {
       duration_minutes?: number;
       page_count?: number;
       is_hospital_resource?: boolean;
+      tenant_id?: string | null;
     },
     file: File,
     thumbnail?: File,
@@ -628,6 +629,7 @@ export const productService = {
       duration_minutes: productData.duration_minutes,
       page_count: productData.page_count,
       is_hospital_resource: productData.is_hospital_resource || false,
+      tenant_id: productData.tenant_id || null,
     } as ProductInsert);
 
     try {
@@ -1691,6 +1693,7 @@ export const productService = {
       expert_id: string;
       content_type?: "single" | "bundle" | "course" | "collection";
       is_hospital_resource?: boolean;
+      tenant_id?: string | null;
     },
     files: File[],
     titles?: string[],
@@ -1738,6 +1741,7 @@ export const productService = {
       has_multiple_files: files.length > 1,
       total_files_count: files.length,
       is_hospital_resource: productData.is_hospital_resource || false,
+      tenant_id: productData.tenant_id || null,
     } as ProductInsert);
 
     const uploadedFiles: ProductFile[] = [];

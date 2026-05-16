@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
-  Download, Receipt, Calendar, CheckCircle, Clock,
-  BookOpen, Loader2, AlertCircle, RefreshCw, Search, Heart
+  Download, Calendar, CheckCircle, Clock, XCircle,
+  BookOpen, Loader2, AlertCircle, RefreshCw, Search, Heart, Bell
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { ContentGrid } from "@/components/content/ContentGrid";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -31,17 +32,22 @@ export const MyPurchasesPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const { toast } = useToast();
   const currentLang = i18n.language || 'en';
+  const searchParams = new URLSearchParams(location.search);
+  const rawTab = searchParams.get("tab") || "content";
+  // "bookings" is a legacy alias for "appointments"
+  const defaultTab = rawTab === "bookings" ? "appointments" : rawTab;
+
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'content' | 'appointments' | 'wishlist'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'appointments' | 'wishlist'>(
+    (defaultTab as 'content' | 'appointments' | 'wishlist') || 'content'
+  );
   const [appointments, setAppointments] = useState<PurchaseWithDetails[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wishlistItems, setWishlistItems] = useState<ProductWithDetails[]>([]);
   const [loadingWishlist, setLoadingWishlist] = useState(false);
-
-  const searchParams = new URLSearchParams(location.search);
-  const defaultTab = searchParams.get("tab") || "content";
 
   const fetchAppointments = async () => {
     try {
@@ -100,7 +106,7 @@ export const MyPurchasesPage: React.FC = () => {
       const { data: experts, error: expertsError } = expertIds.length
         ? await supabase
             .from('profiles')
-            .select('id, first_name, profile_image_url')
+            .select('id, first_name, profile_image_url, inquiry_confirmation_message, inquiry_prebook_message')
             .in('id', expertIds)
         : { data: [], error: null };
 
@@ -152,6 +158,50 @@ export const MyPurchasesPage: React.FC = () => {
 
   useEffect(() => {
     if (user) fetchAppointments();
+  }, [user]);
+
+  // Realtime: notify user when admin updates their appointment status
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`booking-status-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'consultation_bookings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newStatus = payload.new?.status as string | undefined;
+          if (newStatus === 'confirmed') {
+            toast({
+              title: 'Appointment Confirmed',
+              description: 'Your appointment request has been confirmed by the expert.',
+            });
+          } else if (newStatus === 'completed') {
+            toast({
+              title: 'Appointment Completed',
+              description: 'Your appointment has been marked as completed.',
+            });
+          } else if (newStatus === 'cancelled') {
+            toast({
+              title: 'Appointment Cancelled',
+              description: 'Your appointment has been cancelled.',
+              variant: 'destructive',
+            });
+          }
+          // Refresh the list to reflect the new status
+          fetchAppointments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const fetchWishlist = async () => {
@@ -346,33 +396,116 @@ export const MyPurchasesPage: React.FC = () => {
                 <Button onClick={() => navigate('/experts')} className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-full px-8 shadow-md h-12"><Search className="mr-2 h-4 w-4" />{t('purchases.browseExperts')}</Button>
               </div>
             ) : (
-              <div className="grid gap-6">
-                {appointments.map((appointment) => (
-                  <Card key={appointment.id} className="overflow-hidden border-gray-100 shadow-sm">
-                    <CardContent className="p-6">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-bold text-lg text-gray-900 truncate">
-                            {appointment.product?.expert?.first_name ? `${appointment.product.expert.first_name}` : t('purchases.defaultExpert')}
-                          </h3>
-                        </div>
-                        <div className="bg-blue-50 rounded-lg p-4 text-sm mt-4">
-                          {appointment.consultation_completed ? (
-                            <div className="text-green-700">
-                              <CheckCircle className="h-4 w-4 inline mr-2" />
-                              {t('purchases.consultationCompletedMsg')}
-                            </div>
+              <div className="grid gap-4">
+                {appointments.map((appointment) => {
+                  const expertName = appointment.product?.expert?.first_name || t('purchases.defaultExpert');
+                  const productTitle = appointment.product?.title || '';
+                  const bookingModel = appointment.product?.booking_model as string | undefined;
+                  const bookedDate = appointment.created_at
+                    ? new Date(appointment.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : null;
+                  const amountPaid = appointment.amount != null && appointment.amount > 0
+                    ? `$${Number(appointment.amount).toFixed(2)}`
+                    : null;
+
+                  const statusConfig: Record<string, { bg: string; text: string; icon: React.ReactNode; label: string }> = {
+                    completed: {
+                      bg: 'bg-emerald-50 border-emerald-200',
+                      text: 'text-emerald-700',
+                      icon: <CheckCircle className="h-4 w-4" />,
+                      label: t('purchases.statusCompleted', 'Completed'),
+                    },
+                    confirmed: {
+                      bg: 'bg-blue-50 border-blue-200',
+                      text: 'text-blue-700',
+                      icon: <CheckCircle className="h-4 w-4" />,
+                      label: t('purchases.statusConfirmed', 'Confirmed'),
+                    },
+                    pending: {
+                      bg: 'bg-amber-50 border-amber-200',
+                      text: 'text-amber-700',
+                      icon: <Clock className="h-4 w-4" />,
+                      label: t('purchases.statusPending', 'Pending'),
+                    },
+                    cancelled: {
+                      bg: 'bg-gray-100 border-gray-200',
+                      text: 'text-gray-500',
+                      icon: <XCircle className="h-4 w-4" />,
+                      label: t('purchases.statusCancelled', 'Cancelled'),
+                    },
+                  };
+                  const sc = statusConfig[appointment.status] || statusConfig.pending;
+
+                  return (
+                    <Card key={appointment.id} className="overflow-hidden border-gray-100 shadow-sm">
+                      <CardContent className="p-5">
+                        <div className="flex items-start gap-4">
+                          {/* Avatar */}
+                          {appointment.product?.expert?.profile_image_url ? (
+                            <img
+                              src={appointment.product.expert.profile_image_url}
+                              alt={expertName}
+                              className="w-12 h-12 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                            />
                           ) : (
-                            <div className="text-blue-700">
-                              <Clock className="h-4 w-4 inline mr-2" />
-                              {t('purchases.consultationPendingMsg')}
+                            <div className="w-12 h-12 rounded-full bg-brand-primary/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-brand-primary font-bold text-lg">{expertName[0]?.toUpperCase() ?? '?'}</span>
                             </div>
                           )}
+                          <div className="flex-1 min-w-0">
+                            {/* Expert name + booking type pill */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-bold text-base text-gray-900">{expertName}</h3>
+                              {bookingModel && (
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                                  bookingModel === 'direct'
+                                    ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                    : bookingModel === 'hospital'
+                                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                      : 'bg-gray-100 text-gray-600 border-gray-200'
+                                }`}>
+                                  {bookingModel === 'direct' ? 'Flat-Rate' : bookingModel === 'hospital' ? 'Hospital' : 'Inquiry'}
+                                </span>
+                              )}
+                            </div>
+                            {/* Product title */}
+                            {productTitle && (
+                              <p className="text-sm text-gray-600 mt-0.5 leading-snug">{productTitle}</p>
+                            )}
+                            {/* Booking date + amount */}
+                            <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                              {bookedDate && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {bookedDate}
+                                </span>
+                              )}
+                              {amountPaid && (
+                                <span className="font-semibold text-gray-600">{amountPaid}</span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Status badge */}
+                          <span className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold ${sc.bg} ${sc.text}`}>
+                            {sc.icon}
+                            {sc.label}
+                          </span>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+
+                        {/* Status message */}
+                        <div className={`mt-4 rounded-lg p-3 border text-sm flex items-start gap-2 ${sc.bg} ${sc.text}`}>
+                          <span className="flex-shrink-0 mt-0.5">{sc.icon}</span>
+                          <span>
+                            {appointment.status === 'completed' && t('purchases.consultationCompletedMsg', 'Your consultation has been completed.')}
+                            {appointment.status === 'confirmed' && t('purchases.consultationConfirmedMsg', 'Your appointment is confirmed. The expert will be in touch with next steps.')}
+                            {appointment.status === 'pending' && t('purchases.consultationPendingMsg', 'Your request is being reviewed. You\'ll hear back within 1–2 business days.')}
+                            {appointment.status === 'cancelled' && t('purchases.consultationCancelledMsg', 'This appointment was cancelled. Contact support if you have questions.')}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
