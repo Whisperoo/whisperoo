@@ -3,9 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, MessageCircle, Phone, Building2, Mail, Copy, Check } from "lucide-react";
+import { ArrowRight, MessageCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useToast } from "@/hooks/use-toast";
 // import AIMomCallModule from "@/components/dashboard/AIMomCallModule"; // Hidden for now
 import PostDeliveryPrompt from "@/components/dashboard/PostDeliveryPrompt";
 import AppointmentReminders from "@/components/dashboard/AppointmentReminders";
@@ -19,23 +18,13 @@ const Dashboard: React.FC = () => {
   const { profile, user } = useAuth();
   const { isHospitalUser, tenant, config } = useTenant();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const firstName = profile?.first_name || "there";
   const isMobile = useIsMobile();
   const conciergeEmail = (config as any)?.branding?.contact_email || 'support@whisperoo.app';
 
   const handleConciergeClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const mailtoUrl = `mailto:${conciergeEmail}?subject=Support%20Request`;
-    window.location.href = mailtoUrl;
-    // Clipboard fallback for desktop users without a configured mail client
-    setTimeout(() => {
-      navigator.clipboard.writeText(conciergeEmail).catch(() => {});
-      toast({
-        title: t('dashboard.contactCard.copiedTitle', 'Email address copied'),
-        description: t('dashboard.contactCard.copiedDesc', `${conciergeEmail} — paste it into your email app`, { email: conciergeEmail }),
-      });
-    }, 600);
+    window.location.href = `mailto:${conciergeEmail}?subject=Support%20Request`;
   };
 
   const [expectingKids, setExpectingKids] = useState<any[]>([]);
