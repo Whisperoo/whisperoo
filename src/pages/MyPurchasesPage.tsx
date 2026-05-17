@@ -175,26 +175,30 @@ export const MyPurchasesPage: React.FC = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          const newStatus = payload.new?.status as string | undefined;
-          if (newStatus === 'confirmed') {
+          const updated = payload.new as { id: string; status: string };
+          // Update the card immediately without a network refetch
+          setAppointments(prev => prev.map(a =>
+            a.id === updated.id
+              ? { ...a, status: updated.status, consultation_completed: updated.status === 'completed' }
+              : a
+          ));
+          if (updated.status === 'confirmed') {
             toast({
               title: 'Appointment Confirmed',
               description: 'Your appointment request has been confirmed by the expert.',
             });
-          } else if (newStatus === 'completed') {
+          } else if (updated.status === 'completed') {
             toast({
               title: 'Appointment Completed',
               description: 'Your appointment has been marked as completed.',
             });
-          } else if (newStatus === 'cancelled') {
+          } else if (updated.status === 'cancelled') {
             toast({
               title: 'Appointment Cancelled',
               description: 'Your appointment has been cancelled.',
               variant: 'destructive',
             });
           }
-          // Refresh the list to reflect the new status
-          fetchAppointments();
         }
       )
       .subscribe();
@@ -344,7 +348,7 @@ export const MyPurchasesPage: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'content' | 'appointments' | 'wishlist')} className="w-full">
-          <TabsList className="w-full mb-6 bg-white border shadow-sm p-1 overflow-x-auto flex">
+          <TabsList className="w-full mb-6 bg-white border shadow-sm p-1 overflow-hidden flex">
             <TabsTrigger value="content" className="flex-1 whitespace-nowrap px-3 sm:px-6 py-2.5 text-xs sm:text-sm data-[state=active]:bg-brand-primary/10 data-[state=active]:text-brand-primary data-[state=active]:shadow-none">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />

@@ -78,14 +78,12 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
     setSelectedBooking(booking);
     setSelectedPhoneNumber(undefined as any); // "loading" state
     try {
-      // NOTE: phone schema differs across environments.
-      // Avoid hard-failing modal rendering when optional columns differ.
       const { data } = await supabase
         .from('profiles')
-        .select('id')
+        .select('phone_number')
         .eq('id', booking.user_id)
         .maybeSingle();
-      setSelectedPhoneNumber(data ? null : null);
+      setSelectedPhoneNumber(data?.phone_number ?? null);
     } catch {
       setSelectedPhoneNumber(null);
     }
