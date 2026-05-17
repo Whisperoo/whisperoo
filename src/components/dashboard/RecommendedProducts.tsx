@@ -7,12 +7,14 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { productService, ProductWithDetails } from "@/services/products";
 import { usePersonalizedSort } from "@/hooks/usePersonalizedSort";
 import { useAuth } from '@/contexts/AuthContext';
+import { useTenant } from '@/contexts/TenantContext';
 
 export const RecommendedProducts: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { sortPersonalized } = usePersonalizedSort();
   const { profile } = useAuth();
+  const { tenant } = useTenant();
 
   // Stable string key — only changes when the user's topic selections actually change.
   const profileTopicsKey = useMemo(
@@ -51,10 +53,15 @@ export const RecommendedProducts: React.FC = () => {
 
   // Sort is pure derived state: no state mutation, no network call.
   // Even if sortPersonalized identity changes, this just re-sorts in memory.
-  const products = useMemo(
-    () => sortPersonalized(rawProducts).slice(0, 3),
-    [rawProducts, sortPersonalized],
-  );
+  const products = useMemo(() => {
+    const sorted = sortPersonalized(rawProducts);
+    // Defense-in-depth: B2C users must never see hospital resources even if
+    // RLS returns them (e.g. mis-tagged products with no tenant_id).
+    const visible = tenant
+      ? sorted
+      : sorted.filter((p) => !p.is_hospital_resource);
+    return visible.slice(0, 3);
+  }, [rawProducts, sortPersonalized, tenant]);
 
   if (loading) {
     return (

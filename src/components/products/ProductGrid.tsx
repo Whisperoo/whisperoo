@@ -323,7 +323,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     !p.is_hospital_resource
   );
 
-  const allProducts = afterDisabledFilter;
+  // B2C users must never see hospital resources in any tab (defense-in-depth).
+  const allProducts = tenant
+    ? afterDisabledFilter
+    : afterDisabledFilter.filter((p: any) => !p.is_hospital_resource);
+
   const displayProducts = activeResourceTab === 'hospital'
     ? hospitalProducts
     : activeResourceTab === 'whisperoo'
