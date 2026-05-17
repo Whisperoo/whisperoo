@@ -24,7 +24,12 @@ const Dashboard: React.FC = () => {
 
   const handleConciergeClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    window.location.href = `mailto:${conciergeEmail}?subject=Support%20Request`;
+    const a = document.createElement('a');
+    a.href = `mailto:${conciergeEmail}?subject=Support%20Request`;
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const [expectingKids, setExpectingKids] = useState<any[]>([]);
