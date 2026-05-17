@@ -304,29 +304,29 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     : afterTagFilter;
 
   // Phase 4: Tab-based resource filtering
-  // Hospital tab: ONLY explicitly marked hospital resources scoped to this tenant.
-  // is_hospital_resource must be true — expert affiliation alone is not enough.
-  const hospitalProducts = afterDisabledFilter.filter((p: any) => {
-    if (!tenant || !p.is_hospital_resource) return false;
-    const productTenantId = (p as any).tenant_id;
+  // Helper: does this hospital resource belong to the current user's tenant?
+  const isMyTenantResource = (p: any): boolean => {
+    if (!p.is_hospital_resource) return false;
+    const productTenantId = p.tenant_id;
     const expertTenantId = p.expert?.tenant_id;
-    return (
-      productTenantId === tenant.id ||
-      expertTenantId === tenant.id ||
-      // is_hospital_resource=true but no explicit tenant → show for all hospital users
-      (productTenantId == null && expertTenantId == null)
-    );
-  });
+    return productTenantId === tenant?.id || expertTenantId === tenant?.id;
+  };
 
-  // Whisperoo tab: everything not explicitly marked as hospital resource
+  // Hospital tab: ONLY hospital resources scoped to this exact tenant.
+  const hospitalProducts = tenant
+    ? afterDisabledFilter.filter((p: any) => isMyTenantResource(p))
+    : [];
+
+  // Whisperoo tab: everything not marked as a hospital resource.
   const whisperooProducts = afterDisabledFilter.filter((p: any) =>
     !p.is_hospital_resource
   );
 
-  // B2C users must never see hospital resources in any tab (defense-in-depth).
-  const allProducts = tenant
-    ? afterDisabledFilter
-    : afterDisabledFilter.filter((p: any) => !p.is_hospital_resource);
+  // All tab: Whisperoo resources + this tenant's hospital resources only.
+  // Hospital resources from other tenants must never appear here.
+  const allProducts = afterDisabledFilter.filter((p: any) =>
+    !p.is_hospital_resource || isMyTenantResource(p)
+  );
 
   const displayProducts = activeResourceTab === 'hospital'
     ? hospitalProducts

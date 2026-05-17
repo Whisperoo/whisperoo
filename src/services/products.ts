@@ -626,6 +626,7 @@ export const productService = {
       product_type: productData.product_type,
       expert_id: productData.expert_id,
       is_active: true,
+      status: 'published',
       file_size_mb: fileSizeMB,
       duration_minutes: productData.duration_minutes,
       page_count: productData.page_count,
@@ -1788,8 +1789,9 @@ export const productService = {
       // Update product with final details and activate it
       const updateData: Partial<Product> = {
         primary_file_url: primaryFile.file_url,
-        file_url: primaryFile.file_url, // For backward compatibility
-        is_active: true, // Activate the product now that files are uploaded
+        file_url: primaryFile.file_url,
+        is_active: true,
+        status: 'published',
         has_multiple_files: uploadedFiles.length > 1,
         total_files_count: uploadedFiles.length,
       };

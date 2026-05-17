@@ -55,11 +55,14 @@ export const RecommendedProducts: React.FC = () => {
   // Even if sortPersonalized identity changes, this just re-sorts in memory.
   const products = useMemo(() => {
     const sorted = sortPersonalized(rawProducts);
-    // Defense-in-depth: B2C users must never see hospital resources even if
-    // RLS returns them (e.g. mis-tagged products with no tenant_id).
-    const visible = tenant
-      ? sorted
-      : sorted.filter((p) => !p.is_hospital_resource);
+    // Defense-in-depth: only show hospital resources that belong to THIS tenant.
+    // B2C users (no tenant) see no hospital resources.
+    // Hospital users only see their own hospital's resources, never another tenant's.
+    const visible = sorted.filter((p) => {
+      if (!p.is_hospital_resource) return true;
+      if (!tenant) return false;
+      return (p as any).tenant_id === tenant.id || p.expert?.tenant_id === tenant.id;
+    });
     return visible.slice(0, 3);
   }, [rawProducts, sortPersonalized, tenant]);
 
