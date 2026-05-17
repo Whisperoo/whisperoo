@@ -164,6 +164,20 @@ const ProfilePage: React.FC = () => {
   const bornChildren = children.filter(child => !child.is_expecting)
   const expectedBabies = children.filter(child => child.is_expecting)
 
+  // Derive effective expecting status from actual kids data first; profile flag is secondary
+  const isExpecting = expectedBabies.length > 0 || profile.expecting_status === 'yes'
+  const isTrying = !isExpecting && profile.expecting_status === 'trying'
+  const expectingBadgeLabel = isExpecting
+    ? t('profile.expecting')
+    : isTrying
+      ? t('profile.tryingToConceive')
+      : t('profile.notExpecting')
+  const expectingBadgeColor = isExpecting
+    ? 'bg-pink-100 text-pink-700'
+    : isTrying
+      ? 'bg-purple-100 text-purple-700'
+      : 'bg-gray-100 text-gray-700'
+
   const handleEditProfile = () => {
     setIsEditModalOpen(true)
   }
@@ -248,18 +262,16 @@ const ProfilePage: React.FC = () => {
                   </div>
                 </div>
                 
-                {profile.expecting_status === 'yes' && (
+                {isExpecting && expectedBabies.length > 0 && (
                   <div className="text-center p-4 bg-pink-50 rounded-lg">
                     <div className="text-2xl font-bold text-pink-700">{expectedBabies.length}</div>
                     <div className="text-sm text-pink-600">{t('profile.expecting')}</div>
                   </div>
                 )}
-                
+
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <Badge className={`text-sm font-medium ${getExpectingStatusColor(profile.expecting_status || 'no')}`}>
-                    {profile.expecting_status === 'yes' ? t('profile.expecting') : 
-                     profile.expecting_status === 'trying' ? t('profile.tryingToConceive') : 
-                     t('profile.notExpecting')}
+                  <Badge className={`text-sm font-medium ${expectingBadgeColor}`}>
+                    {expectingBadgeLabel}
                   </Badge>
                 </div>
               </div>
