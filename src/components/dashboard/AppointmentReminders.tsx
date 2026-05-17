@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTenant } from '@/contexts/TenantContext';
-import { Calendar, Check, Clock, Stethoscope } from 'lucide-react';
+import { Check, ChevronDown, Clock, Stethoscope } from 'lucide-react';
 import { CATEGORY_META } from '@/utils/stageCalculator';
 
 interface Kid {
@@ -58,6 +58,7 @@ export const AppointmentReminders: React.FC = () => {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingItems, setTogglingItems] = useState<Set<string>>(new Set());
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const fetchReminders = useCallback(async () => {
     if (!user) return;
@@ -236,17 +237,21 @@ export const AppointmentReminders: React.FC = () => {
 
   return (
     <div className="bg-white rounded-xl shadow-card border border-rose-100 overflow-hidden mb-6">
-      <div className="px-5 py-4 border-b border-rose-50 flex items-center gap-3 bg-rose-50/30">
+      <button
+        className="w-full px-5 py-4 border-b border-rose-50 flex items-center gap-3 bg-rose-50/30 hover:bg-rose-50/50 transition-colors text-left"
+        onClick={() => setIsCollapsed(prev => !prev)}
+      >
         <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0">
           <Stethoscope className="w-5 h-5 text-rose-600" />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-base font-bold text-gray-900">{t('appointments.header.title')}</h2>
           <p className="text-sm text-gray-500">{t('appointments.header.subtitle')}</p>
         </div>
-      </div>
+        <ChevronDown className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
+      </button>
 
-      <div className="p-2 space-y-1">
+      {!isCollapsed && <div className="p-2 space-y-1">
         {sortedReminders.map((reminder) => {
           const { kid, template, isCompleted } = reminder;
           const isToggling = togglingItems.has(`${kid.id}-${template.id}`);
@@ -320,7 +325,7 @@ export const AppointmentReminders: React.FC = () => {
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 };
