@@ -23,7 +23,6 @@ type ExpertRow = {
 function profileTextForEmbedding(expert: ExpertRow): string {
   const specialties = (expert.expert_specialties || []).join(", ");
   const credentials = (expert.expert_credentials || []).join(", ");
-
   return [
     `Expert: ${expert.first_name || "Expert"}`,
     `Bio: ${expert.expert_bio || ""}`,
@@ -32,6 +31,13 @@ function profileTextForEmbedding(expert: ExpertRow): string {
     `Experience: ${expert.expert_experience_years || 0} years`,
     `Location: ${expert.expert_office_location || ""}`,
   ].join("\n");
+}
+
+async function generateEmbedding(text: string): Promise<number[]> {
+  // Uses Supabase's built-in gte-small model (384-dim) — no external API key needed.
+  const session = new (globalThis as any).Supabase.ai.Session("gte-small");
+  const output = await session.run(text, { mean_pool: true, normalize: true });
+  return Array.from(output as Float32Array);
 }
 
 serve(async (req) => {
@@ -47,16 +53,9 @@ serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization");
     const token = authHeader?.replace("Bearer ", "") || "";
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) throw new Error("Unauthorized");
 
-    if (authError || !user) {
-      throw new Error("Unauthorized");
-    }
-
-    // Restrict to admin/super-admin callers.
     const { data: callerProfile, error: callerErr } = await supabase
       .from("profiles")
       .select("account_type")
@@ -68,9 +67,9 @@ serve(async (req) => {
     }
 
     const { regenerate_all, expert_id } = await req.json();
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) {
-      throw new Error("OPENAI_API_KEY is not configured");
+
+    if (!regenerate_all && !expert_id) {
+      throw new Error("Provide expert_id or set regenerate_all=true");
     }
 
     let query = supabase
@@ -92,10 +91,6 @@ serve(async (req) => {
 
     const targets = (experts || []) as ExpertRow[];
 
-    if (!regenerate_all && !expert_id) {
-      throw new Error("Provide expert_id or set regenerate_all=true");
-    }
-
     if (!targets.length) {
       return new Response(
         JSON.stringify({ message: "No active experts found", processed: 0, failed: 0, total: 0 }),
@@ -110,34 +105,9 @@ serve(async (req) => {
     for (const expert of targets) {
       try {
         const profileText = profileTextForEmbedding(expert);
-
-        const embeddingResponse = await fetch("https://api.openai.com/v1/embeddings", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${openaiApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "text-embedding-3-small",
-            input: profileText,
-            encoding_format: "float",
-          }),
-        });
-
-        if (!embeddingResponse.ok) {
-          const body = await embeddingResponse.text();
-          throw new Error(`OpenAI embeddings failed (${embeddingResponse.status}): ${body}`);
-        }
-
-        const embeddingData = await embeddingResponse.json();
-        const embedding = embeddingData?.data?.[0]?.embedding;
-        if (!Array.isArray(embedding)) {
-          throw new Error("OpenAI returned invalid embedding payload");
-        }
-
+        const embedding = await generateEmbedding(profileText);
         const embeddingLiteral = `[${embedding.join(",")}]`;
 
-        // Primary storage used by admin tooling/history.
         const { error: upsertErr } = await supabase.from("expert_embeddings").upsert(
           {
             expert_id: expert.id,
@@ -149,16 +119,12 @@ serve(async (req) => {
         );
         if (upsertErr) throw upsertErr;
 
-        // Compatibility update for existing `find_similar_experts` RPC that reads profiles.expert_embedding.
         const { error: profileEmbeddingErr } = await supabase
           .from("profiles")
           .update({ expert_embedding: embeddingLiteral } as any)
           .eq("id", expert.id);
         if (profileEmbeddingErr) {
-          console.warn(
-            `Could not write profiles.expert_embedding for ${expert.id}. expert_embeddings table was updated.`,
-            profileEmbeddingErr,
-          );
+          console.warn(`Could not write profiles.expert_embedding for ${expert.id}`, profileEmbeddingErr);
         }
 
         processed += 1;
@@ -178,18 +144,12 @@ serve(async (req) => {
         total: targets.length,
         errors: errors.length ? errors : undefined,
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      },
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      },
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
     );
   }
 });

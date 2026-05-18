@@ -436,22 +436,23 @@ serve(async (req) => {
   }
 });
 
+/** Generate a 384-dim embedding using Supabase's built-in gte-small model (no API key). */
+async function generateQueryEmbedding(text: string): Promise<number[] | null> {
+  try {
+    const session = new (globalThis as any).Supabase.ai.Session("gte-small");
+    const output = await session.run(text, { mean_pool: true, normalize: true });
+    return Array.from(output as Float32Array);
+  } catch (e) {
+    safeLogError("generateQueryEmbedding", e);
+    return null;
+  }
+}
+
 // Fetch compliance training examples for system prompt self-learning
 async function getComplianceTrainingContext(supabase, message) {
   try {
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) return "";
-
-    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${openaiApiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'text-embedding-3-small', input: message, encoding_format: 'float' })
-    });
-
-    if (!embeddingResponse.ok) return "";
-
-    const embeddingData = await embeddingResponse.json();
-    const queryEmbedding = embeddingData.data[0].embedding;
+    const queryEmbedding = await generateQueryEmbedding(message);
+    if (!queryEmbedding) return "";
 
     const { data: complianceMatches, error } = await supabase.rpc('match_compliance_training', {
       query_embedding: queryEmbedding,
@@ -591,33 +592,11 @@ async function findMatchingExpertsRAGFirst(
 // Enhanced semantic search with proper similarity thresholds
 async function findMatchingExpertsBySemantic(supabase, message) {
   try {
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      console.warn('OpenAI API key not available, skipping semantic search');
+    const queryEmbedding = await generateQueryEmbedding(message);
+    if (!queryEmbedding) {
+      safeLogError('Failed to generate embedding for user message', 'gte-small returned null');
       return [];
     }
-
-    // Generate embedding for user message
-    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: message,
-        encoding_format: 'float'
-      })
-    });
-
-    if (!embeddingResponse.ok) {
-      safeLogError('Failed to generate embedding for user message', 'no embedding returned');
-      return [];
-    }
-
-    const embeddingData = await embeddingResponse.json();
-    const queryEmbedding = embeddingData.data[0].embedding;
 
     // Search for similar experts with moderate threshold for stable relevance
     const { data: similarExperts, error } = await supabase.rpc('find_similar_experts', {
@@ -860,20 +839,11 @@ async function findMatchingProductsRAG(
   disabledProductIds: string[] = [],
 ) {
   try {
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) return [];
-
     // 1. Semantic Search for Products
-    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${openaiApiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'text-embedding-3-small', input: message, encoding_format: 'float' })
-    });
-
+    const productEmbedding = await generateQueryEmbedding(message);
     let semanticProducts: any[] = [];
-    if (embeddingResponse.ok) {
-      const embeddingData = await embeddingResponse.json();
-      const queryEmbedding = embeddingData.data[0].embedding;
+    if (productEmbedding) {
+      const queryEmbedding = productEmbedding;
 
       const { data: matches, error } = await supabase.rpc('match_products_v2', {
         query_embedding: queryEmbedding,
