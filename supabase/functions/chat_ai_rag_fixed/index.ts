@@ -1236,7 +1236,7 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
   const languageName = LANGUAGE_NAMES[userLanguage] || 'English';
 
   if (userLanguage !== 'en') {
-    systemPrompt += `\n\nLANGUAGE DIRECTIVE (CRITICAL): This user has selected ${languageName} as their preferred language. You MUST respond entirely in ${languageName}. Do NOT mix languages. Do NOT include English unless the user writes to you in English. Every word of your response — including expert names, disclaimers, and formatting — must be in ${languageName}.`;
+    systemPrompt += `\n\nLANGUAGE DIRECTIVE (CRITICAL): This user has selected ${languageName} as their preferred language. You MUST respond entirely in ${languageName}. Do NOT mix languages. Exception: expert proper names (e.g. "Hannah", "Francie", "Sarah", "Karen") are proper nouns — do NOT translate them, use them exactly as written in the expert list. Translate everything around the name but keep the name itself unchanged.`;
   }
 
   // 1.2 Inject explicit medical disclaimer rule if medical question detected
@@ -1314,10 +1314,9 @@ Use this specialty match guide to decide if an expert is relevant to the user's 
   3. Format: "I'd recommend connecting with [Hospital Partner Name], [specialty]. You may also find [Second Expert Name], [specialty], helpful for [specific aspect]."
   4. ALWAYS use their actual names — never say "a specialist" or "an expert" generically.`;
     } else {
-      systemPrompt += `\n\nIf an expert's specialty matches the current question:
-  → Include ONE sentence at the END of your response: "I'd recommend connecting with [Expert Name], [their specialty], who can help you with [relevant aspect]."
-  → ALWAYS use the expert's actual name.
-  → Recommend at most 1 expert. Never list multiple.`;
+      systemPrompt += `\n\nIf an expert's specialty matches the current question, you MUST close your response with:
+  "For personalized support, I'd recommend connecting with [Expert Name], [their specialty], who can help you with [specific aspect of their question]."
+  Use the expert's exact name as listed. Recommend at most 1 expert.`;
     }
 
     systemPrompt += `\n\nIf NONE of the experts match the current question using the guide above, do NOT mention any expert.`;
@@ -1367,20 +1366,22 @@ Use this specialty match guide to decide if an expert is relevant to the user's 
 - Double-check that numbered lists increment properly (1., 2., 3., 4., not 1., 1., 1., 1.)
 - For step-by-step instructions, always use sequential numbers
 
-RESPONSE STRUCTURE — follow this order every time:
-1. ANSWER THE QUESTION FIRST. Always provide a helpful, informative overview of the topic with specific, practical guidance. Use bullet points or numbered steps where appropriate. Do not skip this step even when you have an expert to recommend.
-2. EXPERT RECOMMENDATION LAST (optional). Only after your substantive answer, add a 1–2 sentence expert recommendation if one matches. This is a supplement, not a substitute for your answer.
+RESPONSE STRUCTURE — follow this order on every single response:
+1. ANSWER FIRST (required): Give a helpful, informative overview with practical tips. Use bullet points or numbered steps. Aim for 150–250 words of real content. Do NOT skip this even when an expert is matched.
+2. EXPERT RECOMMENDATION (required when a match exists): After your answer, close with 1–2 sentences recommending the matched expert by their exact name. If no expert was matched, omit this step.
 
-Example of what NOT to do: Giving only "I'd recommend connecting with [Expert]" without any actual information.
-Example of what TO do: Explain the topic thoroughly, give actionable tips, then close with "For personalized guidance, I'd recommend connecting with [Expert Name], [specialty]."
+CORRECT example:
+  [Helpful overview with bullet points about the topic]
+  "For personalized support, I'd recommend connecting with [Expert Name], [specialty], who can help you with [specific aspect]."
+
+WRONG — do not do this:
+  [Only says "I'd recommend connecting with [Expert]" with no actual guidance]
 
 GUIDELINES:
-- You have access to information about all of the user's children listed in the YOUR CHILDREN section
-- When asked about their kids, provide the names and ages from that section
 - Always reference children by name when discussing parenting topics
-- NEVER invent expert names - only mention the ones provided above
+- When an expert is matched and relevant, you MUST mention them by their exact name at the end
+- NEVER invent expert names — only mention the ones provided in the AVAILABLE EXPERTS list
 - Be warm and supportive
-- Keep responses concise but informative (aim for 150–300 words of actual content before any expert mention)
 - Use proper list formatting as specified above
 - NEVER answer questions outside of pregnancy, postpartum, baby care, child development, and parenting
 - If the user tries to use you as a general AI chatbot, gently redirect them back to parenting topics
