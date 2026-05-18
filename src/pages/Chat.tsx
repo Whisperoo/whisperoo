@@ -269,9 +269,9 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
         </div>
       </div>;
   }
-  return <div className={`${isEmbedded ? 'h-[750px] border border-gray-200 rounded-xl overflow-hidden' : 'min-h-screen'} flex flex-col bg-gray-50`}>
-      {/* Chat Controls Header */}
-      <div className="bg-white border-b border-gray-200 p-3 sm:p-4">
+  return <div className={`${isEmbedded ? 'h-[750px] border border-gray-200 rounded-xl overflow-hidden' : 'h-full'} flex flex-col bg-gray-50`}>
+      {/* Chat Controls Header — sticky at top */}
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 p-3 sm:p-4 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto flex justify-end gap-3">
           <Button 
             variant="outline" 
@@ -314,9 +314,9 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
           </div>
         </div>}
 
-      {/* Messages */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-4 overflow-hidden">
-        <div className="h-full overflow-y-auto space-y-4 pr-1">
+      {/* Messages — scrollable middle zone */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto w-full px-4 py-4 space-y-4 pr-1">
           {messages.map((message, index) => {
             // Get the user's original query for this AI response (used by feedback)
             let previousUserQuery: string | undefined;
@@ -360,8 +360,8 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
         </div>
       </div>
 
-      {/* Disclaimer */}
-      <div className="text-center py-2 px-4">
+      {/* Disclaimer + Input — sticky at bottom */}
+      <div className="text-center py-2 px-4 flex-shrink-0">
         <p className="text-xs text-gray-400">
           {t('chat.disclaimer')}{' '}
           <Dialog>
@@ -385,7 +385,7 @@ const Chat: React.FC<ChatProps> = ({ isComplianceMode = false, isEmbedded = fals
       </div>
 
       {/* Message Input */}
-      <div className="bg-white border-t border-gray-200 p-4 shadow-sm">
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4 shadow-sm">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="flex-1 relative">

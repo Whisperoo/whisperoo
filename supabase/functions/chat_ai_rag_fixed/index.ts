@@ -864,7 +864,7 @@ async function findMatchingProductsRAG(
 
       const { data: matches, error } = await supabase.rpc('match_products_v2', {
         query_embedding: queryEmbedding,
-        match_threshold: 0.08,
+        match_threshold: 0.18,
         match_count: 5
       });
       if (!error && matches) semanticProducts = matches;
