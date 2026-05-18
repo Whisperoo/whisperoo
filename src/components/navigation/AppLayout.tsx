@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAppointmentNotifications } from '@/hooks/useAppointmentNotifications';
 import TopNavBar from './TopNavBar';
 import SideNavBar from './SideNavBar';
 import BottomNavBar from './BottomNavBar';
@@ -20,6 +21,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   const { profile } = useAuth();
   const { sidebarCollapsed, isMobileNavOpen } = useNavigation();
   const isMobile = useIsMobile();
+  useAppointmentNotifications();
   
 
   if (!profile) {

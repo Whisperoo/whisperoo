@@ -58,7 +58,7 @@ export const AppointmentReminders: React.FC = () => {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingItems, setTogglingItems] = useState<Set<string>>(new Set());
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   const fetchReminders = useCallback(async () => {
     if (!user) return;

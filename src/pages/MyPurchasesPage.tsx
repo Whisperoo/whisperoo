@@ -9,7 +9,6 @@ import {
   Download, Calendar, CheckCircle, Clock, XCircle,
   BookOpen, Loader2, AlertCircle, RefreshCw, Search, Heart, Bell
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { ContentGrid } from "@/components/content/ContentGrid";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -32,7 +31,7 @@ export const MyPurchasesPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const { toast } = useToast();
+
   const currentLang = i18n.language || 'en';
   const searchParams = new URLSearchParams(location.search);
   const rawTab = searchParams.get("tab") || "content";
@@ -176,29 +175,13 @@ export const MyPurchasesPage: React.FC = () => {
         },
         (payload) => {
           const updated = payload.new as { id: string; status: string };
-          // Update the card immediately without a network refetch
+          // Update the card immediately without a network refetch.
+          // Toasts are handled globally by useAppointmentNotifications in AppLayout.
           setAppointments(prev => prev.map(a =>
             a.id === updated.id
               ? { ...a, status: updated.status, consultation_completed: updated.status === 'completed' }
               : a
           ));
-          if (updated.status === 'confirmed') {
-            toast({
-              title: 'Appointment Confirmed',
-              description: 'Your appointment request has been confirmed by the expert.',
-            });
-          } else if (updated.status === 'completed') {
-            toast({
-              title: 'Appointment Completed',
-              description: 'Your appointment has been marked as completed.',
-            });
-          } else if (updated.status === 'cancelled') {
-            toast({
-              title: 'Appointment Cancelled',
-              description: 'Your appointment has been cancelled.',
-              variant: 'destructive',
-            });
-          }
         }
       )
       .subscribe();
