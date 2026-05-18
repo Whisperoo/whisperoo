@@ -625,10 +625,13 @@ async function findMatchingExpertsBySemantic(supabase, message) {
       return [];
     }
 
-    // Search for similar experts with moderate threshold for stable relevance
+    // Lower threshold (0.10) casts a wider net so experts with thin bios still
+    // make it through to the AI for relevance judgement. The AI-mention filter
+    // downstream is the real quality gate — irrelevant candidates are silently
+    // dropped if the AI chooses not to name them.
     const { data: similarExperts, error } = await supabase.rpc('find_similar_experts', {
       query_embedding: queryEmbedding,
-      match_threshold: 0.13,
+      match_threshold: 0.10,
       match_count: 10
     });
 
@@ -639,16 +642,13 @@ async function findMatchingExpertsBySemantic(supabase, message) {
 
     console.log(`Similarity search returned ${similarExperts?.length || 0} candidates`);
 
-    // Similarity scores removed for privacy
-
     if (!similarExperts || similarExperts.length === 0) {
       console.log('No semantic matches found - will try keyword fallback');
       return [];
     }
 
-    // Filter by similarity score and return formatted results - let AI decide relevance
     const filteredExperts = similarExperts
-      .filter(expert => expert.similarity >= 0.13)
+      .filter(expert => expert.similarity >= 0.10)
       .map(expert => ({
         id: expert.expert_id,
         name: expert.first_name || 'Expert',
@@ -1173,10 +1173,9 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
 - Expecting status: ${userInterests.expectingStatus || context.parentProfile?.expecting_status || 'Not specified'}
 - Parenting styles: ${(userInterests.parentingStyles.length > 0 ? userInterests.parentingStyles : context.parentProfile?.parenting_styles)?.join(', ') || 'Not specified'}`;
 
-  // Inject onboarding topics of interest — core to resource/expert relevance
+  // Inject onboarding topics as context — informs tone and depth, does NOT restrict expert recommendations
   if (userInterests.topics && userInterests.topics.length > 0) {
     systemPrompt += `\n- Topics of interest (from onboarding): ${userInterests.topics.join(', ')}`;
-    systemPrompt += `\n\nCRITICAL PERSONALIZATION RULE: This parent has told us they care about: ${userInterests.topics.join(', ')}. ONLY recommend experts or resources directly relevant to these interests AND their current question. Do NOT recommend experts outside these topics unless the user's question explicitly asks about a different area.`;
   }
 
   if (userInterests.personalContext) {
@@ -1202,29 +1201,42 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
     systemPrompt += `\n\nCURRENT CONVERSATION FOCUS: ${context.currentChild.first_name || context.currentChild.expected_name}, Age: ${context.currentChild.age || 'Not specified'}`;
   }
 
-  // Add expert recommendations with hospital prioritization (SOW 3.1/3.2)
+  // Expert recommendation — two-stage: retrieval found candidates, AI is the relevance judge
   if (matchedExperts.length > 0) {
     const hospitalExperts = matchedExperts.filter(e => e.is_hospital_partner);
 
-    systemPrompt += `\n\nRELEVANT EXPERTS (max 3, semantically matched to this query):`;
+    systemPrompt += `\n\nAVAILABLE EXPERTS (matched to this query — you decide if they are genuinely relevant):`;
     matchedExperts.forEach(expert => {
-      const hospitalTag = expert.is_hospital_partner ? ' [🏥 Hospital Partner]' : '';
-      systemPrompt += `\n- ${expert.name}${hospitalTag}, specializing in ${expert.specialty}`;
-      if (expert.experience_years) systemPrompt += ` (${expert.experience_years} years experience)`;
-      if (expert.similarity_score) systemPrompt += ` [Relevance: ${(expert.similarity_score * 100).toFixed(0)}%]`;
+      const tag = expert.is_hospital_partner ? ' [Hospital Partner]' : '';
+      systemPrompt += `\n- ${expert.name}${tag} | Specialty: ${expert.specialty}`;
+      if (expert.bio && expert.bio !== 'Experienced professional ready to help.') {
+        systemPrompt += ` | Bio: "${expert.bio.substring(0, 100)}"`;
+      }
+      if (expert.experience_years) systemPrompt += ` | ${expert.experience_years} yrs exp`;
     });
 
     if (hospitalExperts.length > 0) {
-      systemPrompt += `\n\nHOSPITAL EXPERT PRIORITY: Prioritize the [🏥 Hospital Partner] experts as they are directly connected to the user's healthcare network.`;
+      systemPrompt += `\n\nHospital Partner experts should be prioritized when relevant.`;
     }
 
-    if (isRecurringTopic) {
-      systemPrompt += `\n\nRECURRING TOPIC DETECTED: The user has asked about this topic before. If (and ONLY if) an expert in the list above has a specialty that DIRECTLY and OBVIOUSLY addresses the user's current question, you may mention them at the end of your response. Do NOT manufacture indirect connections (e.g. do NOT recommend a dietitian for a housework management question). If no expert's specialty is an obvious fit for this specific question, do NOT mention any expert.`;
-    } else {
-      systemPrompt += `\n\nEXPERT RECOMMENDATION RULE: Only mention an expert if their specialty is DIRECTLY and OBVIOUSLY relevant to the user's current message — not to their general interests. Do NOT manufacture indirect connections. If the query can be answered with general advice and no expert is an obvious fit, do NOT suggest experts. Never suggest all experts — only the most relevant 1.`;
-    }
+    systemPrompt += `\n\nHOW TO RECOMMEND AN EXPERT:
+Use this specialty match guide to decide if an expert is relevant to the user's CURRENT question:
+  • Dietitian / Nutrition → questions about food, eating, diet, nutrition, energy from food, weight loss through diet
+  • Pelvic Floor / Postpartum Recovery → getting back in shape after birth, core strength, postpartum fitness, leakage, diastasis recti, pelvic pain
+  • Sleep Coach / Infant Sleep → baby sleep, bedtime, naps, night wakings, sleep training, sleep regression
+  • Lactation / Breastfeeding → breastfeeding, nursing, latch, milk supply, pumping, weaning
+  • Yoga / Fitness → exercise, working out, yoga, stretching, postnatal movement, getting in shape
+  • Emotional / Mental Health → overwhelm, stress, anxiety, postpartum emotions, identity, relationship dynamics
+  • Chiropractic → colic, torticollis, baby tension, alignment, nervous system
+
+If an expert's specialty matches the current question using the guide above:
+  → Include ONE sentence at the END of your response, naturally woven in: "I'd recommend connecting with [Expert Name], [their specialty], who can specifically help you with [relevant aspect]."
+  → ALWAYS use the expert's actual name — never say "a specialist" or "an expert" generically.
+  → Recommend at most 1 expert (the best match). Never list multiple experts.
+
+If NONE of the experts match the current question using the guide, do NOT mention any expert.`;
   } else {
-    systemPrompt += `\n\nNo experts closely matched this query — do NOT fabricate or suggest any expert names. Answer the question with general parenting guidance.`;
+    systemPrompt += `\n\nNo experts matched this query. Do NOT invent or suggest any expert names. Answer with general parenting guidance only.`;
   }
 
   // Add platform resources/products
