@@ -400,7 +400,8 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
                         setForm({
                           ...form,
                           booking_model: model,
-                          is_free: model !== 'direct' ? true : form.is_free,
+                          // Direct = paid via Stripe, so show price field. Inquiry/Hospital = free.
+                          is_free: model === 'direct' ? false : true,
                           price: model !== 'direct' ? 0 : form.price,
                           is_hospital_resource: model === 'hospital' ? true : form.is_hospital_resource,
                         });
