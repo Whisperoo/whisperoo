@@ -144,7 +144,12 @@ serve(async (req) => {
         t.includes('latch') || t.includes('milk supply') ||
         t.includes('pump') || t.includes('weaning') ||
         t.includes('formula') || t.includes('bottle feed') ||
-        t.includes('lactation')
+        t.includes('lactation') ||
+        // Vietnamese
+        t.includes('sữa mẹ') || t.includes('cho bú') || t.includes('bú mẹ') ||
+        t.includes('hút sữa') || t.includes('tắc tia sữa') || t.includes('cai sữa') ||
+        // Spanish
+        t.includes('lactancia') || t.includes('amamantar') || t.includes('leche materna')
       ) return 'Baby Feeding';
 
       if (
@@ -154,26 +159,42 @@ serve(async (req) => {
         t.includes('postpartum depression') || t.includes('ppd') ||
         t.includes('self-harm') || t.includes('harm') ||
         t.includes('suicide') || t.includes('nervous system') ||
-        t.includes('stress') || t.includes('regulation')
+        t.includes('stress') || t.includes('regulation') ||
+        // Vietnamese
+        t.includes('căng thẳng') || t.includes('lo lắng') || t.includes('kiệt sức') ||
+        // Spanish
+        t.includes('estrés') || t.includes('ansiedad') || t.includes('depresión posparto')
       ) return 'Nervous System Regulation';
 
       if (
         t.includes('pelvic floor') || t.includes('perineal') ||
         t.includes('c-section') || t.includes('bleeding') ||
         t.includes('lochia') || t.includes('after birth') ||
-        t.includes('recovery') || t.includes('vaginal pressure')
+        t.includes('recovery') || t.includes('vaginal pressure') ||
+        // Vietnamese
+        t.includes('sàn chậu') || t.includes('tiểu không kiểm soát') ||
+        // Spanish
+        t.includes('suelo pélvico') || t.includes('cesárea')
       ) return 'Pelvic Floor';
 
       if (
         t.includes('sleep') || t.includes('bedtime') ||
         t.includes('nap') || t.includes('night waking') ||
-        t.includes('sleep training') || t.includes('regression')
+        t.includes('sleep training') || t.includes('regression') ||
+        // Vietnamese
+        t.includes('ngủ') || t.includes('giấc ngủ') || t.includes('thức đêm') ||
+        // Spanish
+        t.includes('dormir') || t.includes('sueño') || t.includes('siesta')
       ) return 'Sleep Coaching';
 
       if (
         t.includes('yoga') || t.includes('fitness') ||
         t.includes('exercise') || t.includes('stretch') ||
-        t.includes('workout')
+        t.includes('workout') ||
+        // Vietnamese
+        t.includes('tập thể dục') || t.includes('tập yoga') ||
+        // Spanish
+        t.includes('ejercicio') || t.includes('yoga prenatal')
       ) return 'Fitness/yoga';
 
       if (
@@ -567,11 +588,24 @@ async function findMatchingExpertsRAGFirst(
     experts = await findMatchingExpertsByKeywords(supabase, message, userTenantId);
   }
 
-  // NOTE: findMatchingExpertsByUserTopics fallback intentionally removed.
-  // Matching experts purely by onboarding topics (ignoring the current query)
-  // caused a dietitian to appear on every query from users who selected
-  // "Nutrition" at signup, regardless of what they actually asked about.
-  // Semantic + keyword match is sufficient; if both miss, return no experts.
+  // Last-resort fallback: if both semantic and keyword searches return nothing,
+  // use the user's stored onboarding topics as English seed phrases.
+  // This primarily helps non-English queries (Vietnamese/Spanish) where the
+  // keyword fallback always fails because it only checks English keywords.
+  // The AI's specialty rules still act as a quality gate — it won't recommend
+  // a dietitian for a sleep question even if both appear in matchedExperts.
+  if (experts.length === 0 && userTopics.length > 0) {
+    const topicSeeds = userTopics
+      .map((t: string) => seedPhraseForCategory(t))
+      .filter((seed: string) => seed.trim())
+      .join(' ');
+    if (topicSeeds.trim()) {
+      experts = await findMatchingExpertsByKeywords(supabase, topicSeeds, userTenantId);
+      if (experts.length > 0) {
+        console.log(`Topic-seed fallback returned ${experts.length} experts from topics: ${userTopics.join(', ')}`);
+      }
+    }
+  }
 
   // Pull expert_specialties for topic overlap scoring. The semantic + keyword
   // results above don't always include the full specialties array, so we
@@ -710,6 +744,10 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
         'c-section', 'csection', 'c section', 'cesarean', 'scar tissue',
         'postpartum physical', 'postpartum healing', 'birth recovery',
         'core strength after baby', 'pelvic floor weakness',
+        // Vietnamese: sàn chậu / tiểu không kiểm soát
+        'sàn chậu', 'tiểu không kiểm soát', 'rỉ nước tiểu', 'mổ lấy thai',
+        // Spanish: suelo pélvico / pérdidas de orina
+        'suelo pélvico', 'pérdidas de orina', 'cesárea', 'kegel',
       ]
     },
     {
@@ -724,6 +762,10 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
         "won't nap", 'skipping naps', 'fighting sleep', 'overtired', 'over tired',
         'co-sleeping', 'cosleeping', 'bed sharing',
         'crying at night', 'up all night', 'all night',
+        // Vietnamese: ngủ / giấc ngủ / thức đêm
+        'ngủ', 'giấc ngủ', 'thức đêm', 'ru ngủ', 'không chịu ngủ',
+        // Spanish: dormir / sueño / siesta
+        'dormir', 'sueño', 'siesta', 'no duerme', 'despertarse de noche',
       ]
     },
     {
@@ -750,6 +792,11 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
         'formula', 'formula feeding', 'bottle feeding', 'bottle',
         'feeding my baby', 'baby feeding', 'feeding issues', 'feeding problems',
         'feeding difficulties',
+        // Vietnamese: breastfeeding / sữa mẹ / cho bú / hút sữa
+        'sữa mẹ', 'cho bú', 'bú mẹ', 'ti mẹ', 'hút sữa', 'tắc tia sữa', 'cai sữa', 'cho con bú', 'bú sữa',
+        // Spanish: lactancia / amamantar / leche materna
+        'lactancia', 'amamantar', 'pecho', 'leche materna', 'dar el pecho', 'lactación',
+        'sacaleches', 'extractor de leche',
       ]
     },
     {
@@ -764,6 +811,10 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
         'weight loss', 'losing weight', 'postpartum weight',
         'hungry', 'appetite', 'cravings',
         'iron', 'calcium', 'omega',
+        // Vietnamese: dinh dưỡng / ăn uống
+        'dinh dưỡng', 'chế độ ăn', 'ăn uống', 'thực phẩm',
+        // Spanish: nutrición / dieta / alimentación
+        'nutrición', 'nutricionista', 'dietista', 'dieta', 'alimentación',
       ]
     },
     {
@@ -788,6 +839,10 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
         'mindfulness', 'breathing exercise', 'meditation',
         'get in shape', 'get back in shape', 'in shape', 'lose weight',
         'postpartum fitness', 'body after baby', 'toning',
+        // Vietnamese: tập thể dục / yoga
+        'tập thể dục', 'tập yoga', 'vận động', 'thở', 'thiền',
+        // Spanish: ejercicio / yoga prenatal
+        'ejercicio', 'yoga prenatal', 'yoga posnatal', 'fitness posparto',
       ]
     },
     {
@@ -814,6 +869,10 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
         'lost my identity', 'not myself', 'finding balance',
         'feeling alone', 'lonely', 'isolated',
         'overwhelmed with baby',
+        // Vietnamese: căng thẳng / lo lắng / mệt mỏi
+        'căng thẳng', 'lo lắng', 'mệt mỏi', 'kiệt sức', 'cảm thấy cô đơn',
+        // Spanish: estrés / ansiedad / agotada
+        'estrés', 'ansiedad', 'agotada', 'depresión posparto', 'abrumada',
       ]
     }
   ];
