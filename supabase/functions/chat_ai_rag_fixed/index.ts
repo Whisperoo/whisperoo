@@ -618,8 +618,8 @@ async function findMatchingExpertsBySemantic(supabase, message) {
     // Search for similar experts with moderate threshold for stable relevance
     const { data: similarExperts, error } = await supabase.rpc('find_similar_experts', {
       query_embedding: queryEmbedding,
-      match_threshold: 0.08,
-      match_count: 10        // Get more potential matches for AI to evaluate
+      match_threshold: 0.13,
+      match_count: 10
     });
 
     if (error) {
@@ -638,7 +638,7 @@ async function findMatchingExpertsBySemantic(supabase, message) {
 
     // Filter by similarity score and return formatted results - let AI decide relevance
     const filteredExperts = similarExperts
-      .filter(expert => expert.similarity >= 0.10)  // 384-dim embeddings score lower; 0.10 is the practical relevance floor
+      .filter(expert => expert.similarity >= 0.13)
       .map(expert => ({
         id: expert.expert_id,
         name: expert.first_name || 'Expert',
@@ -896,10 +896,12 @@ async function findMatchingProductsRAG(
       const title = (p.title || '').toLowerCase();
       const desc = (p.description || '').toLowerCase();
       const tags = (p.tags || []).map(t => t.toLowerCase());
-      return title.includes(messageLower) || 
-             desc.includes(messageLower) || 
-             tags.some(t => messageLower.includes(t)) ||
-             userTopics.some(topic => title.includes(topic.toLowerCase()));
+      // Match only against the current query — userTopics intentionally excluded
+      // here because onboarding topics would cause e.g. "Restore Your Pelvic Floor"
+      // to match any message from a user who selected Pelvic Floor at signup.
+      return title.includes(messageLower) ||
+             desc.includes(messageLower) ||
+             tags.some(t => messageLower.includes(t));
     });
 
     // Merge and deduplicate
