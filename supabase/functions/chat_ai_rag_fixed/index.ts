@@ -578,20 +578,17 @@ async function findMatchingExpertsRAGFirst(
     experts = experts.filter((e) => !disabledExpertIds.includes(e.id));
   }
 
-  // QA Phase 2.1 + 2.2: blended ranking score.
-  //   topicScore   = 1 if any user-topic overlaps the expert's specialties, else 0
-  //   semanticScore = pgvector similarity, 0 if missing (keyword fallback path)
-  //   finalScore   = onboardingWeight * topicScore + (1 - onboardingWeight) * semanticScore
-  //                  + small rating bonus to break ties
+  // Ranking: semantic similarity to the current query is always the primary signal.
+  // Onboarding topic overlap adds a small fixed bonus (+0.05) — never multiplicative,
+  // so it cannot override query relevance even for brand-new users (onboardingWeight=1
+  // previously zeroed out semanticScore for new users, causing onboarding topics to
+  // dominate regardless of what was actually asked).
   for (const e of experts) {
     const specs = specialtiesById[e.id] ?? (e.specialty ? [e.specialty] : []);
     const overlaps = userTopics.length > 0 ? topicSpecialtyOverlap(userTopics, specs) : 0;
-    const topicScore = overlaps > 0 ? 1 : 0;
     const semanticScore = typeof e.similarity_score === 'number' ? e.similarity_score : 0;
-    e._rankScore =
-      onboardingWeight * topicScore +
-      (1 - onboardingWeight) * semanticScore +
-      ((e.rating || 0) / 100); // tiny tiebreaker
+    const topicBonus = overlaps > 0 ? 0.05 : 0;
+    e._rankScore = semanticScore + topicBonus + ((e.rating || 0) / 100);
   }
 
   experts.sort((a: any, b: any) => (b._rankScore ?? 0) - (a._rankScore ?? 0));
