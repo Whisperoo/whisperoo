@@ -262,13 +262,6 @@ const ProfilePage: React.FC = () => {
                   </div>
                 </div>
                 
-                {isExpecting && expectedBabies.length > 0 && (
-                  <div className="text-center p-4 bg-pink-50 rounded-lg">
-                    <div className="text-2xl font-bold text-pink-700">{expectedBabies.length}</div>
-                    <div className="text-sm text-pink-600">{t('profile.expecting')}</div>
-                  </div>
-                )}
-
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
                   <Badge className={`text-sm font-medium ${expectingBadgeColor}`}>
                     {expectingBadgeLabel}
