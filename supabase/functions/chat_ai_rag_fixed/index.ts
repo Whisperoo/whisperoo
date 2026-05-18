@@ -473,7 +473,7 @@ async function getComplianceTrainingContext(supabase, message) {
 
     const { data: complianceMatches, error } = await supabase.rpc('match_compliance_training', {
       query_embedding: queryEmbedding,
-      match_threshold: 0.20,
+      match_threshold: 0.08,
       match_count: 2
     });
 
@@ -618,7 +618,7 @@ async function findMatchingExpertsBySemantic(supabase, message) {
     // Search for similar experts with moderate threshold for stable relevance
     const { data: similarExperts, error } = await supabase.rpc('find_similar_experts', {
       query_embedding: queryEmbedding,
-      match_threshold: 0.25,
+      match_threshold: 0.08,
       match_count: 10        // Get more potential matches for AI to evaluate
     });
 
@@ -638,7 +638,7 @@ async function findMatchingExpertsBySemantic(supabase, message) {
 
     // Filter by similarity score and return formatted results - let AI decide relevance
     const filteredExperts = similarExperts
-      .filter(expert => expert.similarity >= 0.3)  // Avoid low-relevance false positives (e.g. repeated pelvic-floor suggestions)
+      .filter(expert => expert.similarity >= 0.10)  // 384-dim embeddings score lower; 0.10 is the practical relevance floor
       .map(expert => ({
         id: expert.expert_id,
         name: expert.first_name || 'Expert',
@@ -864,7 +864,7 @@ async function findMatchingProductsRAG(
 
       const { data: matches, error } = await supabase.rpc('match_products_v2', {
         query_embedding: queryEmbedding,
-        match_threshold: 0.2,
+        match_threshold: 0.08,
         match_count: 5
       });
       if (!error && matches) semanticProducts = matches;

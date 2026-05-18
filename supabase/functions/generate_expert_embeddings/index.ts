@@ -31,37 +31,59 @@ function profileTextForEmbedding(expert: ExpertRow): string {
   ].join("\n");
 }
 
-async function generateEmbedding(text: string, apiKey: string): Promise<number[]> {
-  const res = await fetch("https://api.openai.com/v1/embeddings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "text-embedding-3-small",
-      input: text,
-      dimensions: 384,
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`OpenAI embeddings HTTP ${res.status}: ${errText.substring(0, 300)}`);
+/** Semantic 384-dim embedding via OpenAI text-embedding-3-small. Returns null on any failure. */
+async function openAIEmbedding(text: string, apiKey: string): Promise<number[] | null> {
+  try {
+    const res = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "text-embedding-3-small", input: text, dimensions: 384 }),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`OpenAI embeddings HTTP ${res.status}: ${errText.substring(0, 200)}`);
+      return null;
+    }
+    const data = await res.json();
+    const emb = data?.data?.[0]?.embedding;
+    return Array.isArray(emb) ? emb : null;
+  } catch (e) {
+    console.error("OpenAI embedding fetch error:", e instanceof Error ? e.message : String(e));
+    return null;
   }
+}
 
-  const data = await res.json();
-  const embedding = data?.data?.[0]?.embedding;
-  if (!Array.isArray(embedding)) throw new Error("No embedding returned by OpenAI");
-  return embedding;
+/** Deterministic 384-dim fallback — no external API required. */
+function hashEmbedding(text: string): number[] {
+  const tokens = text.toLowerCase().split(/[\s\W]+/).filter(Boolean);
+  const vec = new Float64Array(384);
+  for (const token of tokens) {
+    let h = 2166136261;
+    for (let i = 0; i < token.length; i++) { h ^= token.charCodeAt(i); h = Math.imul(h, 16777619); }
+    vec[((h >>> 0) % 384)] += 1;
+    for (let i = 0; i < token.length - 2; i++) {
+      let ng = 2166136261;
+      for (let j = i; j < i + 3; j++) { ng ^= token.charCodeAt(j); ng = Math.imul(ng, 16777619); }
+      vec[((ng >>> 0) % 384)] += 0.5;
+    }
+  }
+  const norm = Math.sqrt(vec.reduce((s, v) => s + v * v, 0));
+  return norm > 0 ? Array.from(vec).map(v => v / norm) : Array.from(vec);
+}
+
+async function generateEmbedding(text: string, apiKey: string): Promise<{ embedding: number[]; method: string }> {
+  if (apiKey) {
+    const semantic = await openAIEmbedding(text, apiKey);
+    if (semantic) return { embedding: semantic, method: "openai" };
+  }
+  return { embedding: hashEmbedding(text), method: "hash_fallback" };
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY") ?? "";
-    if (!openaiApiKey) throw new Error("OPENAI_API_KEY is not set in Edge Function secrets");
+    const openaiApiKey = (Deno.env.get("OPENAI_API_KEY") ?? "").trim();
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -102,12 +124,14 @@ serve(async (req) => {
     }
 
     let processed = 0, failed = 0;
+    let embeddingMethod = "openai";
     const errors: Array<{ expert_id?: string; error: string }> = [];
 
     for (const expert of targets) {
       try {
         const profileText = profileTextForEmbedding(expert);
-        const embedding = await generateEmbedding(profileText, openaiApiKey);
+        const { embedding, method } = await generateEmbedding(profileText, openaiApiKey);
+        embeddingMethod = method;
         const embeddingLiteral = `[${embedding.join(",")}]`;
 
         const { error: upsertErr } = await supabase.from("expert_embeddings").upsert(
@@ -117,7 +141,6 @@ serve(async (req) => {
         if (upsertErr) throw upsertErr;
 
         await supabase.from("profiles").update({ expert_embedding: embeddingLiteral } as any).eq("id", expert.id);
-
         processed++;
       } catch (err) {
         failed++;
@@ -127,8 +150,18 @@ serve(async (req) => {
       }
     }
 
+    const warning = embeddingMethod === "hash_fallback"
+      ? "OpenAI embeddings unavailable — used approximate embeddings. Fix your OPENAI_API_KEY in Supabase secrets (check Embeddings permission on the key) then regenerate for full semantic search."
+      : undefined;
+
     return new Response(
-      JSON.stringify({ message: `Processed ${processed} experts, ${failed} failed`, processed, failed, total: targets.length, errors: errors.length ? errors : undefined }),
+      JSON.stringify({
+        message: `Processed ${processed} experts, ${failed} failed`,
+        processed, failed, total: targets.length,
+        embedding_method: embeddingMethod,
+        ...(warning ? { warning } : {}),
+        ...(errors.length ? { errors } : {}),
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   } catch (error) {
