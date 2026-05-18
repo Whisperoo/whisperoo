@@ -829,14 +829,16 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
   const matchedSpecialties = matchedSpecialtyGroups.flatMap(g => g.specialties);
 
   try {
-    // Query experts whose specialties overlap with matched keywords
+    // Query experts whose specialties overlap with matched keywords.
+    // Note: NOT filtering by expert_accepts_new_clients — if not explicitly set to false,
+    // the expert should still be surfaced. Visibility check is sufficient.
     const { data: experts, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('account_type', 'expert')
       .eq('expert_verified', true)
       .eq('expert_profile_visibility', true)
-      .eq('expert_accepts_new_clients', true)
+      .neq('expert_accepts_new_clients', false)
       .order('first_name');
 
     if (error || !experts) return [];
@@ -1306,7 +1308,7 @@ The name (e.g. "Hannah", "Francie", "Sarah", "Karen") must appear verbatim in yo
     const hospitalExperts = matchedExperts.filter(e => e.is_hospital_partner);
     const hasHospitalPartners = hospitalExperts.length > 0;
 
-    systemPrompt += `\n\nAVAILABLE EXPERTS (matched to this query — you decide if they are genuinely relevant):`;
+    systemPrompt += `\n\nAVAILABLE EXPERTS (already pre-filtered for relevance to this query):`;
     // Hospital partners always listed first
     [...hospitalExperts, ...matchedExperts.filter(e => !e.is_hospital_partner)].forEach(expert => {
       const tag = expert.is_hospital_partner ? ' [Hospital Partner — prioritize this expert]' : '';
@@ -1317,15 +1319,14 @@ The name (e.g. "Hannah", "Francie", "Sarah", "Karen") must appear verbatim in yo
       if (expert.experience_years) systemPrompt += ` | ${expert.experience_years} yrs exp`;
     });
 
-    systemPrompt += `\n\nHOW TO RECOMMEND AN EXPERT:
-Use this specialty match guide to decide if an expert is relevant to the user's CURRENT question:
-  • Dietitian / Nutrition → food, eating habits, diet, nutrition, energy from food, weight loss through diet, supplements
-  • Pelvic Floor / Postpartum Recovery → PHYSICAL symptoms only: leaking urine, pelvic pain/pressure, diastasis recti, pelvic floor weakness, c-section scar, physical postpartum recovery, core rehab. NOT for general life management.
+    systemPrompt += `\n\nEXPERT RECOMMENDATION RULE: The list above was pre-filtered using semantic + keyword matching — these experts are already confirmed as relevant to this query. You MUST recommend the single best match. Do NOT skip the recommendation. Pick the expert whose specialty most directly addresses the user's question using this guide:
+  • Dietitian / Nutrition → food, eating habits, diet, nutrition, weight loss through food, supplements, hydration
+  • Pelvic Floor / Postpartum Recovery → leaking urine, pelvic pain, diastasis, c-section recovery, core rehab, kegels, prolapse
   • Sleep Coach / Infant Sleep → baby sleep, bedtime, naps, night wakings, sleep training, sleep regression
   • Lactation / Breastfeeding → breastfeeding, nursing, latch, milk supply, pumping, weaning, formula
-  • Yoga / Fitness → exercise, working out, yoga, stretching, postnatal movement, getting in shape
-  • Family Dynamics / Emotional Support / LCSW → managing life after baby, overwhelm, stress, anxiety, can't manage responsibilities, postpartum emotions, identity challenges, relationship struggles, mom guilt, burnout, work-life balance, housework management
-  • Chiropractic → colic, torticollis, baby tension, spinal alignment, nervous system`;
+  • Yoga / Fitness → exercise, working out, yoga, postnatal movement, getting in shape, stretching
+  • Family Dynamics / Emotional Support → overwhelm, stress, anxiety, relationship struggles, mom guilt, burnout, life adjustment after baby
+  • Chiropractic → colic, baby tension, torticollis, spinal alignment, nervous system`;
 
     if (hasHospitalPartners) {
       systemPrompt += `\n\nHOSPITAL PARTNER RULE (important): This user is affiliated with a hospital. Hospital Partners are marked above. When recommending experts:
@@ -1339,7 +1340,7 @@ Use this specialty match guide to decide if an expert is relevant to the user's 
   Use the expert's exact name as listed. Recommend at most 1 expert.`;
     }
 
-    systemPrompt += `\n\nIf NONE of the experts match the current question using the guide above, do NOT mention any expert.`;
+    systemPrompt += `\n\nIMPORTANT: Since this list is already pre-filtered, at least one expert will be relevant. Always recommend the best match by name. Do NOT say "no experts match" when a list has been provided.`;
   } else {
     systemPrompt += `\n\nNo experts matched this query. Do NOT invent or suggest any expert names. Answer with general parenting guidance only.`;
   }
@@ -1388,7 +1389,7 @@ Use this specialty match guide to decide if an expert is relevant to the user's 
 
 RESPONSE STRUCTURE — follow this order on every single response:
 1. ANSWER FIRST (required): Give a helpful, informative overview with practical tips. Use bullet points or numbered steps. Aim for 150–250 words of real content. Do NOT skip this even when an expert is matched.
-2. EXPERT RECOMMENDATION (required when a match exists): After your answer, close with 1–2 sentences recommending the matched expert by their exact name. If no expert was matched, omit this step.
+2. EXPERT RECOMMENDATION (required when AVAILABLE EXPERTS list is non-empty): After your answer, close with 1–2 sentences recommending the best expert by their exact name. You MUST do this — never skip it when experts were provided.
 
 CORRECT example:
   [Helpful overview with bullet points about the topic]
