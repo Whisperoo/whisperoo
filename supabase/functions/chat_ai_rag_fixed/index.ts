@@ -554,14 +554,11 @@ async function findMatchingExpertsRAGFirst(
     experts = await findMatchingExpertsByKeywords(supabase, message, userTenantId);
   }
 
-  // QA Phase 2.1: Topic-aware fallback. If both semantic and keyword paths
-  // miss but the user has onboarding topics selected, pull experts whose
-  // specialties overlap those topics. Important for fresh users on day 0
-  // whose first message is too generic for semantic to bite (e.g. "I'm
-  // anxious") but who clearly told us in onboarding they care about Lactation.
-  if (experts.length === 0 && userTopics.length > 0) {
-    experts = await findMatchingExpertsByUserTopics(supabase, userTopics, userTenantId);
-  }
+  // NOTE: findMatchingExpertsByUserTopics fallback intentionally removed.
+  // Matching experts purely by onboarding topics (ignoring the current query)
+  // caused a dietitian to appear on every query from users who selected
+  // "Nutrition" at signup, regardless of what they actually asked about.
+  // Semantic + keyword match is sufficient; if both miss, return no experts.
 
   // Pull expert_specialties for topic overlap scoring. The semantic + keyword
   // results above don't always include the full specialties array, so we
@@ -1218,14 +1215,9 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
     }
 
     if (isRecurringTopic) {
-      // RECURRING TOPIC: The user has asked about this topic before — proactively recommend experts
-      systemPrompt += `\n\nRECURRING TOPIC DETECTED: The user has asked about this topic multiple times in this conversation. This signals deeper interest or an ongoing concern. You MUST:
-1. Provide your helpful answer as usual.
-2. At the END of your response, add a section like: "Since you've been asking about [topic], I'd recommend connecting with one of our experts who specializes in this area:"
-3. Recommend the most relevant 1-2 experts from the list above by name, specialty, and a brief reason why they'd be a great fit.
-4. Frame it warmly and naturally — not as a sales pitch, but as a helpful next step.`;
+      systemPrompt += `\n\nRECURRING TOPIC DETECTED: The user has asked about this topic before. If (and ONLY if) an expert in the list above has a specialty that DIRECTLY and OBVIOUSLY addresses the user's current question, you may mention them at the end of your response. Do NOT manufacture indirect connections (e.g. do NOT recommend a dietitian for a housework management question). If no expert's specialty is an obvious fit for this specific question, do NOT mention any expert.`;
     } else {
-      systemPrompt += `\n\nEXPERT RECOMMENDATION RULE: Only mention an expert if their specialty is directly and specifically relevant to the user's current message. If the query can be answered with general advice, do NOT suggest experts. Never suggest all experts — only the most relevant 1-2.`;
+      systemPrompt += `\n\nEXPERT RECOMMENDATION RULE: Only mention an expert if their specialty is DIRECTLY and OBVIOUSLY relevant to the user's current message — not to their general interests. Do NOT manufacture indirect connections. If the query can be answered with general advice and no expert is an obvious fit, do NOT suggest experts. Never suggest all experts — only the most relevant 1.`;
     }
   } else {
     systemPrompt += `\n\nNo experts closely matched this query — do NOT fabricate or suggest any expert names. Answer the question with general parenting guidance.`;
