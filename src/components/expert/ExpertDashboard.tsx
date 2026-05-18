@@ -84,7 +84,7 @@ export const ExpertDashboard: React.FC = () => {
     enabled: !!profile,
   });
 
-  // Fetch expert's consultation bookings
+  // Fetch expert's consultation bookings from consultation_bookings table
   const {
     data: consultations,
     isLoading: consultationsLoading,
@@ -95,31 +95,10 @@ export const ExpertDashboard: React.FC = () => {
       if (!profile) return [];
 
       const { data, error } = await supabase
-        .from("purchases")
-        .select(
-          `
-          id,
-          user_id,
-          amount,
-          purchased_at,
-          consultation_completed,
-          consultation_completed_at,
-          product:products!inner (
-            id,
-            title,
-            product_type
-          ),
-          user:profiles!purchases_user_id_fkey (
-            id,
-            first_name,
-            profile_image_url
-          )
-        `,
-        )
+        .from("consultation_bookings")
+        .select("*")
         .eq("expert_id", profile.id)
-        .eq("product.product_type", "consultation")
-        .eq("status", "completed")
-        .order("purchased_at", { ascending: false });
+        .order("booked_at", { ascending: false });
 
       if (error) throw error;
       return data || [];
@@ -129,30 +108,28 @@ export const ExpertDashboard: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  // Mutation to mark consultation as completed
-  const markConsultationComplete = useMutation({
-    mutationFn: async (consultationId: string) => {
-      const { data, error } = await supabase
-        .from("purchases")
-        .update({
-          consultation_completed: true,
-          consultation_completed_at: new Date().toISOString(),
-        })
-        .eq("id", consultationId)
-        .select()
-        .single();
-
+  const confirmConsultation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("consultation_bookings")
+        .update({ status: "confirmed" })
+        .eq("id", id);
       if (error) throw error;
-      return data;
     },
-    onSuccess: () => {
-      refetchConsultations();
-      queryClient.invalidateQueries({ queryKey: ["purchases"] }); // Refresh user's purchases too
+    onSuccess: () => refetchConsultations(),
+    onError: () => alert("Failed to confirm booking. Please try again."),
+  });
+
+  const markConsultationComplete = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("consultation_bookings")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
     },
-    onError: (error) => {
-      console.error("Error marking consultation as complete:", error);
-      alert("Failed to mark consultation as complete. Please try again.");
-    },
+    onSuccess: () => refetchConsultations(),
+    onError: () => alert("Failed to mark consultation as complete. Please try again."),
   });
 
   const handleProductUploadSuccess = () => {
@@ -628,8 +605,16 @@ export const ExpertDashboard: React.FC = () => {
 
         <TabsContent value="consultations" className="space-y-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle>Consultation Bookings</CardTitle>
+              {consultations && consultations.length > 0 && (
+                <div className="flex gap-2 text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">{consultations.length}</span> total
+                  · <span className="font-medium text-foreground">
+                    {consultations.filter((c: any) => c.status === 'pending' || c.status === 'confirmed').length}
+                  </span> upcoming
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {consultationsLoading ? (
@@ -640,108 +625,85 @@ export const ExpertDashboard: React.FC = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="min-w-[150px]">Client</TableHead>
-                        <TableHead className="min-w-[120px]">
-                          Consultation
-                        </TableHead>
+                        <TableHead className="min-w-[150px]">Consultation</TableHead>
+                        <TableHead className="min-w-[80px]">Type</TableHead>
                         <TableHead className="min-w-[80px]">Amount</TableHead>
-                        <TableHead className="min-w-[100px]">
-                          Booked Date
-                        </TableHead>
-                        <TableHead className="min-w-[100px]">Status</TableHead>
-                        <TableHead className="text-right min-w-[100px]">
-                          Actions
-                        </TableHead>
+                        <TableHead className="min-w-[100px]">Booked</TableHead>
+                        <TableHead className="min-w-[110px]">Status</TableHead>
+                        <TableHead className="text-right min-w-[140px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {consultations.map((consultation) => (
-                        <TableRow key={consultation.id}>
+                      {consultations.map((c: any) => (
+                        <TableRow key={c.id}>
                           <TableCell>
-                            <div className="flex items-center gap-3">
-                              {(consultation as any).user
-                                ?.profile_image_url && (
-                                <img
-                                  src={
-                                    (consultation as any).user.profile_image_url
-                                  }
-                                  alt={
-                                    (consultation as any).user.first_name ||
-                                    "Client"
-                                  }
-                                  className="w-8 h-8 object-cover rounded-full"
-                                />
-                              )}
-                              <div>
-                                <div className="font-medium">
-                                  {(consultation as any).user?.first_name ||
-                                    "Client"}
-                                </div>
-                              </div>
-                            </div>
+                            <div className="font-medium">{c.user_name || "Client"}</div>
+                            {c.user_email && (
+                              <div className="text-xs text-muted-foreground">{c.user_email}</div>
+                            )}
                           </TableCell>
                           <TableCell>
-                            <div className="font-medium">
-                              {(consultation as any).product?.title ||
-                                "Consultation"}
-                            </div>
+                            <div className="font-medium">{c.appointment_name || "Consultation"}</div>
                           </TableCell>
                           <TableCell>
-                            {formatCurrency(Number(consultation.amount))}
+                            <Badge variant="outline" className="capitalize text-xs">
+                              {c.booking_type || "direct"}
+                            </Badge>
                           </TableCell>
                           <TableCell>
-                            {new Date(
-                              consultation.purchased_at,
-                            ).toLocaleDateString()}
+                            {c.amount_paid != null && c.amount_paid > 0
+                              ? formatCurrency(Number(c.amount_paid))
+                              : <span className="text-muted-foreground text-xs">Free</span>}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(c.booked_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
                             <Badge
                               variant={
-                                consultation.consultation_completed
-                                  ? "default"
-                                  : "secondary"
+                                c.status === "completed" ? "default"
+                                : c.status === "confirmed" ? "secondary"
+                                : c.status === "cancelled" ? "destructive"
+                                : "outline"
                               }
-                              className="gap-1"
+                              className="gap-1 capitalize"
                             >
-                              {consultation.consultation_completed ? (
-                                <>
-                                  <CheckCircle className="h-3 w-3" />
-                                  Completed
-                                </>
-                              ) : (
-                                <>
-                                  <Clock className="h-3 w-3" />
-                                  Pending
-                                </>
-                              )}
+                              {c.status === "completed" && <CheckCircle className="h-3 w-3" />}
+                              {c.status === "pending" && <Clock className="h-3 w-3" />}
+                              {c.status}
                             </Badge>
-                            {consultation.consultation_completed_at && (
+                            {c.completed_at && (
                               <div className="text-xs text-muted-foreground mt-1">
-                                Completed:{" "}
-                                {new Date(
-                                  consultation.consultation_completed_at,
-                                ).toLocaleDateString()}
+                                {new Date(c.completed_at).toLocaleDateString()}
                               </div>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            {!consultation.consultation_completed && (
-                              <Button
-                                size="sm"
-                                onClick={() =>
-                                  markConsultationComplete.mutate(
-                                    consultation.id,
-                                  )
-                                }
-                                disabled={markConsultationComplete.isPending}
-                                className="gap-1 text-xs"
-                              >
-                                <CheckCircle className="h-3 w-3" />
-                                <span className="hidden sm:inline">
-                                  Mark Complete
-                                </span>
-                                <span className="sm:hidden">Complete</span>
-                              </Button>
-                            )}
+                            <div className="flex justify-end gap-2">
+                              {c.status === "pending" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => confirmConsultation.mutate(c.id)}
+                                  disabled={confirmConsultation.isPending}
+                                  className="gap-1 text-xs"
+                                >
+                                  <CheckCircle className="h-3 w-3" />
+                                  <span className="hidden sm:inline">Confirm</span>
+                                </Button>
+                              )}
+                              {(c.status === "pending" || c.status === "confirmed") && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => markConsultationComplete.mutate(c.id)}
+                                  disabled={markConsultationComplete.isPending}
+                                  className="gap-1 text-xs"
+                                >
+                                  <CheckCircle className="h-3 w-3" />
+                                  <span className="hidden sm:inline">Complete</span>
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -751,12 +713,9 @@ export const ExpertDashboard: React.FC = () => {
               ) : (
                 <div className="text-center py-12">
                   <Calendar className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-sm font-semibold">
-                    No consultation bookings
-                  </h3>
+                  <h3 className="mt-2 text-sm font-semibold">No consultation bookings yet</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    When clients book consultations with you, they'll appear
-                    here.
+                    When clients book consultations with you, they'll appear here.
                   </p>
                 </div>
               )}
