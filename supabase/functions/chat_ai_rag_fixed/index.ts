@@ -370,6 +370,22 @@ serve(async (req) => {
       }
     }
 
+    // Filter expert suggestions to only those the AI actually recommended in its
+    // response text. The system prompt already tells the AI to only mention experts
+    // directly relevant to the current query — trust its judgment over raw cosine
+    // similarity, which is noisy when expert bios are sparse or generic.
+    let displayedExperts: any[] = matchedExperts;
+    if (matchedExperts.length > 0 && !isEscalation) {
+      const responseLower = aiResponse.toLowerCase();
+      const mentioned = matchedExperts.filter((expert: any) => {
+        if (!expert?.name) return false;
+        const firstToken = String(expert.name).split(/[\s,]+/)[0].toLowerCase();
+        if (firstToken.length < 3) return false;
+        return responseLower.includes(firstToken);
+      });
+      displayedExperts = mentioned;
+    }
+
     // Store AI response
     const { error: aiMessageError } = await supabase
       .from('messages')
@@ -379,7 +395,7 @@ serve(async (req) => {
         content: aiResponse,
         metadata: {
           child_id: childId,
-          expert_suggestions: matchedExperts.length > 0 ? matchedExperts : undefined,
+          expert_suggestions: displayedExperts.length > 0 ? displayedExperts : undefined,
           original_user_query: message,
           ...(debugError ? { ai_error: debugError } : {}),
           ...(moderationEscalationForMeta
@@ -412,7 +428,7 @@ serve(async (req) => {
       JSON.stringify({
         response: aiResponse,
         sessionId: currentSessionId,
-        expertSuggestions: matchedExperts,
+        expertSuggestions: displayedExperts,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
