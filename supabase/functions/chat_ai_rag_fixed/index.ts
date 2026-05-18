@@ -1308,7 +1308,7 @@ The name (e.g. "Hannah", "Francie", "Sarah", "Karen") must appear verbatim in yo
     const hospitalExperts = matchedExperts.filter(e => e.is_hospital_partner);
     const hasHospitalPartners = hospitalExperts.length > 0;
 
-    systemPrompt += `\n\nAVAILABLE EXPERTS (already pre-filtered for relevance to this query):`;
+    systemPrompt += `\n\nAVAILABLE EXPERTS (candidates for this query):`;
     // Hospital partners always listed first
     [...hospitalExperts, ...matchedExperts.filter(e => !e.is_hospital_partner)].forEach(expert => {
       const tag = expert.is_hospital_partner ? ' [Hospital Partner — prioritize this expert]' : '';
@@ -1319,28 +1319,47 @@ The name (e.g. "Hannah", "Francie", "Sarah", "Karen") must appear verbatim in yo
       if (expert.experience_years) systemPrompt += ` | ${expert.experience_years} yrs exp`;
     });
 
-    systemPrompt += `\n\nEXPERT RECOMMENDATION RULE: The list above was pre-filtered using semantic + keyword matching — these experts are already confirmed as relevant to this query. You MUST recommend the single best match. Do NOT skip the recommendation. Pick the expert whose specialty most directly addresses the user's question using this guide:
-  • Dietitian / Nutrition → food, eating habits, diet, nutrition, weight loss through food, supplements, hydration
-  • Pelvic Floor / Postpartum Recovery → leaking urine, pelvic pain, diastasis, c-section recovery, core rehab, kegels, prolapse
-  • Sleep Coach / Infant Sleep → baby sleep, bedtime, naps, night wakings, sleep training, sleep regression
-  • Lactation / Breastfeeding → breastfeeding, nursing, latch, milk supply, pumping, weaning, formula
-  • Yoga / Fitness → exercise, working out, yoga, postnatal movement, getting in shape, stretching
-  • Family Dynamics / Emotional Support → overwhelm, stress, anxiety, relationship struggles, mom guilt, burnout, life adjustment after baby
-  • Chiropractic → colic, baby tension, torticollis, spinal alignment, nervous system`;
+    systemPrompt += `\n\nHOW TO PICK THE RIGHT EXPERT — match the user's question topic to the correct specialty:
+
+  TOPIC → CORRECT SPECIALTY (only recommend when the question is about THIS topic):
+  • Breastfeeding / nursing / latch / milk supply / pumping / weaning / formula
+    → Lactation Consultant / Breastfeeding Specialist
+    ✗ NOT a Dietitian (dietitians handle what the parent eats, NOT baby feeding technique)
+
+  • Parent's own diet / what to eat / weight loss / supplements / prenatal nutrition / postpartum diet
+    → Dietitian / Nutrition Specialist
+    ✗ NOT a Lactation Consultant (lactation is for nursing technique, not the parent's food choices)
+
+  • Leaking urine / pelvic pain / diastasis / c-section scar / kegels / prolapse / core rehab
+    → Pelvic Floor Specialist / Postpartum Recovery
+    ✗ NOT for general emotions or life management
+
+  • Baby sleep / bedtime / naps / night wakings / sleep training / sleep regression
+    → Sleep Coach / Infant Sleep Specialist
+
+  • Exercise / yoga / postnatal movement / getting back in shape / stretching
+    → Yoga / Fitness / Postnatal Movement
+
+  • Overwhelm / stress / anxiety / mom guilt / relationship struggles / burnout / life after baby
+    → Family Dynamics / Emotional Support / LCSW
+
+  • Colic / baby tension / torticollis / spinal alignment / nervous system
+    → Chiropractor / Pediatric Chiropractic
+
+  RULE: If an expert from the list above has a specialty that is a DIRECT match for the user's question topic, you MUST recommend them by their exact name.
+  If NO expert in the list matches the actual topic (e.g. only a dietitian is listed but the question is about breastfeeding technique), do NOT recommend anyone — answer with general guidance only.`;
 
     if (hasHospitalPartners) {
-      systemPrompt += `\n\nHOSPITAL PARTNER RULE (important): This user is affiliated with a hospital. Hospital Partners are marked above. When recommending experts:
-  1. If a Hospital Partner's specialty matches the question → ALWAYS mention them FIRST by name.
-  2. If a second non-hospital expert ALSO matches a different relevant aspect → you may mention them as well.
+      systemPrompt += `\n\nHOSPITAL PARTNER RULE: This user is affiliated with a hospital. Hospital Partners are marked above.
+  1. If a Hospital Partner's specialty DIRECTLY matches the question → mention them FIRST by name.
+  2. If a second non-hospital expert also directly matches a different aspect → mention them too.
   3. Format: "I'd recommend connecting with [Hospital Partner Name], [specialty]. You may also find [Second Expert Name], [specialty], helpful for [specific aspect]."
   4. ALWAYS use their actual names — never say "a specialist" or "an expert" generically.`;
     } else {
-      systemPrompt += `\n\nIf an expert's specialty matches the current question, you MUST close your response with:
-  "For personalized support, I'd recommend connecting with [Expert Name], [their specialty], who can help you with [specific aspect of their question]."
+      systemPrompt += `\n\nWhen recommending an expert, close your response with:
+  "For personalized support, I'd recommend connecting with [Expert Name], [their specialty], who can help you with [specific aspect]."
   Use the expert's exact name as listed. Recommend at most 1 expert.`;
     }
-
-    systemPrompt += `\n\nIMPORTANT: Since this list is already pre-filtered, at least one expert will be relevant. Always recommend the best match by name. Do NOT say "no experts match" when a list has been provided.`;
   } else {
     systemPrompt += `\n\nNo experts matched this query. Do NOT invent or suggest any expert names. Answer with general parenting guidance only.`;
   }
@@ -1389,7 +1408,7 @@ The name (e.g. "Hannah", "Francie", "Sarah", "Karen") must appear verbatim in yo
 
 RESPONSE STRUCTURE — follow this order on every single response:
 1. ANSWER FIRST (required): Give a helpful, informative overview with practical tips. Use bullet points or numbered steps. Aim for 150–250 words of real content. Do NOT skip this even when an expert is matched.
-2. EXPERT RECOMMENDATION (required when AVAILABLE EXPERTS list is non-empty): After your answer, close with 1–2 sentences recommending the best expert by their exact name. You MUST do this — never skip it when experts were provided.
+2. EXPERT RECOMMENDATION (only when an expert's specialty is a DIRECT match for this question): Close with 1–2 sentences recommending them by exact name. Skip this step if no expert's specialty directly matches — wrong recommendations are worse than none.
 
 CORRECT example:
   [Helpful overview with bullet points about the topic]
