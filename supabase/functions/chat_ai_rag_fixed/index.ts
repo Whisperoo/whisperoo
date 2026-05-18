@@ -680,59 +680,128 @@ async function findMatchingExpertsBySemantic(supabase, message) {
 async function findMatchingExpertsByKeywords(supabase, message, userTenantId: string | null = null) {
   const messageLower = message.toLowerCase();
 
-  // Specialty keyword maps
+  // Specialty keyword maps — covers both clinical terms and natural language parents actually type.
+  // Rule: each group should ONLY match its specialty. Do NOT add generic phrases that
+  // would match messages about other topics (e.g. "just had my baby" should not be in
+  // Pelvic Floor because it matches every postpartum message).
   const SPECIALTY_KEYWORDS = [
     {
       specialties: ['Pelvic Floor', 'Pelvic Health', 'Postpartum Recovery'],
-      // Intentionally SPECIFIC physical symptoms only — do NOT add generic
-      // postpartum phrases like "just had my baby" or "after giving birth" here
-      // because they match every postpartum message and pull Becca into unrelated queries.
-      keywords: ['pee', 'leak', 'leaking', 'incontinence', 'pelvic', 'sneeze', 'kegel',
-                 'bladder', 'pelvic floor', 'prolapse', 'diastasis', 'core recovery',
-                 'postpartum body', 'perineal', 'vaginal pressure', 'core strength',
-                 'pelvic pain', 'pelvic pressure', 'c-section recovery', 'scar tissue',
-                 'birth recovery', 'postpartum physical', 'postpartum healing']
+      keywords: [
+        // Physical symptoms — specific, not generic
+        'pee', 'peed', 'peeing', 'leak', 'leaking', 'leaks', 'incontinence',
+        'pelvic', 'pelvic floor', 'pelvic pain', 'pelvic pressure',
+        'sneeze', 'kegel', 'bladder', 'prolapse',
+        'diastasis', 'diastasis recti', 'ab separation', 'core recovery', 'core rehab',
+        'perineal', 'perineum', 'vaginal pressure', 'vaginal pain',
+        'c-section', 'csection', 'c section', 'cesarean', 'scar tissue',
+        'postpartum physical', 'postpartum healing', 'birth recovery',
+        'core strength after baby', 'pelvic floor weakness',
+      ]
     },
     {
       specialties: ['Sleep Training', 'Sleep', 'Infant Sleep'],
-      keywords: ['sleep', 'bedtime', 'nap', 'night waking', 'sleep training',
-                 'won\'t sleep', 'crying at night', 'sleep regression']
+      keywords: [
+        'sleep', 'nap', 'napping', 'bedtime', 'bed time',
+        'night waking', 'night wakes', 'wakes up at night', 'waking up at night',
+        'wake up', 'wakes up', 'waking up',
+        'sleep training', 'sleep train', 'cry it out', 'ferber',
+        'sleep regression', 'regression',
+        "won't sleep", 'not sleeping', 'trouble sleeping', 'sleep issues', 'sleep problems',
+        "won't nap", 'skipping naps', 'fighting sleep', 'overtired', 'over tired',
+        'co-sleeping', 'cosleeping', 'bed sharing',
+        'crying at night', 'up all night', 'all night',
+      ]
     },
     {
-      specialties: ['Breastfeeding', 'Lactation', 'Feeding'],
-      keywords: ['breastfeed', 'nursing', 'lactation', 'latch', 'milk supply',
-                 'bottle', 'pumping', 'weaning', 'formula']
+      specialties: ['Breastfeeding', 'Lactation', 'Feeding', 'Baby Feeding'],
+      keywords: [
+        // Most critical: both spellings
+        'breastfeed', 'breastfeeding', 'breastfed',
+        'breast feed', 'breast feeding', 'breast fed',
+        'breast milk', 'breastmilk',
+        // Common baby feeding terms
+        'nursing', 'nurse my baby', 'latch', 'latching', 'latch on',
+        "won't latch", 'not latching', 'latch issues', 'latch problems', 'latch difficulties',
+        // Supply
+        'milk supply', 'low milk', 'milk production', 'not enough milk',
+        'drying up', 'dry up', 'increase milk', 'boost milk',
+        // Physical issues
+        'nipple', 'nipple pain', 'sore nipple', 'cracked nipple',
+        'mastitis', 'breast infection', 'clogged duct', 'blocked duct',
+        'engorged', 'engorgement',
+        // Other
+        'lactation', 'lactation consultant', 'colostrum',
+        'pumping', 'pump', 'pumped', 'breast pump',
+        'weaning', 'wean', 'stop breastfeeding',
+        'formula', 'formula feeding', 'bottle feeding', 'bottle',
+        'feeding my baby', 'baby feeding', 'feeding issues', 'feeding problems',
+        'feeding difficulties',
+      ]
     },
     {
       specialties: ['Nutrition', 'Postpartum Nutrition', 'Prenatal Nutrition'],
-      keywords: ['nutrition', 'diet', 'meal', 'meals', 'food', 'eating', 'protein',
-                 'vitamin', 'supplement', 'calorie', 'hydration', 'prenatal nutrition',
-                 'postpartum nutrition', 'healthy eating']
+      keywords: [
+        'nutrition', 'nutritionist', 'dietitian', 'diet',
+        'meal', 'meals', 'meal plan', 'meal prep',
+        'food', 'eating', 'eating habits', 'healthy eating',
+        'protein', 'vitamin', 'vitamins', 'supplement', 'supplements',
+        'calorie', 'calories', 'hydration', 'dehydrated',
+        'prenatal nutrition', 'postpartum nutrition',
+        'weight loss', 'losing weight', 'postpartum weight',
+        'hungry', 'appetite', 'cravings',
+        'iron', 'calcium', 'omega',
+      ]
     },
     {
       specialties: ['Chiropractic', 'Pediatric Chiropractic'],
-      keywords: ['chiropractic', 'alignment', 'tension', 'colic', 'torticollis',
-                 'spine', 'nervous system']
+      keywords: [
+        'chiropractic', 'chiropractor',
+        'alignment', 'misalignment', 'spine', 'spinal',
+        'tension', 'tight muscles', 'neck tension',
+        'colic', 'colicky', 'gassy baby', 'gas pain',
+        'reflux', 'acid reflux', 'spit up',
+        'torticollis', 'head tilt', 'flat head',
+        'nervous system',
+      ]
     },
     {
       specialties: ['Yoga', 'Prenatal Yoga', 'Postnatal Yoga', 'Postpartum Fitness'],
-      keywords: ['yoga', 'prenatal exercise', 'postnatal exercise', 'mindfulness',
-                 'breathing exercise', 'meditation', 'stretch', 'fitness', 'workout',
-                 'exercise', 'get in shape', 'in shape', 'lose weight', 'body after baby',
-                 'postpartum fitness', 'postpartum exercise', 'get back in shape']
+      keywords: [
+        'yoga', 'prenatal yoga', 'postnatal yoga',
+        'prenatal exercise', 'postnatal exercise', 'postpartum exercise',
+        'exercise', 'workout', 'working out', 'fitness',
+        'stretch', 'stretching',
+        'mindfulness', 'breathing exercise', 'meditation',
+        'get in shape', 'get back in shape', 'in shape', 'lose weight',
+        'postpartum fitness', 'body after baby', 'toning',
+      ]
     },
     {
       specialties: ['Family Dynamics', 'Lifestyle', 'Emotional Support'],
-      keywords: ['overwhelmed', 'relationship', 'partner', 'family dynamics',
-                 'identity', 'balance', 'stress', 'mental health', 'postpartum depression',
-                 // Natural language for "life is hard after baby"
-                 "can't manage", 'struggling to manage', 'hard to manage', 'too much to handle',
-                 'too much on my plate', "can't cope", 'hard to cope', 'feeling lost',
-                 'life after baby', 'adjustment', 'new mom', 'new parent', 'new mother',
-                 'responsibilities', 'house work', 'housework', 'managing everything',
-                 'do it all', "can't do it all", 'self care', 'self-care', 'mom guilt',
-                 'lost my identity', 'not myself', 'finding balance', 'so tired', 'burned out',
-                 'burn out', 'burnout']
+      keywords: [
+        'overwhelmed', 'overwhelming',
+        'relationship', 'partner', 'husband', 'spouse', 'marriage',
+        'family dynamics', 'identity', 'balance',
+        'stress', 'stressed', 'stressful',
+        'mental health', 'anxiety', 'anxious',
+        'postpartum depression', 'ppd', 'postpartum anxiety',
+        // Natural language for "I am struggling"
+        "can't manage", 'struggling to manage', 'hard to manage',
+        'struggling', 'struggle',
+        'too much to handle', 'too much on my plate',
+        "can't cope", 'hard to cope', 'feeling lost',
+        'exhausted', 'exhaustion', 'so tired', 'burned out', 'burnout',
+        // Life management
+        'housework', 'house work', 'chores', 'managing everything',
+        'responsibilities', 'do it all', "can't do it all",
+        'life after baby', 'adjustment', 'adjusting',
+        'new mom', 'new parent', 'new mother', 'first time mom',
+        'self care', 'self-care', 'mom guilt', 'guilt',
+        'lost my identity', 'not myself', 'finding balance',
+        'feeling alone', 'lonely', 'isolated',
+        'overwhelmed with baby',
+      ]
     }
   ];
 
