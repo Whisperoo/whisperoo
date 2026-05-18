@@ -379,9 +379,14 @@ serve(async (req) => {
       const responseLower = aiResponse.toLowerCase();
       const mentioned = matchedExperts.filter((expert: any) => {
         if (!expert?.name) return false;
-        const firstToken = String(expert.name).split(/[\s,]+/)[0].toLowerCase();
-        if (firstToken.length < 3) return false;
-        return responseLower.includes(firstToken);
+        // Split on spaces, commas, dots (handles "Dr. Memo", "Sarah, PhD", etc.)
+        // and check ANY token ≥ 3 chars — the first token may be a short honorific like "Dr"
+        const tokens = String(expert.name)
+          .split(/[\s,\.]+/)
+          .map(t => t.toLowerCase())
+          .filter(t => t.length >= 3);
+        if (tokens.length === 0) return false;
+        return tokens.some(token => responseLower.includes(token));
       });
 
       if (mentioned.length === 0 && userLanguage !== 'en') {
