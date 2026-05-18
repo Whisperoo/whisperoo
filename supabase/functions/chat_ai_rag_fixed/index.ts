@@ -1215,10 +1215,12 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
   // Expert recommendation — two-stage: retrieval found candidates, AI is the relevance judge
   if (matchedExperts.length > 0) {
     const hospitalExperts = matchedExperts.filter(e => e.is_hospital_partner);
+    const hasHospitalPartners = hospitalExperts.length > 0;
 
     systemPrompt += `\n\nAVAILABLE EXPERTS (matched to this query — you decide if they are genuinely relevant):`;
-    matchedExperts.forEach(expert => {
-      const tag = expert.is_hospital_partner ? ' [Hospital Partner]' : '';
+    // Hospital partners always listed first
+    [...hospitalExperts, ...matchedExperts.filter(e => !e.is_hospital_partner)].forEach(expert => {
+      const tag = expert.is_hospital_partner ? ' [Hospital Partner — prioritize this expert]' : '';
       systemPrompt += `\n- ${expert.name}${tag} | Specialty: ${expert.specialty}`;
       if (expert.bio && expert.bio !== 'Experienced professional ready to help.') {
         systemPrompt += ` | Bio: "${expert.bio.substring(0, 100)}"`;
@@ -1226,26 +1228,30 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
       if (expert.experience_years) systemPrompt += ` | ${expert.experience_years} yrs exp`;
     });
 
-    if (hospitalExperts.length > 0) {
-      systemPrompt += `\n\nHospital Partner experts should be prioritized when relevant.`;
-    }
-
     systemPrompt += `\n\nHOW TO RECOMMEND AN EXPERT:
 Use this specialty match guide to decide if an expert is relevant to the user's CURRENT question:
   • Dietitian / Nutrition → food, eating habits, diet, nutrition, energy from food, weight loss through diet, supplements
-  • Pelvic Floor / Postpartum Recovery → PHYSICAL symptoms: leaking urine, pelvic pain/pressure, diastasis recti, pelvic floor weakness, c-section scar, physical postpartum recovery, core rehab. NOT for general life management or emotional challenges.
+  • Pelvic Floor / Postpartum Recovery → PHYSICAL symptoms only: leaking urine, pelvic pain/pressure, diastasis recti, pelvic floor weakness, c-section scar, physical postpartum recovery, core rehab. NOT for general life management.
   • Sleep Coach / Infant Sleep → baby sleep, bedtime, naps, night wakings, sleep training, sleep regression
   • Lactation / Breastfeeding → breastfeeding, nursing, latch, milk supply, pumping, weaning, formula
   • Yoga / Fitness → exercise, working out, yoga, stretching, postnatal movement, getting in shape
   • Family Dynamics / Emotional Support / LCSW → managing life after baby, overwhelm, stress, anxiety, can't manage responsibilities, postpartum emotions, identity challenges, relationship struggles, mom guilt, burnout, work-life balance, housework management
-  • Chiropractic → colic, torticollis, baby tension, spinal alignment, nervous system
+  • Chiropractic → colic, torticollis, baby tension, spinal alignment, nervous system`;
 
-If an expert's specialty matches the current question using the guide above:
-  → Include ONE sentence at the END of your response, naturally woven in: "I'd recommend connecting with [Expert Name], [their specialty], who can specifically help you with [relevant aspect]."
-  → ALWAYS use the expert's actual name — never say "a specialist" or "an expert" generically.
-  → Recommend at most 1 expert (the best match). Never list multiple experts.
+    if (hasHospitalPartners) {
+      systemPrompt += `\n\nHOSPITAL PARTNER RULE (important): This user is affiliated with a hospital. Hospital Partners are marked above. When recommending experts:
+  1. If a Hospital Partner's specialty matches the question → ALWAYS mention them FIRST by name.
+  2. If a second non-hospital expert ALSO matches a different relevant aspect → you may mention them as well.
+  3. Format: "I'd recommend connecting with [Hospital Partner Name], [specialty]. You may also find [Second Expert Name], [specialty], helpful for [specific aspect]."
+  4. ALWAYS use their actual names — never say "a specialist" or "an expert" generically.`;
+    } else {
+      systemPrompt += `\n\nIf an expert's specialty matches the current question:
+  → Include ONE sentence at the END of your response: "I'd recommend connecting with [Expert Name], [their specialty], who can help you with [relevant aspect]."
+  → ALWAYS use the expert's actual name.
+  → Recommend at most 1 expert. Never list multiple.`;
+    }
 
-If NONE of the experts match the current question using the guide, do NOT mention any expert.`;
+    systemPrompt += `\n\nIf NONE of the experts match the current question using the guide above, do NOT mention any expert.`;
   } else {
     systemPrompt += `\n\nNo experts matched this query. Do NOT invent or suggest any expert names. Answer with general parenting guidance only.`;
   }

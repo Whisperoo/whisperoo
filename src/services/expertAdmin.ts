@@ -24,11 +24,6 @@ export async function deleteExpertAndResources(expertId: string): Promise<void> 
 
   await removeStoredFileUrl(profile?.profile_image_url ?? null);
 
-  // Remove phi_access_log rows referencing this profile as patient_user_id.
-  // The FK lacks ON DELETE CASCADE, so without this the profile delete fails.
-  // A companion migration adds ON DELETE SET NULL for future robustness.
-  await supabase.from('phi_access_log').delete().eq('patient_user_id', expertId);
-
   const { error } = await supabase.from('profiles').delete().eq('id', expertId);
   if (error) throw error;
 }
