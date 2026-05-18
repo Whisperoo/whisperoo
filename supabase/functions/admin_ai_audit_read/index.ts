@@ -75,24 +75,21 @@ Deno.serve(async (req: Request) => {
     const { data: rows, error } = await query;
     if (error) return json(500, { error: "Failed to load audit rows" });
 
-    // Log PHI access per returned row so the accounting trail is explicit.
+    // Log one summary entry for the list-view fetch (not one per row).
+    // Per-row logging was creating 50 entries every time the AI Logs panel
+    // loaded, flooding phi_access_log with noise. Individual conversation
+    // views are logged separately in admin_phi_conversation with full context.
     if (rows && rows.length > 0) {
-      const logRows = rows
-        .filter((r: any) => r.user_id)
-        .map((r: any) => ({
-          accessor_user_id: user.id,
-          accessor_role: role,
-          patient_user_id: r.user_id,
-          resource_type: "message",
-          resource_id: String(r.message_id),
-          action: "view_audit_row",
-          reason_code: reasonCode,
-          reason_text: reasonText,
-        }));
-      if (logRows.length > 0) {
-        const { error: logErr } = await supabase.from("phi_access_log").insert(logRows);
-        if (logErr) return json(500, { error: "Failed to record PHI access" });
-      }
+      await supabase.from("phi_access_log").insert({
+        accessor_user_id: user.id,
+        accessor_role: role,
+        patient_user_id: null,
+        resource_type: "audit_list",
+        resource_id: `count:${rows.length}`,
+        action: "view_audit_list",
+        reason_code: reasonCode,
+        reason_text: reasonText,
+      });
     }
 
     return json(200, { rows: rows ?? [] });

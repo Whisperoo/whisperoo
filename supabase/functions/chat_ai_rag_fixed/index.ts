@@ -686,7 +686,9 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
       specialties: ['Pelvic Floor', 'Pelvic Health', 'Postpartum Recovery'],
       keywords: ['pee', 'leak', 'leaking', 'incontinence', 'pelvic', 'sneeze', 'kegel',
                  'bladder', 'pelvic floor', 'prolapse', 'diastasis', 'core recovery',
-                 'postpartum body', 'perineal', 'vaginal pressure']
+                 'postpartum body', 'perineal', 'vaginal pressure', 'after giving birth',
+                 'after birth', 'postpartum recovery', 'recovery after baby', 'gave birth',
+                 'just had my baby', 'just had a baby', 'new mom body', 'core strength']
     },
     {
       specialties: ['Sleep Training', 'Sleep', 'Infant Sleep'],
@@ -710,9 +712,11 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
                  'spine', 'nervous system']
     },
     {
-      specialties: ['Yoga', 'Prenatal Yoga', 'Postnatal Yoga'],
+      specialties: ['Yoga', 'Prenatal Yoga', 'Postnatal Yoga', 'Postpartum Fitness'],
       keywords: ['yoga', 'prenatal exercise', 'postnatal exercise', 'mindfulness',
-                 'breathing exercise', 'meditation', 'stretch']
+                 'breathing exercise', 'meditation', 'stretch', 'fitness', 'workout',
+                 'exercise', 'get in shape', 'in shape', 'lose weight', 'body after baby',
+                 'postpartum fitness', 'postpartum exercise', 'get back in shape']
     },
     {
       specialties: ['Family Dynamics', 'Lifestyle', 'Emotional Support'],
