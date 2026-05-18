@@ -39,6 +39,13 @@ interface ExpertOption {
   tenant_id?: string | null;
 }
 
+interface PendingFile {
+  id?: string;        // set when loaded from an existing product_files row
+  display_title: string;
+  file?: File;        // new file selected from disk
+  file_url: string;   // existing URL or manually pasted URL
+}
+
 const EMPTY_FORM: ProductFormData = {
   title: '',
   description: '',
@@ -72,6 +79,8 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [tenants, setTenants] = useState<{ id: string; name: string }[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [removedFileIds, setRemovedFileIds] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -123,6 +132,20 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
             booking_confirmation_desc: (data as any).booking_confirmation_desc || '',
             tenant_id: (data as any).tenant_id || '',
           });
+
+          // Load existing additional files
+          const { data: fileRows } = await supabase
+            .from('product_files')
+            .select('id, display_title, file_name, file_url, sort_order')
+            .eq('product_id', productId)
+            .order('sort_order', { ascending: true });
+          if (fileRows && fileRows.length > 0) {
+            setPendingFiles(fileRows.map(f => ({
+              id: f.id,
+              display_title: f.display_title || f.file_name || '',
+              file_url: f.file_url || '',
+            })));
+          }
         }
       }
       setLoading(false);
@@ -205,13 +228,71 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
         tenant_id: productTenantId,
       };
 
+      let savedProductId: string;
       if (isNew) {
-        const { error: insertErr } = await supabase.from('products').insert([payload]);
+        const { data: newProduct, error: insertErr } = await supabase.from('products').insert([payload]).select('id').single();
         if (insertErr) throw insertErr;
+        savedProductId = newProduct.id;
       } else {
-        const { error: updateErr } = await supabase.from('products').update(payload).eq('id', productId);
+        const { error: updateErr } = await supabase.from('products').update(payload).eq('id', productId!);
         if (updateErr) throw updateErr;
+        savedProductId = productId!;
       }
+
+      // Process additional files: delete removed rows, then upsert pending rows
+      for (const fid of removedFileIds) {
+        await supabase.from('product_files').delete().eq('id', fid);
+      }
+
+      for (let i = 0; i < pendingFiles.length; i++) {
+        const pf = pendingFiles[i];
+        let finalUrl = pf.file_url.trim();
+        let fileName = pf.display_title.trim() || `file-${i + 1}`;
+        let fileSizeMb: number | null = null;
+        let mimeType: string | null = null;
+        let fileType = 'document';
+
+        if (pf.file) {
+          const prefix = `resources/${form.expert_id || 'unknown'}/${savedProductId}`;
+          const uploaded = await uploadPublic('resource-files', pf.file, prefix);
+          if (uploaded) {
+            finalUrl = uploaded;
+            fileName = pf.file.name;
+            fileSizeMb = parseFloat((pf.file.size / (1024 * 1024)).toFixed(2));
+            mimeType = pf.file.type || null;
+            if (mimeType?.startsWith('video/')) fileType = 'video';
+            else if (mimeType?.startsWith('audio/')) fileType = 'audio';
+            else if (mimeType === 'application/pdf') fileType = 'pdf';
+          }
+        }
+
+        if (!finalUrl) continue;
+
+        if (pf.id) {
+          await supabase.from('product_files').update({
+            display_title: pf.display_title.trim() || fileName,
+            file_url: finalUrl,
+            file_name: fileName,
+            ...(fileSizeMb !== null ? { file_size_mb: fileSizeMb } : {}),
+            ...(mimeType ? { mime_type: mimeType } : {}),
+            file_type: fileType,
+            sort_order: i,
+          }).eq('id', pf.id);
+        } else {
+          await supabase.from('product_files').insert({
+            product_id: savedProductId,
+            display_title: pf.display_title.trim() || fileName,
+            file_url: finalUrl,
+            file_name: fileName,
+            file_size_mb: fileSizeMb,
+            mime_type: mimeType,
+            file_type: fileType,
+            sort_order: i,
+            is_primary: false,
+          });
+        }
+      }
+
       toast({ title: 'Success', description: `Content successfully ${isNew ? 'created' : 'updated'}.` });
       onSaved();
       onClose();
@@ -543,6 +624,80 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
                 </div>
               </div>
             )}
+
+            {/* Additional Files */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block">Additional Files</label>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {form.product_type === 'course' ? 'Attach each module or lesson as a separate file.' : 'Attach supplementary files (e.g. worksheets, handouts).'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPendingFiles(prev => [...prev, { display_title: '', file_url: '' }])}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium shrink-0 ml-4"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add File
+                </button>
+              </div>
+
+              {pendingFiles.length === 0 ? (
+                <p className="text-xs text-gray-400 italic py-2">No additional files added.</p>
+              ) : (
+                <div className="space-y-3">
+                  {pendingFiles.map((pf, idx) => (
+                    <div key={idx} className="flex flex-col gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-gray-500 w-5 shrink-0">#{idx + 1}</span>
+                        <input
+                          value={pf.display_title}
+                          onChange={e => setPendingFiles(prev => prev.map((f, i) => i === idx ? { ...f, display_title: e.target.value } : f))}
+                          placeholder="File title (e.g. Module 1 — Introduction)"
+                          className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (pf.id) setRemovedFileIds(prev => [...prev, pf.id!]);
+                            setPendingFiles(prev => prev.filter((_, i) => i !== idx));
+                          }}
+                          className="text-gray-400 hover:text-red-500 shrink-0"
+                          title="Remove file"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 pl-7">
+                        <input
+                          type="file"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setPendingFiles(prev => prev.map((f, i) =>
+                                i === idx ? { ...f, file, display_title: f.display_title || file.name } : f
+                              ));
+                            }
+                          }}
+                          className="text-xs text-gray-600 flex-1"
+                        />
+                        <span className="text-xs text-gray-400 shrink-0">or</span>
+                        <input
+                          value={pf.file_url}
+                          onChange={e => setPendingFiles(prev => prev.map((f, i) => i === idx ? { ...f, file_url: e.target.value } : f))}
+                          placeholder="paste URL"
+                          className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        />
+                      </div>
+                      {pf.id && !pf.file && pf.file_url && (
+                        <p className="text-xs text-gray-400 pl-7 truncate">Current: {pf.file_url}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Tags */}
             <div>
