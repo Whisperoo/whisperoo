@@ -217,10 +217,18 @@ const SideNavBar: React.FC<SideNavBarProps> = ({ isMobileOverlay = false }) => {
           {/* User Profile Display */}
           {(!sidebarCollapsed || isMobileOverlay) && (
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-brand-primary rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-white">
-                  {profile.first_name?.[0]?.toUpperCase()}
-                </span>
+              <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-brand-primary flex items-center justify-center">
+                {profile.profile_image_url ? (
+                  <img
+                    src={profile.profile_image_url}
+                    alt={profile.first_name || ''}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-medium text-white">
+                    {profile.first_name?.[0]?.toUpperCase()}
+                  </span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
