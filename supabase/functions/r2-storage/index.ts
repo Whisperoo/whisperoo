@@ -97,12 +97,6 @@ Deno.serve(async (req) => {
     const accountType = (callerProfile?.account_type ?? "") as string;
     const isAdmin = accountType === "admin" || accountType === "super_admin";
     const isExpert = accountType === "expert";
-    if (!isAdmin && !isExpert) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const body = await req.json();
     const action = body?.action as Action | undefined;
@@ -112,6 +106,19 @@ Deno.serve(async (req) => {
     if (!action || !key) {
       return new Response(JSON.stringify({ error: "Missing action or key" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Any authenticated user may upload/delete their own profile image.
+    // Experts may also manage their products and thumbnails.
+    // Admins have unrestricted access.
+    const normalizedKey = key.replace(/^\/+/, "");
+    const isOwnProfileImage = normalizedKey.startsWith(`profile-images/${userId}/`);
+
+    if (!isAdmin && !isExpert && !isOwnProfileImage) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

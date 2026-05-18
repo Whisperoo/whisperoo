@@ -383,7 +383,15 @@ serve(async (req) => {
         if (firstToken.length < 3) return false;
         return responseLower.includes(firstToken);
       });
-      displayedExperts = mentioned;
+
+      if (mentioned.length === 0 && userLanguage !== 'en') {
+        // Non-English: AI likely used a generic phrase ("a specialist") instead of the
+        // expert's name, breaking the name-match filter. Since semantic/keyword matching
+        // already confirmed relevance, surface the top match so the card still appears.
+        displayedExperts = matchedExperts.slice(0, 1);
+      } else {
+        displayedExperts = mentioned;
+      }
     }
 
     // Store AI response
@@ -1236,7 +1244,14 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
   const languageName = LANGUAGE_NAMES[userLanguage] || 'English';
 
   if (userLanguage !== 'en') {
-    systemPrompt += `\n\nLANGUAGE DIRECTIVE (CRITICAL): This user has selected ${languageName} as their preferred language. You MUST respond entirely in ${languageName}. Do NOT mix languages. Exception: expert proper names (e.g. "Hannah", "Francie", "Sarah", "Karen") are proper nouns — do NOT translate them, use them exactly as written in the expert list. Translate everything around the name but keep the name itself unchanged.`;
+    systemPrompt += `\n\nLANGUAGE DIRECTIVE (CRITICAL): This user has selected ${languageName} as their preferred language. You MUST respond entirely in ${languageName}. Do NOT mix languages.
+
+EXPERT NAME RULE (CRITICAL): Expert names are proper nouns — you MUST write the expert's actual name exactly as listed, even in ${languageName}. NEVER replace a name with a generic phrase.
+  ✓ CORRECT: "...Tôi đề xuất kết nối với Hannah, chuyên gia tư vấn dinh dưỡng..."
+  ✗ WRONG: "...Tôi đề xuất kết nối với một chuyên gia dinh dưỡng..."
+  ✓ CORRECT: "...Te recomiendo conectarte con Hannah, nutricionista..."
+  ✗ WRONG: "...Te recomiendo conectarte con una especialista en nutrición..."
+The name (e.g. "Hannah", "Francie", "Sarah", "Karen") must appear verbatim in your recommendation sentence. Translate everything around the name but keep the name itself unchanged.`;
   }
 
   // 1.2 Inject explicit medical disclaimer rule if medical question detected
