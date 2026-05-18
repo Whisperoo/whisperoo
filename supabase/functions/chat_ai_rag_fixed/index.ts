@@ -436,12 +436,29 @@ serve(async (req) => {
   }
 });
 
-/** Generate a 384-dim embedding using Supabase's built-in gte-small model (no API key). */
-async function generateQueryEmbedding(text: string): Promise<number[] | null> {
+/** Generate a 384-dim embedding using deterministic FNV-1a hashing (no external API). */
+function generateQueryEmbedding(text: string): number[] | null {
   try {
-    const session = new (globalThis as any).Supabase.ai.Session("gte-small");
-    const output = await session.run(text, { mean_pool: true, normalize: true });
-    return Array.from(output as Float32Array);
+    const tokens = text.toLowerCase().split(/[\s\W]+/).filter(Boolean);
+    const vec = new Float64Array(384);
+    for (const token of tokens) {
+      let h = 2166136261;
+      for (let i = 0; i < token.length; i++) {
+        h ^= token.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      vec[((h >>> 0) % 384)] += 1;
+      for (let i = 0; i < token.length - 2; i++) {
+        let ng = 2166136261;
+        for (let j = i; j < i + 3; j++) {
+          ng ^= token.charCodeAt(j);
+          ng = Math.imul(ng, 16777619);
+        }
+        vec[((ng >>> 0) % 384)] += 0.5;
+      }
+    }
+    const norm = Math.sqrt(vec.reduce((s, v) => s + v * v, 0));
+    return norm > 0 ? Array.from(vec).map(v => v / norm) : Array.from(vec);
   } catch (e) {
     safeLogError("generateQueryEmbedding", e);
     return null;
@@ -451,7 +468,7 @@ async function generateQueryEmbedding(text: string): Promise<number[] | null> {
 // Fetch compliance training examples for system prompt self-learning
 async function getComplianceTrainingContext(supabase, message) {
   try {
-    const queryEmbedding = await generateQueryEmbedding(message);
+    const queryEmbedding = generateQueryEmbedding(message);
     if (!queryEmbedding) return "";
 
     const { data: complianceMatches, error } = await supabase.rpc('match_compliance_training', {
@@ -592,9 +609,9 @@ async function findMatchingExpertsRAGFirst(
 // Enhanced semantic search with proper similarity thresholds
 async function findMatchingExpertsBySemantic(supabase, message) {
   try {
-    const queryEmbedding = await generateQueryEmbedding(message);
+    const queryEmbedding = generateQueryEmbedding(message);
     if (!queryEmbedding) {
-      safeLogError('Failed to generate embedding for user message', 'gte-small returned null');
+      safeLogError('Failed to generate embedding for user message', 'hash embedding returned null');
       return [];
     }
 
@@ -840,7 +857,7 @@ async function findMatchingProductsRAG(
 ) {
   try {
     // 1. Semantic Search for Products
-    const productEmbedding = await generateQueryEmbedding(message);
+    const productEmbedding = generateQueryEmbedding(message);
     let semanticProducts: any[] = [];
     if (productEmbedding) {
       const queryEmbedding = productEmbedding;

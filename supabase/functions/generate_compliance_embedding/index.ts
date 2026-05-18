@@ -6,11 +6,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
-async function generateEmbedding(text: string): Promise<number[]> {
-  // Uses Supabase's built-in gte-small model (384-dim) — no external API key needed.
-  const session = new (globalThis as any).Supabase.ai.Session("gte-small");
-  const output = await session.run(text, { mean_pool: true, normalize: true });
-  return Array.from(output as Float32Array);
+function generateEmbedding(text: string): number[] {
+  const tokens = text.toLowerCase().split(/[\s\W]+/).filter(Boolean);
+  const vec = new Float64Array(384);
+  for (const token of tokens) {
+    let h = 2166136261;
+    for (let i = 0; i < token.length; i++) {
+      h ^= token.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    vec[((h >>> 0) % 384)] += 1;
+    for (let i = 0; i < token.length - 2; i++) {
+      let ng = 2166136261;
+      for (let j = i; j < i + 3; j++) {
+        ng ^= token.charCodeAt(j);
+        ng = Math.imul(ng, 16777619);
+      }
+      vec[((ng >>> 0) % 384)] += 0.5;
+    }
+  }
+  const norm = Math.sqrt(vec.reduce((s, v) => s + v * v, 0));
+  return norm > 0 ? Array.from(vec).map(v => v / norm) : Array.from(vec);
 }
 
 serve(async (req) => {
@@ -72,7 +88,7 @@ serve(async (req) => {
           `Classification: ${entry.classification}`,
         ].join('\n');
 
-        const embedding = await generateEmbedding(embeddingText);
+        const embedding = generateEmbedding(embeddingText);
 
         const { error: updateError } = await supabase
           .from('compliance_training')
