@@ -254,18 +254,29 @@ const ProfilePage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                  <div className="text-2xl font-bold text-indigo-700">{bornChildren.length}</div>
-                  <div className="text-sm text-indigo-600">
+              <div className="flex justify-center gap-4">
+                {/* Born children */}
+                <div className="flex-1 max-w-[180px] text-center p-5 bg-indigo-50 rounded-xl">
+                  <div className="text-3xl font-bold text-indigo-700">{bornChildren.length}</div>
+                  <div className="text-sm font-medium text-indigo-500 mt-1">
                     {bornChildren.length === 1 ? t('profile.child') : t('profile.children')}
                   </div>
                 </div>
-                
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <Badge className={`text-sm font-medium ${expectingBadgeColor}`}>
+
+                {/* Expected babies — always shown, count driven by actual DB records */}
+                <div className={`flex-1 max-w-[180px] text-center p-5 rounded-xl ${
+                  isExpecting ? 'bg-pink-50' : isTrying ? 'bg-purple-50' : 'bg-gray-50'
+                }`}>
+                  <div className={`text-3xl font-bold ${
+                    isExpecting ? 'text-pink-600' : isTrying ? 'text-purple-600' : 'text-gray-400'
+                  }`}>
+                    {isExpecting ? (expectedBabies.length || 1) : '—'}
+                  </div>
+                  <div className={`text-sm font-medium mt-1 ${
+                    isExpecting ? 'text-pink-400' : isTrying ? 'text-purple-400' : 'text-gray-400'
+                  }`}>
                     {expectingBadgeLabel}
-                  </Badge>
+                  </div>
                 </div>
               </div>
             </CardContent>
