@@ -31,45 +31,38 @@ function profileTextForEmbedding(expert: ExpertRow): string {
   ].join("\n");
 }
 
-/**
- * Deterministic 384-dim text embedding using term-frequency hashing.
- * Produces normalized vectors suitable for cosine similarity.
- * No external API or model download required.
- */
-function hashEmbedding(text: string, dim = 384): number[] {
-  const tokens = text.toLowerCase().split(/[\s\W]+/).filter(Boolean);
-  const vec = new Float64Array(dim);
+async function generateEmbedding(text: string, apiKey: string): Promise<number[]> {
+  const res = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "text-embedding-3-small",
+      input: text,
+      dimensions: 384,
+    }),
+  });
 
-  for (const token of tokens) {
-    // FNV-1a hash for good distribution
-    let h = 2166136261;
-    for (let i = 0; i < token.length; i++) {
-      h ^= token.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    // Bigram hash for basic phrase sensitivity
-    vec[((h >>> 0) % dim)] += 1;
-
-    // Character n-gram (trigrams) for morphological sensitivity
-    for (let i = 0; i < token.length - 2; i++) {
-      let ng = 2166136261;
-      for (let j = i; j < i + 3; j++) {
-        ng ^= token.charCodeAt(j);
-        ng = Math.imul(ng, 16777619);
-      }
-      vec[((ng >>> 0) % dim)] += 0.5;
-    }
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`OpenAI embeddings HTTP ${res.status}: ${errText.substring(0, 300)}`);
   }
 
-  // L2-normalize
-  const norm = Math.sqrt(vec.reduce((s, v) => s + v * v, 0));
-  return norm > 0 ? Array.from(vec).map(v => v / norm) : Array.from(vec);
+  const data = await res.json();
+  const embedding = data?.data?.[0]?.embedding;
+  if (!Array.isArray(embedding)) throw new Error("No embedding returned by OpenAI");
+  return embedding;
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY") ?? "";
+    if (!openaiApiKey) throw new Error("OPENAI_API_KEY is not set in Edge Function secrets");
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -114,7 +107,7 @@ serve(async (req) => {
     for (const expert of targets) {
       try {
         const profileText = profileTextForEmbedding(expert);
-        const embedding = hashEmbedding(profileText);
+        const embedding = await generateEmbedding(profileText, openaiApiKey);
         const embeddingLiteral = `[${embedding.join(",")}]`;
 
         const { error: upsertErr } = await supabase.from("expert_embeddings").upsert(

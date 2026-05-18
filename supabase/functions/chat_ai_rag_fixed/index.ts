@@ -436,31 +436,31 @@ serve(async (req) => {
   }
 });
 
-/** Generate a 384-dim embedding using deterministic FNV-1a hashing (no external API). */
-function generateQueryEmbedding(text: string): number[] | null {
+/** Generate a 384-dim semantic embedding using OpenAI text-embedding-3-small. */
+async function generateQueryEmbedding(text: string): Promise<number[] | null> {
   try {
-    const tokens = text.toLowerCase().split(/[\s\W]+/).filter(Boolean);
-    const vec = new Float64Array(384);
-    for (const token of tokens) {
-      let h = 2166136261;
-      for (let i = 0; i < token.length; i++) {
-        h ^= token.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-      }
-      vec[((h >>> 0) % 384)] += 1;
-      for (let i = 0; i < token.length - 2; i++) {
-        let ng = 2166136261;
-        for (let j = i; j < i + 3; j++) {
-          ng ^= token.charCodeAt(j);
-          ng = Math.imul(ng, 16777619);
-        }
-        vec[((ng >>> 0) % 384)] += 0.5;
-      }
+    const apiKey = Deno.env.get('OPENAI_API_KEY') ?? '';
+    if (!apiKey) {
+      safeLogError('generateQueryEmbedding', 'OPENAI_API_KEY not set');
+      return null;
     }
-    const norm = Math.sqrt(vec.reduce((s, v) => s + v * v, 0));
-    return norm > 0 ? Array.from(vec).map(v => v / norm) : Array.from(vec);
+    const res = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ model: 'text-embedding-3-small', input: text, dimensions: 384 }),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      safeLogError('generateQueryEmbedding', `HTTP ${res.status}: ${errText.substring(0, 200)}`);
+      return null;
+    }
+    const data = await res.json();
+    return data?.data?.[0]?.embedding ?? null;
   } catch (e) {
-    safeLogError("generateQueryEmbedding", e);
+    safeLogError('generateQueryEmbedding', e);
     return null;
   }
 }
@@ -468,7 +468,7 @@ function generateQueryEmbedding(text: string): number[] | null {
 // Fetch compliance training examples for system prompt self-learning
 async function getComplianceTrainingContext(supabase, message) {
   try {
-    const queryEmbedding = generateQueryEmbedding(message);
+    const queryEmbedding = await generateQueryEmbedding(message);
     if (!queryEmbedding) return "";
 
     const { data: complianceMatches, error } = await supabase.rpc('match_compliance_training', {
@@ -609,9 +609,9 @@ async function findMatchingExpertsRAGFirst(
 // Enhanced semantic search with proper similarity thresholds
 async function findMatchingExpertsBySemantic(supabase, message) {
   try {
-    const queryEmbedding = generateQueryEmbedding(message);
+    const queryEmbedding = await generateQueryEmbedding(message);
     if (!queryEmbedding) {
-      safeLogError('Failed to generate embedding for user message', 'hash embedding returned null');
+      safeLogError('Failed to generate embedding for user message', 'OpenAI embedding returned null');
       return [];
     }
 
@@ -857,7 +857,7 @@ async function findMatchingProductsRAG(
 ) {
   try {
     // 1. Semantic Search for Products
-    const productEmbedding = generateQueryEmbedding(message);
+    const productEmbedding = await generateQueryEmbedding(message);
     let semanticProducts: any[] = [];
     if (productEmbedding) {
       const queryEmbedding = productEmbedding;

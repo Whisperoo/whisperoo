@@ -6,27 +6,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
-function generateEmbedding(text: string): number[] {
-  const tokens = text.toLowerCase().split(/[\s\W]+/).filter(Boolean);
-  const vec = new Float64Array(384);
-  for (const token of tokens) {
-    let h = 2166136261;
-    for (let i = 0; i < token.length; i++) {
-      h ^= token.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    vec[((h >>> 0) % 384)] += 1;
-    for (let i = 0; i < token.length - 2; i++) {
-      let ng = 2166136261;
-      for (let j = i; j < i + 3; j++) {
-        ng ^= token.charCodeAt(j);
-        ng = Math.imul(ng, 16777619);
-      }
-      vec[((ng >>> 0) % 384)] += 0.5;
-    }
+async function generateEmbedding(text: string, apiKey: string): Promise<number[]> {
+  const res = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "text-embedding-3-small",
+      input: text,
+      dimensions: 384,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`OpenAI embeddings HTTP ${res.status}: ${errText.substring(0, 300)}`);
   }
-  const norm = Math.sqrt(vec.reduce((s, v) => s + v * v, 0));
-  return norm > 0 ? Array.from(vec).map(v => v / norm) : Array.from(vec);
+
+  const data = await res.json();
+  const embedding = data?.data?.[0]?.embedding;
+  if (!Array.isArray(embedding)) throw new Error("No embedding returned by OpenAI");
+  return embedding;
 }
 
 serve(async (req) => {
@@ -35,6 +37,9 @@ serve(async (req) => {
   }
 
   try {
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY') ?? '';
+    if (!openaiApiKey) throw new Error('OPENAI_API_KEY is not set in Edge Function secrets');
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -88,7 +93,7 @@ serve(async (req) => {
           `Classification: ${entry.classification}`,
         ].join('\n');
 
-        const embedding = generateEmbedding(embeddingText);
+        const embedding = await generateEmbedding(embeddingText, openaiApiKey);
 
         const { error: updateError } = await supabase
           .from('compliance_training')
