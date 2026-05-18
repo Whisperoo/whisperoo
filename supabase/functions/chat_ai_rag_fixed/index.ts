@@ -684,11 +684,14 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
   const SPECIALTY_KEYWORDS = [
     {
       specialties: ['Pelvic Floor', 'Pelvic Health', 'Postpartum Recovery'],
+      // Intentionally SPECIFIC physical symptoms only — do NOT add generic
+      // postpartum phrases like "just had my baby" or "after giving birth" here
+      // because they match every postpartum message and pull Becca into unrelated queries.
       keywords: ['pee', 'leak', 'leaking', 'incontinence', 'pelvic', 'sneeze', 'kegel',
                  'bladder', 'pelvic floor', 'prolapse', 'diastasis', 'core recovery',
-                 'postpartum body', 'perineal', 'vaginal pressure', 'after giving birth',
-                 'after birth', 'postpartum recovery', 'recovery after baby', 'gave birth',
-                 'just had my baby', 'just had a baby', 'new mom body', 'core strength']
+                 'postpartum body', 'perineal', 'vaginal pressure', 'core strength',
+                 'pelvic pain', 'pelvic pressure', 'c-section recovery', 'scar tissue',
+                 'birth recovery', 'postpartum physical', 'postpartum healing']
     },
     {
       specialties: ['Sleep Training', 'Sleep', 'Infant Sleep'],
@@ -721,7 +724,15 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
     {
       specialties: ['Family Dynamics', 'Lifestyle', 'Emotional Support'],
       keywords: ['overwhelmed', 'relationship', 'partner', 'family dynamics',
-                 'identity', 'balance', 'stress', 'mental health', 'postpartum depression']
+                 'identity', 'balance', 'stress', 'mental health', 'postpartum depression',
+                 // Natural language for "life is hard after baby"
+                 "can't manage", 'struggling to manage', 'hard to manage', 'too much to handle',
+                 'too much on my plate', "can't cope", 'hard to cope', 'feeling lost',
+                 'life after baby', 'adjustment', 'new mom', 'new parent', 'new mother',
+                 'responsibilities', 'house work', 'housework', 'managing everything',
+                 'do it all', "can't do it all", 'self care', 'self-care', 'mom guilt',
+                 'lost my identity', 'not myself', 'finding balance', 'so tired', 'burned out',
+                 'burn out', 'burnout']
     }
   ];
 
@@ -1221,13 +1232,13 @@ LANGUAGE SWITCHING RULE: If the user indicates they do not speak English, or if 
 
     systemPrompt += `\n\nHOW TO RECOMMEND AN EXPERT:
 Use this specialty match guide to decide if an expert is relevant to the user's CURRENT question:
-  • Dietitian / Nutrition → questions about food, eating, diet, nutrition, energy from food, weight loss through diet
-  • Pelvic Floor / Postpartum Recovery → getting back in shape after birth, core strength, postpartum fitness, leakage, diastasis recti, pelvic pain
+  • Dietitian / Nutrition → food, eating habits, diet, nutrition, energy from food, weight loss through diet, supplements
+  • Pelvic Floor / Postpartum Recovery → PHYSICAL symptoms: leaking urine, pelvic pain/pressure, diastasis recti, pelvic floor weakness, c-section scar, physical postpartum recovery, core rehab. NOT for general life management or emotional challenges.
   • Sleep Coach / Infant Sleep → baby sleep, bedtime, naps, night wakings, sleep training, sleep regression
-  • Lactation / Breastfeeding → breastfeeding, nursing, latch, milk supply, pumping, weaning
+  • Lactation / Breastfeeding → breastfeeding, nursing, latch, milk supply, pumping, weaning, formula
   • Yoga / Fitness → exercise, working out, yoga, stretching, postnatal movement, getting in shape
-  • Emotional / Mental Health → overwhelm, stress, anxiety, postpartum emotions, identity, relationship dynamics
-  • Chiropractic → colic, torticollis, baby tension, alignment, nervous system
+  • Family Dynamics / Emotional Support / LCSW → managing life after baby, overwhelm, stress, anxiety, can't manage responsibilities, postpartum emotions, identity challenges, relationship struggles, mom guilt, burnout, work-life balance, housework management
+  • Chiropractic → colic, torticollis, baby tension, spinal alignment, nervous system
 
 If an expert's specialty matches the current question using the guide above:
   → Include ONE sentence at the END of your response, naturally woven in: "I'd recommend connecting with [Expert Name], [their specialty], who can specifically help you with [relevant aspect]."
