@@ -247,15 +247,6 @@ const Login: React.FC = () => {
               ? t('auth.login.sendResetLinkButton')
               : t('auth.login.signInButton')}
           </Button>
-          {/* Add this right before the form closing tag */}
-          {process.env.NODE_ENV === "development" && resetMode && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-              <div className="font-semibold text-yellow-800">Debug Info:</div>
-              <div>Current host: {window.location.hostname}</div>
-              <div>Environment: {process.env.NODE_ENV}</div>
-              <div>Redirect URL: {window.location.origin}/update-password</div>
-            </div>
-          )}
         </form>
 
         <div className="text-center space-y-4">
