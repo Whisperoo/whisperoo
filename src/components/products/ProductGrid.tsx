@@ -18,10 +18,10 @@ import {
   ProductWithDetails,
 } from "@/services/products";
 import { useQuery } from "@tanstack/react-query";
-import { Grid, List, Search, Building2 } from "lucide-react";
+import { Grid, List, Search, Building2, Sparkles } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ProductCard } from "./ProductCard";
 import { usePersonalizedSort } from "@/hooks/usePersonalizedSort";
 
@@ -198,7 +198,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   });
   const [page, setPage] = useState(1);
   const [userPurchases, setUserPurchases] = useState<Set<string>>(new Set());
-  const [activeResourceTab, setActiveResourceTab] = useState<'all' | 'whisperoo' | 'hospital'>('all');
+  const [searchParams] = useSearchParams();
+  const initialTab = (['all', 'whisperoo', 'hospital'] as const).find(
+    (v) => v === searchParams.get('tab'),
+  ) ?? 'all';
+  const [activeResourceTab, setActiveResourceTab] = useState<'all' | 'whisperoo' | 'hospital'>(initialTab);
 
   const isPersonalized = filters.sortBy === 'personalized';
 
@@ -699,53 +703,98 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         </div>
       ) : (
         <>
-          {/* Always use server-filtered products */}
-          {displayProducts?.length > 0 ? (
-            <div
-              className={
-                viewMode === "grid"
-                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                  : "space-y-4"
-              }
-            >
-              {displayProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onView={() => handleProductView(product)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              {searchQuery.trim() ? (
-                <>
-                  <p className="text-gray-500 font-medium mb-2">
-                    No products found for "{searchQuery}"
-                  </p>
-                  <p className="text-sm text-gray-400 mb-4">
-                    Try different keywords or check spelling
-                  </p>
-                  <Button variant="outline" onClick={handleClearSearch}>
-                    Clear search & show all products
-                  </Button>
-                </>
-              ) : (
-                <p className="text-muted-foreground">No products found</p>
+          {/* All tab — hospital users: two named sections (hospital first, then Whisperoo) */}
+          {activeResourceTab === 'all' && isHospitalUser && tenant && hospitalProducts.length > 0 ? (
+            <div className="space-y-8">
+              {/* Hospital section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
+                  <Building2 className="w-4 h-4 text-brand-primary flex-shrink-0" />
+                  <h3 className="text-sm font-semibold text-brand-dark">{tenant.name} Resources</h3>
+                </div>
+                <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
+                  {hospitalProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} onView={() => handleProductView(product)} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Whisperoo section */}
+              {whisperooProducts.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
+                    <Sparkles className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                    <h3 className="text-sm font-semibold text-gray-700">Whisperoo Resources</h3>
+                  </div>
+                  <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
+                    {whisperooProducts.map((product) => (
+                      <ProductCard key={product.id} product={product} onView={() => handleProductView(product)} />
+                    ))}
+                  </div>
+                  {!isPersonalized && (
+                    <PaginationControls
+                      currentPage={page}
+                      totalResults={totalResults}
+                      pageSize={12}
+                      onPageChange={setPage}
+                      isLoading={isLoading}
+                      searchQuery={searchQuery}
+                    />
+                  )}
+                </div>
               )}
             </div>
-          )}
+          ) : (
+            <>
+              {/* Standard single-list render (non-hospital All tab, or Hospital/Whisperoo tabs) */}
+              {displayProducts?.length > 0 ? (
+                <div
+                  className={
+                    viewMode === "grid"
+                      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                      : "space-y-4"
+                  }
+                >
+                  {displayProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onView={() => handleProductView(product)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  {searchQuery.trim() ? (
+                    <>
+                      <p className="text-gray-500 font-medium mb-2">
+                        No products found for "{searchQuery}"
+                      </p>
+                      <p className="text-sm text-gray-400 mb-4">
+                        Try different keywords or check spelling
+                      </p>
+                      <Button variant="outline" onClick={handleClearSearch}>
+                        Clear search & show all products
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">No products found</p>
+                  )}
+                </div>
+              )}
 
-          {/* Pagination — only shown when not in personalized mode (which loads the full pool) */}
-          {!isPersonalized && displayProducts?.length > 0 && (
-            <PaginationControls
-              currentPage={page}
-              totalResults={totalResults}
-              pageSize={12}
-              onPageChange={setPage}
-              isLoading={isLoading}
-              searchQuery={searchQuery}
-            />
+              {/* Pagination */}
+              {!isPersonalized && displayProducts?.length > 0 && (
+                <PaginationControls
+                  currentPage={page}
+                  totalResults={totalResults}
+                  pageSize={12}
+                  onPageChange={setPage}
+                  isLoading={isLoading}
+                  searchQuery={searchQuery}
+                />
+              )}
+            </>
           )}
         </>
       )}

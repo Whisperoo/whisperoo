@@ -403,14 +403,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 </p>
               </div>
               
-              {/* Hospital Resource Badge */}
-              {(product as any).is_hospital_resource && (
-                <div className="backdrop-blur-[2px] justify-center bg-indigo-500/80 rounded-full px-2 flex items-center w-fit shadow-sm">
-                  <p className="font-bold text-[10px] text-white tracking-[0.2px] leading-[22px] font-['Plus_Jakarta_Sans'] flex items-center gap-1">
-                    Hospital Resource
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Right side icons */}
