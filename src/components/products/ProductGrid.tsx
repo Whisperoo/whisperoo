@@ -326,11 +326,21 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     !p.is_hospital_resource
   );
 
-  // All tab: Whisperoo resources + this tenant's hospital resources only.
-  // Hospital resources from other tenants must never appear here.
-  const allProducts = afterDisabledFilter.filter((p: any) =>
-    !p.is_hospital_resource || isMyTenantResource(p)
-  );
+  // All tab: interleave Whisperoo and hospital resources so every row in the
+  // 3-column grid gets a genuine mix (W, H, W → H, W, H → W, H, W …).
+  // For B2C users (no hospital resources) this degrades to the plain sorted list.
+  const allProducts = (() => {
+    if (!isHospitalUser || hospitalProducts.length === 0) {
+      return afterDisabledFilter.filter((p: any) => !p.is_hospital_resource || isMyTenantResource(p));
+    }
+    const result: any[] = [];
+    let wi = 0, hi = 0;
+    while (wi < whisperooProducts.length || hi < hospitalProducts.length) {
+      if (wi < whisperooProducts.length) result.push(whisperooProducts[wi++]);
+      if (hi < hospitalProducts.length) result.push(hospitalProducts[hi++]);
+    }
+    return result;
+  })();
 
   const displayProducts = activeResourceTab === 'hospital'
     ? hospitalProducts
