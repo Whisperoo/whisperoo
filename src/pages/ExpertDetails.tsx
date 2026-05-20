@@ -159,7 +159,7 @@ const ExpertDetails: React.FC = () => {
       // First, get expert data to check availability
       const { data: expertData, error: expertError } = await supabase
         .from('profiles')
-        .select('first_name, expert_consultation_rate, expert_availability_status')
+        .select('first_name, expert_consultation_rate, expert_availability_status, tenant_id')
         .eq('id', expertId)
         .single();
 
@@ -195,10 +195,14 @@ const ExpertDetails: React.FC = () => {
             title: `Consultation with ${expertData.first_name}`,
             description: `Book a one-on-one consultation session with ${expertData.first_name}. This expert will reach out to you within 24 hours to schedule your appointment.`,
             product_type: 'consultation',
-            price: expertData.expert_consultation_rate || 0, // Use expert's rate or 0 if not set
+            price: expertData.expert_consultation_rate || 0,
             booking_model: (expertData.expert_consultation_rate || 0) > 0 ? 'direct' : 'inquiry',
             expert_id: expertId,
-            is_active: true
+            is_active: true,
+            // Inherit the expert's hospital affiliation so hospital consultations
+            // are scoped to that tenant and never surface as Whisperoo resources.
+            tenant_id: expertData.tenant_id ?? null,
+            is_hospital_resource: expertData.tenant_id ? true : false,
           })
           .select(`
             *,
@@ -218,13 +222,27 @@ const ExpertDetails: React.FC = () => {
         return;
       }
 
-      if (product && product.is_active !== true) {
+      // Patch: fix any legacy consultation products that are missing tenant data.
+      // These were created before tenant_id was included in the insert, so they
+      // appear as Whisperoo resources even for hospital experts.
+      const needsTenantPatch =
+        product &&
+        expertData.tenant_id &&
+        (!(product as any).tenant_id || !(product as any).is_hospital_resource);
+
+      const needsActivePatch = product && product.is_active !== true;
+
+      if (needsTenantPatch || needsActivePatch) {
+        const patch: Record<string, unknown> = {};
+        if (needsActivePatch) patch.is_active = true;
+        if (needsTenantPatch) {
+          patch.tenant_id = expertData.tenant_id;
+          patch.is_hospital_resource = true;
+        }
         const { data: updatedProduct, error: updateError } = await supabase
           .from('products')
-          .update({
-            is_active: true
-          })
-          .eq('id', product.id)
+          .update(patch)
+          .eq('id', product!.id)
           .select(`
             *,
             expert:profiles!products_expert_id_fkey(
@@ -234,7 +252,7 @@ const ExpertDetails: React.FC = () => {
           .single();
 
         if (updateError) {
-          console.error('Error updating consultation product:', updateError);
+          console.error('Error patching consultation product:', updateError);
         } else {
           product = updatedProduct;
         }
