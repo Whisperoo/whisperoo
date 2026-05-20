@@ -4,7 +4,7 @@ providers = ["node"]
 NIXPACKS_NODE_VERSION = "20"
 
 [build]
-cmd = "NODE_OPTIONS=--max-old-space-size=4096 npm run build"
+cmd = "echo 'redirect-only — skipping React build'"
 
 [start]
-cmd = "npx serve -s dist -l ${PORT:-3000}"
+cmd = "node redirect-server.cjs"
