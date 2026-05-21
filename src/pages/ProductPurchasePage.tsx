@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, CreditCard } from "lucide-react";
-import { productService, ProductWithDetails } from "@/services/products";
+import { productService } from "@/services/products";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/utils";
 import { StripeCheckout } from "@/components/payments/StripeCheckout";
@@ -23,9 +23,7 @@ export const ProductPurchasePage: React.FC = () => {
   const { t } = useTranslation();
 
   const [discountCode, setDiscountCode] = useState("");
-  const [discountStatus, setDiscountStatus] = useState<"idle" | "validating" | "valid" | "invalid">("idle");
   const [discountInfo, setDiscountInfo] = useState<{ type: "percentage" | "fixed"; amount: number } | null>(null);
-  const [discountError, setDiscountError] = useState("");
 
   const [isGift, setIsGift] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
@@ -56,29 +54,6 @@ export const ProductPurchasePage: React.FC = () => {
 
   const handlePaymentError = (error: string) => {
     console.error("Payment error:", error);
-  };
-
-  const applyDiscount = async () => {
-    if (!discountCode.trim()) return;
-    setDiscountStatus("validating");
-    setDiscountError("");
-
-    try {
-      const result = await productService.validateDiscountCode(discountCode.trim());
-      if (result.isValid && result.discountType && result.discountAmount) {
-        setDiscountStatus("valid");
-        setDiscountInfo({ type: result.discountType, amount: result.discountAmount });
-        toast.success("Discount code applied successfully!");
-      } else {
-        setDiscountStatus("invalid");
-        setDiscountError(result.error || "Invalid discount code");
-        setDiscountInfo(null);
-      }
-    } catch (e) {
-      setDiscountStatus("invalid");
-      setDiscountError("Failed to validate code");
-      setDiscountInfo(null);
-    }
   };
 
   if (isLoading) {
@@ -173,23 +148,18 @@ export const ProductPurchasePage: React.FC = () => {
                   productId={product.id}
                   productTitle={product.title}
                   amount={finalPrice}
-                  discountCode={discountStatus === "valid" ? discountCode : undefined}
                   giftInfo={isGift && recipientEmail ? { recipientEmail, recipientName, giftMessage } : undefined}
                   onSuccess={handlePaymentSuccess}
                   onError={handlePaymentError}
                   onCancel={() => navigate(-1)}
                   onDiscountChange={(discountedAmt, code) => {
                     if (discountedAmt !== null && code) {
-                      // Sync sidebar Order Summary with the actual server-computed discount
                       const savings = basePrice - discountedAmt;
                       setDiscountCode(code);
                       setDiscountInfo({ type: 'fixed', amount: savings });
-                      setDiscountStatus('valid');
                     } else {
-                      // Promo removed
                       setDiscountInfo(null);
                       setDiscountCode('');
-                      setDiscountStatus('idle');
                     }
                   }}
                 />
@@ -221,41 +191,6 @@ export const ProductPurchasePage: React.FC = () => {
                       <p className="text-xs text-indigo-700">Send this product to a friend or family member</p>
                     </div>
                     <Switch checked={isGift} onCheckedChange={setIsGift} />
-                  </div>
-
-                  {/* Discount Section */}
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Discount code"
-                        value={discountCode}
-                        onChange={(e) => {
-                          setDiscountCode(e.target.value);
-                          if (discountStatus === "invalid") setDiscountStatus("idle");
-                        }}
-                        disabled={discountStatus === "validating" || discountStatus === "valid"}
-                        className={discountStatus === "invalid" ? "border-red-500" : ""}
-                      />
-                      <Button
-                        variant={discountStatus === "valid" ? "outline" : "secondary"}
-                        onClick={() => {
-                          if (discountStatus === "valid") {
-                            setDiscountStatus("idle");
-                            setDiscountCode("");
-                            setDiscountInfo(null);
-                            setDiscountError("");
-                          } else {
-                            applyDiscount();
-                          }
-                        }}
-                        disabled={!discountCode.trim() || discountStatus === "validating"}
-                      >
-                        {discountStatus === "validating" ? "..." : discountStatus === "valid" ? "Remove" : "Apply"}
-                      </Button>
-                    </div>
-                    {discountStatus === "invalid" && discountError && (
-                      <p className="text-sm text-red-500">{discountError}</p>
-                    )}
                   </div>
 
                   <div className="border-t pt-3 mt-3">

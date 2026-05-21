@@ -38,13 +38,14 @@ const CreateAccount: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [waitingForProfile, setWaitingForProfile] = useState(false);
-  
+
   // MT.3 Tenant Detection
   const tenantSlug = searchParams.get('tenant');
   const querySource = searchParams.get('source');
   const queryDept = searchParams.get('dept');
   const queryQr = searchParams.get('qr');
   const [tenantInfo, setTenantInfo] = useState<any>(null);
+  const [resolvedQrToken, setResolvedQrToken] = useState<string | null>(queryQr || null);
 
   // Redirect coming-soon tenants (e.g. SJMC pre-launch) to the waitlist page
   // before any signup form renders.
@@ -60,6 +61,42 @@ const CreateAccount: React.FC = () => {
         .then(({ data }) => setTenantInfo(data));
     }
   }, [tenantSlug]);
+
+  // Log a QR scan event on page load so raw scan counts are tracked even when
+  // the user doesn't complete signup. Runs once when tenantInfo resolves.
+  useEffect(() => {
+    if (!tenantInfo?.id) return;
+    const logScan = async () => {
+      let token = queryQr;
+      if (!token) {
+        const { data: autoQr } = await supabase
+          .from('qr_codes')
+          .select('token, id')
+          .eq('tenant_id', tenantInfo.id)
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle();
+        token = autoQr?.token ?? null;
+      }
+      if (!token) return;
+      setResolvedQrToken(token);
+      const { data: qrRow } = await supabase
+        .from('qr_codes')
+        .select('id')
+        .eq('token', token)
+        .maybeSingle();
+      if (!qrRow?.id) return;
+      await supabase.from('qr_events').insert({
+        qr_code_id: qrRow.id,
+        event_type: 'scan',
+        anon_id: null,
+        user_id: null,
+        metadata: { tenant_slug: tenantSlug, source: querySource || 'qr_hospital' },
+      });
+    };
+    logScan();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantInfo?.id]);
 
   const handleSkipAffiliation = () => {
     setTenantInfo(null);
@@ -122,24 +159,9 @@ const CreateAccount: React.FC = () => {
     console.log('Creating account...');
     
     try {
-      // If the URL has an explicit QR token use it directly.
-      // Otherwise, for old-style physical QR codes that point to
-      // /auth/create?tenant=<slug> (no token), look up the tenant's first
-      // active tracked QR code and auto-attribute to it. This means printing
-      // new QR codes is optional — existing hospital QR posters keep working
-      // and will be counted in the metrics once a qr_codes record exists.
-      let effectiveQrToken = queryQr || null;
-      if (!effectiveQrToken && tenantInfo?.id) {
-        const { data: autoQr } = await supabase
-          .from('qr_codes')
-          .select('token')
-          .eq('tenant_id', tenantInfo.id)
-          .eq('is_active', true)
-          .limit(1)
-          .maybeSingle();
-        if (autoQr?.token) effectiveQrToken = autoQr.token;
-      }
-
+      // resolvedQrToken is set on page load by the scan-logging useEffect,
+      // so no second lookup is needed here.
+      const effectiveQrToken = resolvedQrToken;
       const acquisitionSource = querySource || (effectiveQrToken ? 'qr_hospital' : tenantSlug ? 'hospital_direct' : 'organic');
       const acquisitionDept = queryDept || null;
       const { user, error } = await signUp(

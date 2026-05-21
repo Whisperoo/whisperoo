@@ -93,6 +93,31 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
 
   useEffect(() => { fetchQrCodes(); }, [fetchQrCodes]);
 
+  const handleToggleQrCode = async (qr: QrCodeRow) => {
+    try {
+      const { error } = await supabase
+        .from('qr_codes')
+        .update({ is_active: !qr.is_active })
+        .eq('id', qr.id);
+      if (error) throw error;
+      await fetchQrCodes();
+      toast({ title: qr.is_active ? 'QR Code Deactivated' : 'QR Code Activated' });
+    } catch (err: any) {
+      toast({ title: 'Failed to update QR code', description: err?.message ?? 'Unknown error', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteQrCode = async (id: string) => {
+    try {
+      const { error } = await supabase.from('qr_codes').delete().eq('id', id);
+      if (error) throw error;
+      await fetchQrCodes();
+      toast({ title: 'QR Code Deleted' });
+    } catch (err: any) {
+      toast({ title: 'Failed to delete QR code', description: err?.message ?? 'Unknown error', variant: 'destructive' });
+    }
+  };
+
   const handleCreateQrCode = async () => {
     if (!tenantId) return;
     setCreatingQr(true);
@@ -415,7 +440,7 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
                     <p className="text-xs font-semibold text-gray-700">{qr.label || 'General'}{qr.department ? ` · ${qr.department}` : ''}</p>
                     <p className="text-xs font-medium text-gray-600">Scan URL:</p>
                     <code className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-800 break-all">{qrUrl}</code>
-                    <div className="flex items-center gap-3 mt-1">
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
                       <button
                         onClick={() => { navigator.clipboard.writeText(qrUrl); toast({ title: 'Link Copied', description: 'Tracked QR link copied to clipboard.' }); }}
                         className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -430,7 +455,22 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
                       >
                         Download High-Res &rarr;
                       </a>
+                      <button
+                        onClick={() => handleToggleQrCode(qr)}
+                        className={`text-sm font-medium ${qr.is_active ? 'text-amber-600 hover:text-amber-700' : 'text-emerald-600 hover:text-emerald-700'}`}
+                      >
+                        {qr.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => { if (confirm('Delete this QR code? This cannot be undone.')) handleDeleteQrCode(qr.id); }}
+                        className="text-sm text-red-500 hover:text-red-600 font-medium"
+                      >
+                        Delete
+                      </button>
                     </div>
+                    <span className={`text-xs font-semibold mt-1 ${qr.is_active ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      {qr.is_active ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
                 </div>
               );
