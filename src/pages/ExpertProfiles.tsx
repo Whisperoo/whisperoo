@@ -270,25 +270,25 @@ const ExpertProfiles: React.FC = () => {
           onValueChange={(v) => setActiveTab(v as 'all' | 'whisperoo' | 'hospital')}
           className="w-full"
         >
-          <TabsList className="w-full sm:w-auto mb-2 bg-gray-100 rounded-xl p-1">
+          <TabsList className="w-full mb-2 bg-gray-100 rounded-xl p-1 overflow-x-auto flex-nowrap">
             <TabsTrigger
               value="all"
-              className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
+              className="flex-1 shrink-0 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
             >
               {t('experts.tabAllExperts', 'All Experts')}
             </TabsTrigger>
             <TabsTrigger
               value="whisperoo"
-              className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
+              className="flex-1 shrink-0 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
             >
               {t('experts.tabWhisperooExperts', 'Whisperoo Experts')}
             </TabsTrigger>
             {isHospitalUser && hospitalExperts.length > 0 && (
               <TabsTrigger
                 value="hospital"
-                className="flex-1 sm:flex-none rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
+                className="flex-1 shrink-0 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
               >
-                <Building2 className="w-3.5 h-3.5 mr-1.5 inline-block" />
+                <Building2 className="w-3 h-3 mr-1 inline-block" />
                 {t('experts.tabHospitalExperts', 'Hospital Experts')}
               </TabsTrigger>
             )}

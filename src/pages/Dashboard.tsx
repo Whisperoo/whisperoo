@@ -76,7 +76,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center space-x-2 flex-shrink-0">
               <MessageCircle className="w-5 h-5 text-brand-primary" />
             </div>
-            <h2 className="text-lg font-semibold text-brand-primary truncate">
+            <h2 className="text-lg font-semibold text-brand-primary leading-tight">
               {t('dashboard.chatCard.title')}
             </h2>
           </div>
