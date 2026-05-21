@@ -7,6 +7,7 @@ import { CheckCircle, MessageCircle, Shield, Clock, Users, Star, User, Calendar,
 import productHero from '@/assets/product-hero.png';
 import marthaHammond from '@/assets/martha-hammond.jpg';
 import { useAuth } from '@/contexts/AuthContext';
+import { LANDING_URL } from '@/config/urls';
 
 const Splash: React.FC = () => {
   const navigate = useNavigate();
@@ -19,12 +20,16 @@ const Splash: React.FC = () => {
     setIsVisible(true);
   }, []);
 
-  // Redirect authenticated users to dashboard
+  // Authenticated users → app. Unauthenticated users → Framer landing page.
   useEffect(() => {
-    if (!loading && user && profile?.onboarded === true) {
-      navigate('/dashboard', { replace: true });
-    } else if (!loading && user && profile && !profile.onboarded) {
-      navigate('/onboarding/role', { replace: true });
+    if (!loading) {
+      if (user && profile?.onboarded === true) {
+        navigate('/dashboard', { replace: true });
+      } else if (user && profile && !profile.onboarded) {
+        navigate('/onboarding/role', { replace: true });
+      } else if (!user) {
+        window.location.replace(LANDING_URL);
+      }
     }
   }, [loading, user, profile, navigate]);
   const handleGetStarted = () => {

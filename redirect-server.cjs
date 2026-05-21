@@ -5,7 +5,7 @@
 const http = require('http');
 
 const PORT = process.env.PORT || 3000;
-const TARGET = 'https://whisperoo.app';
+const TARGET = 'https://app.whisperoo.app';
 
 http.createServer((req, res) => {
   res.writeHead(301, { Location: TARGET + req.url });

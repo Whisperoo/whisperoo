@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /d d:\\\\WORKK\\\\whisperoo)",
+      "Bash(dir supabase\\\\migrations)",
+      "Bash(findstr expert *)"
+    ]
+  }
+}

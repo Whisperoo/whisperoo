@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { TermsOfServiceContent, PrivacyPolicyContent } from '@/components/legal/LegalDocuments';
 import { isComingSoonTenant } from '@/config/comingSoon';
 import { formatUsPhone, isValidUsPhone } from '@/utils/phone';
+import { LANDING_URL } from '@/config/urls';
 
 const CreateAccount: React.FC = () => {
   const { t } = useTranslation();
@@ -206,7 +207,7 @@ const CreateAccount: React.FC = () => {
       <div className="space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <BackButton onClick={() => navigate('/')} />
+          <BackButton onClick={() => window.location.href = LANDING_URL} />
           <Link 
             to="/auth/login" 
             className="text-indigo-700 text-sm font-medium hover:underline"

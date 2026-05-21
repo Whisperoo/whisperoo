@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LANDING_URL } from '@/config/urls';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
@@ -92,7 +93,7 @@ const SuperAdminPortal: React.FC = () => {
               <button
                 onClick={() => {
                   signOut();
-                  navigate('/');
+                  window.location.href = LANDING_URL;
                 }}
                 className="flex items-center gap-1.5 text-gray-400 hover:text-gray-700 transition-colors"
                 title="Sign out of Admin Dashboard"

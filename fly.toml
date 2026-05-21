@@ -10,9 +10,13 @@
 #   fly secrets set VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=...
 #   fly deploy
 #
-# ⚠️  REMINDER after deploy:
-#   Add https://whisperoo-app.fly.dev to Supabase Auth →
-#   URL Configuration → Redirect URLs
+# ⚠️  AFTER DEPLOY — do these in order:
+#   1. fly certs create whisperoo.app
+#   2. fly certs create www.whisperoo.app
+#   3. fly certs show whisperoo.app  ← copy the A/CNAME values for GoDaddy
+#   4. In Supabase Auth → URL Configuration:
+#        Site URL: https://whisperoo.app
+#        Redirect URLs: https://whisperoo.app/**, https://www.whisperoo.app/**
 # ============================================================
 
 app = "whisperoo-app"
