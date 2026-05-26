@@ -590,9 +590,26 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
               </div>
             </div>
 
-            {/* URLs / Uploads (not applicable to consultations) */}
-            {form.product_type !== 'consultation' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Thumbnail — available for all product types */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Thumbnail (upload or URL)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setThumbFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm mb-2"
+                />
+                <input
+                  value={form.thumbnail_url}
+                  onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* File download — not applicable to consultations */}
+              {form.product_type !== 'consultation' && (
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">File (upload or URL)</label>
                   <input
@@ -607,23 +624,8 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
                     className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">Thumbnail (upload or URL)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setThumbFile(e.target.files?.[0] || null)}
-                    className="w-full text-sm mb-2"
-                  />
-                  <input
-                    value={form.thumbnail_url}
-                    onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Additional Files */}
             <div>
