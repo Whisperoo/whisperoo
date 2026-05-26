@@ -514,26 +514,44 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
 
             {/* Conditional confirmation message based on booking type */}
             {bookingMode === 'inquiry' ? (
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">
-                  Inquiry Request — Confirmation Message
-                  <span className="text-gray-400 ml-1">(optional)</span>
-                </label>
-                <textarea
-                  value={form.inquiry_confirmation_message}
-                  onChange={(e) => setForm({ ...form, inquiry_confirmation_message: e.target.value })}
-                  placeholder="Shown right after the parent submits an inquiry. E.g. 'Thank you! I typically respond within 24 hours. Please have your insurance info ready.'"
-                  rows={3}
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Leave blank to show the default "we'll be in touch" message.
-                </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">
+                    Pre-Book Dialog Message
+                    <span className="text-gray-400 ml-1">(optional)</span>
+                  </label>
+                  <textarea
+                    value={form.inquiry_prebook_message}
+                    onChange={(e) => setForm({ ...form, inquiry_prebook_message: e.target.value })}
+                    placeholder="Shown in the 'Book a 1:1' popup before the parent submits. E.g. 'I offer virtual and in-person lactation visits. I typically respond within 24 hours to schedule.'"
+                    rows={3}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Leave blank to show the default "You're about to request…" text.
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">
+                    Post-Submission Confirmation
+                    <span className="text-gray-400 ml-1">(optional)</span>
+                  </label>
+                  <textarea
+                    value={form.inquiry_confirmation_message}
+                    onChange={(e) => setForm({ ...form, inquiry_confirmation_message: e.target.value })}
+                    placeholder="Shown right after the parent submits an inquiry. E.g. 'Thank you! I typically respond within 24 hours. Please have your insurance info ready.'"
+                    rows={3}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Leave blank to show the default "we'll be in touch" message.
+                  </p>
+                </div>
               </div>
             ) : (
               <div>
                 <label className="text-xs font-medium text-gray-600 mb-1 block">
-                  Flat-Rate Purchase — Confirmation Note
+                  Post-Purchase Confirmation Note
                   <span className="text-gray-400 ml-1">(optional)</span>
                 </label>
                 <textarea
