@@ -124,6 +124,31 @@ serve(async (req) => {
       });
     }
 
+    // Auto-create a draft consultation product for this expert so it's
+    // immediately editable in the Content panel without a manual step.
+    const { error: productErr } = await adminClient
+      .from("products")
+      .insert({
+        title: `Consultation with ${first_name.trim()}`,
+        description: "",
+        product_type: "consultation",
+        price: 0,
+        is_free: true,
+        status: "draft",
+        expert_id: userId,
+        tenant_id: tenant_id || null,
+        is_hospital_resource: !!tenant_id,
+        booking_model: "inquiry",
+        tags: [],
+        duration_minutes: 60,
+        difficulty_level: "beginner",
+      });
+
+    if (productErr) {
+      // Non-fatal — expert was created successfully; log and continue.
+      console.error("auto-create consultation product failed:", productErr.message);
+    }
+
     return new Response(
       JSON.stringify({ id: userId, email: email.trim().toLowerCase() }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
