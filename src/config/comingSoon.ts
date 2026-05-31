@@ -5,7 +5,7 @@
 // must match exactly what QrLanding resolves from the qr_codes table or
 // what's passed via the `?tenant=` URL parameter.
 export const COMING_SOON_TENANT_SLUGS = new Set<string>([
-  'st-joseph-medical-center-moq54rfp',
+  // 'st-joseph-medical-center-moq54rfp', // Removed: SJMC is now live — route to /auth/create
 ]);
 
 export const isComingSoonTenant = (slug: string | null | undefined): boolean => {
