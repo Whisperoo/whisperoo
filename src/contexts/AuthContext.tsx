@@ -12,7 +12,7 @@ interface AuthContextType {
   profile: Profile | null
   session: Session | null
   loading: boolean
-  signUp: (email: string, password: string, firstName: string, phoneNumber?: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null) => Promise<{ user: User | null; error: AuthError | null }>
+  signUp: (email: string, password: string, firstName: string, phoneNumber?: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null, language?: string | null) => Promise<{ user: User | null; error: AuthError | null }>
   signIn: (email: string, password: string) => Promise<{ user: User | null; error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>
@@ -137,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe()
   }, [fetchProfile])
 
-  const signUp = async (email: string, password: string, firstName: string, phoneNumber?: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null) => {
+  const signUp = async (email: string, password: string, firstName: string, phoneNumber?: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null, language?: string | null) => {
     try {
       console.log('Signing up user')
       
@@ -184,12 +184,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        // Update profile with MT fields if present
-        if (tenantId || source || department || qrCodeId || anonId) {
+        // Update profile with MT fields + language preference if present
+        {
           const payload: any = {}
           if (tenantId !== undefined && tenantId !== null) payload.tenant_id = tenantId
           if (source !== undefined && source !== null) payload.acquisition_source = source || 'organic'
           if (department !== undefined && department !== null) payload.acquisition_department = department
+          if (language) {
+            payload.language_preference = language
+            payload.preferred_language = language
+          }
 
           if (qrCodeId) {
             payload.signup_qr_code_id = qrCodeId

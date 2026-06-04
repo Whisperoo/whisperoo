@@ -18,10 +18,18 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n/config';
 import { TermsOfServiceContent, PrivacyPolicyContent } from '@/components/legal/LegalDocuments';
 import { isComingSoonTenant } from '@/config/comingSoon';
 import { formatUsPhone, isValidUsPhone } from '@/utils/phone';
 import { LANDING_URL } from '@/config/urls';
+
+const LANGUAGES = [
+  { code: 'en', flag: '🇺🇸', label: 'English' },
+  { code: 'es', flag: '🇲🇽', label: 'Español' },
+  { code: 'vi', flag: '🇻🇳', label: 'Tiếng Việt' },
+] as const;
+const LANGUAGE_STORAGE_KEY = 'whisperoo-language';
 
 const CreateAccount: React.FC = () => {
   const { t } = useTranslation();
@@ -38,6 +46,17 @@ const CreateAccount: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [waitingForProfile, setWaitingForProfile] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(
+    () => (typeof window !== 'undefined' ? window.localStorage.getItem(LANGUAGE_STORAGE_KEY) : null) || 'en'
+  );
+
+  const handleLanguageSelect = (lang: string) => {
+    setSelectedLanguage(lang);
+    i18n.changeLanguage(lang);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    }
+  };
 
   // MT.3 Tenant Detection
   const tenantSlug = searchParams.get('tenant');
@@ -172,7 +191,8 @@ const CreateAccount: React.FC = () => {
         tenantInfo?.id,
         acquisitionSource,
         acquisitionDept,
-        effectiveQrToken
+        effectiveQrToken,
+        selectedLanguage
       );
       
       if (error) {
@@ -236,6 +256,33 @@ const CreateAccount: React.FC = () => {
           >
             {t('auth.createAccount.applyExpert')}
           </Link>
+        </div>
+
+        {/* Language selector */}
+        <div className="flex justify-center gap-2">
+          {LANGUAGES.map((lang) => {
+            const isActive = selectedLanguage === lang.code;
+            return (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => handleLanguageSelect(lang.code)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
+                  isActive
+                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 text-gray-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/50'
+                }`}
+                style={isActive && tenantInfo?.config?.branding?.primary_color ? {
+                  borderColor: tenantInfo.config.branding.primary_color,
+                  backgroundColor: `${tenantInfo.config.branding.primary_color}15`,
+                  color: tenantInfo.config.branding.primary_color,
+                } : {}}
+              >
+                <span>{lang.flag}</span>
+                <span>{lang.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Content */}
