@@ -28,6 +28,7 @@ Get-Content $envFile | Where-Object { $_ -match "^\s*([A-Za-z_][^=]*)=(.*)$" } |
 Write-Host "`nDeploying to Fly.io with build args..." -ForegroundColor Cyan
 
 flyctl deploy `
+    --no-cache `
     --build-arg "VITE_SUPABASE_URL=$($envVars['VITE_SUPABASE_URL'])" `
     --build-arg "VITE_SUPABASE_ANON_KEY=$($envVars['VITE_SUPABASE_ANON_KEY'])" `
     --build-arg "VITE_STRIPE_PUBLISHABLE_KEY=$($envVars['VITE_STRIPE_PUBLISHABLE_KEY'])" `

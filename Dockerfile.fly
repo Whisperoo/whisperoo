@@ -49,31 +49,9 @@ RUN npm install -g serve@14
 # Copy only the compiled output from the build stage
 COPY --from=builder /app/dist ./dist
 
-# serve config: no-cache for HTML entry point, long cache for hashed assets
-COPY <<'EOF' /app/serve.json
-{
-  "headers": [
-    {
-      "source": "/index.html",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
-        { "key": "Pragma",        "value": "no-cache" },
-        { "key": "Expires",       "value": "0" }
-      ]
-    },
-    {
-      "source": "/assets/**",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    }
-  ]
-}
-EOF
-
 # Port 8080 is the Fly.io standard internal port
 EXPOSE 8080
 
 # -s flag = SPA mode: all unknown routes fall back to index.html
 # This is required for React Router client-side routing to work
-CMD ["serve", "-s", "dist", "-l", "8080", "-C", "/app/serve.json"]
+CMD ["serve", "-s", "dist", "-l", "8080"]
