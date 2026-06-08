@@ -23,23 +23,29 @@ const Login: React.FC = () => {
   const [pendingRedirect, setPendingRedirect] = useState(false);
 
   // Navigate once AuthContext has the user + profile in state.
-  // This handles the race where navigate() fires before onAuthStateChange
-  // updates React state, which would cause ProtectedRoute to bounce back.
+  // Waits for profile so admin accounts get routed to /admin/super correctly.
   useEffect(() => {
     if (!pendingRedirect) return;
     if (loading) return;
     if (!user) return;
-    // Navigate as soon as the user is confirmed authenticated. Profile may
-    // still be loading — use it for admin routing if available, otherwise
-    // default to /dashboard. Blocking on profile causes infinite stuck state
-    // when the profile fetch fails (network error after auth succeeds).
-    const acct = profile?.account_type;
+    if (!profile) return; // Wait for profile — needed for admin routing
+    const acct = profile.account_type;
     if (acct === 'admin' || acct === 'super_admin' || acct === 'superadmin') {
       navigate('/admin/super', { replace: true });
     } else {
       navigate('/dashboard', { replace: true });
     }
   }, [pendingRedirect, loading, user, profile, navigate]);
+
+  // Fallback: if profile fails to load within 3s (e.g. network error),
+  // navigate to /dashboard so the user isn't stuck on the login page forever.
+  useEffect(() => {
+    if (!pendingRedirect || !user || loading || profile) return;
+    const timer = setTimeout(() => {
+      navigate('/dashboard', { replace: true });
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [pendingRedirect, user, loading, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

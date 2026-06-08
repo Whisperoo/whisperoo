@@ -18,7 +18,7 @@ import PhiAccessLogPanel from './PhiAccessLogPanel';
 type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'bookings' | 'discounts' | 'phi' | 'config';
 
 const SuperAdminPortal: React.FC = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [authorized, setAuthorized] = useState(false);
@@ -28,16 +28,20 @@ const SuperAdminPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('metrics');
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
 
-  // Auth guard
+  // Auth guard — wait for profile to load before making the authorization decision.
+  // Checking before profile loads would redirect super_admins to /dashboard.
   useEffect(() => {
     if (!user) {
       navigate('/auth/login');
       return;
     }
+    // Still loading initial auth or profile — stay on spinner
+    if (loading) return;
+    if (!profile) return;
 
     const isAuthorized =
-      profile?.account_type === 'admin' ||
-      profile?.account_type === 'super_admin';
+      profile.account_type === 'admin' ||
+      profile.account_type === 'super_admin';
 
     if (isAuthorized) {
       setAuthorized(true);
@@ -50,7 +54,7 @@ const SuperAdminPortal: React.FC = () => {
       navigate('/dashboard');
     }
     setCheckingAuth(false);
-  }, [user, profile, navigate]);
+  }, [user, profile, loading, navigate]);
 
   if (checkingAuth || !authorized) {
     return (
