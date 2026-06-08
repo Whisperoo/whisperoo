@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../../components/layouts/AuthLayout";
 import BackButton from "../../components/ui/BackButton";
@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 const Login: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, user, profile, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -20,6 +20,24 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [resetMode, setResetMode] = useState(false); // Toggle between login and reset
   const [resetEmail, setResetEmail] = useState(""); // Separate state for reset email
+  const [pendingRedirect, setPendingRedirect] = useState(false);
+
+  // Navigate once AuthContext has the user + profile in state.
+  // This handles the race where navigate() fires before onAuthStateChange
+  // updates React state, which would cause ProtectedRoute to bounce back.
+  useEffect(() => {
+    if (!pendingRedirect) return;
+    if (loading) return;
+    if (!user) return;
+    // Profile may still be loading; wait for it so role-based routing is correct.
+    if (!profile) return;
+    const acct = profile.account_type;
+    if (acct === 'admin' || acct === 'super_admin' || acct === 'superadmin') {
+      navigate('/admin/super', { replace: true });
+    } else {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [pendingRedirect, loading, user, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,24 +88,10 @@ const Login: React.FC = () => {
           title: t('auth.login.toast.welcomeBack'),
           description: t('auth.login.toast.signedInSuccess'),
         });
-
-        // Route by role, not hardcoded email.
-        const { data: signedInProfile } = await supabase
-          .from("profiles")
-          .select("account_type")
-          .eq("id", resolvedUser.id)
-          .maybeSingle();
-
-        if (
-          signedInProfile?.account_type === "admin" ||
-          signedInProfile?.account_type === "super_admin" ||
-          signedInProfile?.account_type === "superadmin"
-        ) {
-          navigate("/admin/super");
-        } else {
-          // Navigate to dashboard - ProtectedRoute will handle onboarding redirect if needed
-          navigate("/dashboard");
-        }
+        // Don't navigate here — onAuthStateChange fires async and React state
+        // may not have user set yet. Set flag; useEffect navigates once context
+        // has both user + profile loaded.
+        setPendingRedirect(true);
       }
     } catch (error) {
       console.error("Login error:", error);
