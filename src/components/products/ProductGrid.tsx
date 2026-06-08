@@ -663,20 +663,20 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         <TabsList className="w-full mb-4 bg-gray-100 rounded-xl p-1 overflow-x-auto flex-nowrap">
           <TabsTrigger
             value="all"
-            className="flex-1 shrink-0 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
+            className="flex-1 shrink-0 px-3 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
           >
             {t('resources.tabAll', 'All Resources')}
           </TabsTrigger>
           <TabsTrigger
             value="whisperoo"
-            className="flex-1 shrink-0 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
+            className="flex-1 shrink-0 px-3 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
           >
             {t('experts.tabWhisperoo', 'Whisperoo')}
           </TabsTrigger>
           {isHospitalUser && tenant && hospitalProducts.length > 0 && (
             <TabsTrigger
               value="hospital"
-              className="flex-1 shrink-0 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
+              className="flex-1 shrink-0 px-3 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm"
             >
               <Building2 className="w-3 h-3 mr-1 inline-block" />
               {t('experts.tabHospital', 'Hospital')}
