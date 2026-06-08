@@ -29,9 +29,11 @@ const Login: React.FC = () => {
     if (!pendingRedirect) return;
     if (loading) return;
     if (!user) return;
-    // Profile may still be loading; wait for it so role-based routing is correct.
-    if (!profile) return;
-    const acct = profile.account_type;
+    // Navigate as soon as the user is confirmed authenticated. Profile may
+    // still be loading — use it for admin routing if available, otherwise
+    // default to /dashboard. Blocking on profile causes infinite stuck state
+    // when the profile fetch fails (network error after auth succeeds).
+    const acct = profile?.account_type;
     if (acct === 'admin' || acct === 'super_admin' || acct === 'superadmin') {
       navigate('/admin/super', { replace: true });
     } else {
