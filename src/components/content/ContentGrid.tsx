@@ -25,6 +25,7 @@ import {
 import { ContentViewer } from "./ContentViewer";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Purchase {
   id: string;
@@ -54,6 +55,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
   >({});
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'en';
+  const { user } = useAuth();
 
   const translateSpecialty = (specialty: string) => {
     if (!specialty) return '';
@@ -98,6 +100,7 @@ export const ContentGrid: React.FC<ContentGridProps> = ({
   }, [purchases]);
 
   const handlePreview = (product: ProductWithDetails) => {
+    productService.trackProductEvent(product.id, "view", user?.id).catch(console.error);
     setPreviewProduct(product);
   };
 

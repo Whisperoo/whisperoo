@@ -308,7 +308,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
     if (hasFullAccess) {
       // Show full content viewer for purchased/saved content
-      productService.trackProductEvent(product.id, "download", user.id).catch(console.error);
+      productService.trackProductEvent(product.id, "view", user.id).catch(console.error);
       setShowPreview(true);
     } else {
       // Show preview modal for non-purchased content (no error messages)
