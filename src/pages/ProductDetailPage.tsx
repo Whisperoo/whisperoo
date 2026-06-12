@@ -91,13 +91,6 @@ export const ProductDetailPage: React.FC = () => {
     }
   }, [user, productId]);
 
-  // Track view event
-  useEffect(() => {
-    if (productId) {
-      productService.trackProductEvent(productId, "view", user?.id);
-    }
-  }, [productId, user]);
-
   // Check wishlist status
   useEffect(() => {
     if (user && productId) {
@@ -109,7 +102,7 @@ export const ProductDetailPage: React.FC = () => {
     }
   }, [user, productId]);
 
-  // Track view event
+  // Track view event — fires once when product data is ready
   useEffect(() => {
     if (productId && product) {
       productService.trackProductEvent(productId, "view", user?.id).catch(console.error);

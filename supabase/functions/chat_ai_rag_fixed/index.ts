@@ -416,7 +416,18 @@ serve(async (req) => {
         // already confirmed relevance, surface the top match so the card still appears.
         displayedExperts = matchedExperts.slice(0, 1);
       } else {
-        displayedExperts = mentioned;
+        // Sort cards to match the order the AI mentioned each expert in its response,
+        // so if the AI says "Francie" before "Ann", Francie's card appears first.
+        displayedExperts = mentioned.sort((a: any, b: any) => {
+          const firstMentionPos = (expert: any) => {
+            const tokens = String(expert.name).split(/[\s,\.]+/).map((t: string) => t.toLowerCase()).filter((t: string) => t.length >= 3);
+            return Math.min(...tokens.map((t: string) => {
+              const idx = responseLower.indexOf(t);
+              return idx === -1 ? Infinity : idx;
+            }));
+          };
+          return firstMentionPos(a) - firstMentionPos(b);
+        });
       }
     }
 
@@ -1370,10 +1381,10 @@ The name (e.g. "Hannah", "Francie", "Sarah", "Karen") must appear verbatim in yo
     systemPrompt += `\n\nAVAILABLE EXPERTS (candidates for this query):`;
     // Hospital partners always listed first
     [...hospitalExperts, ...matchedExperts.filter(e => !e.is_hospital_partner)].forEach(expert => {
-      const tag = expert.is_hospital_partner ? ' [Hospital Partner — prioritize this expert]' : '';
+      const tag = expert.is_hospital_partner ? ' [Hospital Partner]' : '';
       systemPrompt += `\n- ${expert.name}${tag} | Specialty: ${expert.specialty}`;
       if (expert.bio && expert.bio !== 'Experienced professional ready to help.') {
-        systemPrompt += ` | Bio: "${expert.bio.substring(0, 100)}"`;
+        systemPrompt += ` | Bio: "${expert.bio.substring(0, 300)}"`;
       }
       if (expert.experience_years) systemPrompt += ` | ${expert.experience_years} yrs exp`;
     });
@@ -1410,10 +1421,11 @@ The name (e.g. "Hannah", "Francie", "Sarah", "Karen") must appear verbatim in yo
 
     if (hasHospitalPartners) {
       systemPrompt += `\n\nHOSPITAL PARTNER RULE: This user is affiliated with a hospital. Hospital Partners are marked above.
-  1. If a Hospital Partner's specialty DIRECTLY matches the question → mention them FIRST by name.
-  2. If a second non-hospital expert also directly matches a different aspect → mention them too.
-  3. Format: "I'd recommend connecting with [Hospital Partner Name], [specialty]. You may also find [Second Expert Name], [specialty], helpful for [specific aspect]."
-  4. ALWAYS use their actual names — never say "a specialist" or "an expert" generically.`;
+  1. If a Hospital Partner's specialty DIRECTLY matches the question AND their bio fits the user's specific need (e.g., they offer virtual visits when the user asks for virtual) → mention them FIRST.
+  2. If the Hospital Partner's bio or profile does NOT fit the user's specific need (e.g., their bio says "in-home visits" but the user asked for a virtual session) → recommend the non-hospital expert who is the better fit instead. Do not force a hospital partner who is a poor fit.
+  3. If a second expert also directly matches a different aspect of the question → mention them too.
+  4. Format: "I'd recommend connecting with [Expert Name], [specialty]. You may also find [Second Expert Name], [specialty], helpful for [specific aspect]."
+  5. ALWAYS use their actual names — never say "a specialist" or "an expert" generically.`;
     } else {
       systemPrompt += `\n\nWhen recommending an expert, close your response with:
   "For personalized support, I'd recommend connecting with [Expert Name], [their specialty], who can help you with [specific aspect]."

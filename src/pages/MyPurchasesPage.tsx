@@ -287,11 +287,13 @@ export const MyPurchasesPage: React.FC = () => {
         const data = await response.json();
         if (data.has_access && data.product?.download_url) {
           await downloadFileViaFetch(data.product.download_url, `${data.product.title}.${data.product.product_type === "video" ? "mp4" : "pdf"}`);
+          productService.trackProductEvent(purchase.product_id, "download", user.id).catch(console.error);
         } else {
           alert(data.error || "Download failed");
         }
       } else {
         await downloadFile(response, purchase.product || purchase);
+        productService.trackProductEvent(purchase.product_id, "download", user.id).catch(console.error);
       }
     } catch (error) {
       console.error("Download error:", error);

@@ -1,3 +1,158 @@
+# Sprint 2 — AI Paywall, Content Recommendations & Hospital Resource Chat
+
+## Scope of Work (from Sprint 2 SOW)
+
+Three workstreams, all delivered on a `sprint-2` feature branch so `main` stays clean and production-stable throughout.
+
+---
+
+## Safety & Branch Strategy
+
+- All Sprint 2 work lives on branch `sprint-2`.  
+- Migrations are **additive only** — no drops or altering columns used by production code.  
+- Edge function changes are backward-compatible: new flags absent → old behavior.  
+- New UI is additive (new pages/dialogs), not replacing existing screens.  
+- Each phase ends with `npm run build` + lint pass before merging to `main`.
+
+---
+
+## Phase A — Foundation: Subscription DB + Sponsorship Flag (WS 1.1 / 1.2 / 1.4)
+
+> No UI yet. Just the data layer. Required before everything else.
+
+- [ ] **A.1** Create `subscriptions` table  
+  `(id, user_id FK→auth.users, stripe_customer_id, stripe_subscription_id, tier TEXT default 'free', status TEXT, current_period_end TIMESTAMPTZ, created_at, updated_at)`  
+  RLS: owner-read, service-role write.  
+- [ ] **A.2** Create `ai_usage` table  
+  `(id, user_id FK→auth.users, period_month TEXT (YYYY-MM), message_count INT default 0, token_cost INT default 0)`  
+  Unique index: `(user_id, period_month)`. RLS: owner-read, service-role write.  
+- [ ] **A.3** Add `is_sponsored BOOLEAN DEFAULT false` to `tenants` table.  
+- [ ] **A.4** Add `subscription_tier TEXT DEFAULT 'free'` to `profiles` (denormalized read-fast copy; synced by webhook).  
+- [ ] **A.5** Regenerate `src/types/database.types.ts` after migration.
+
+---
+
+## Phase B — Paywall Enforcement in Edge Function (WS 1.2)
+
+> Gate the chat pipeline. No UI yet, but API enforces limits.
+
+- [ ] **B.1** In `chat_ai_rag_fixed`: before running LLM, fetch `subscriptions` tier + `ai_usage` count for current month.  
+  - Sponsored tenant user (tenant.is_sponsored = true) → skip paywall entirely.  
+  - `tier = 'premium'` → no cap.  
+  - `tier = 'free'` → if `message_count >= 25` return HTTP 402 with `{ error: 'paywall', messages_used: 25, limit: 25 }`.  
+- [ ] **B.2** On successful LLM completion: upsert `ai_usage(user_id, period_month)` incrementing `message_count` + logging `token_cost` from OpenAI usage object.  
+- [ ] **B.3** Deploy `chat_ai_rag_fixed`.
+
+---
+
+## Phase C — Stripe Subscription Integration (WS 1.3)
+
+> Real Stripe subscriptions, not one-off payment intents.
+
+- [ ] **C.1** Create Supabase Edge Function `stripe-subscription` handling:  
+  - `POST /create-checkout` → create Stripe Checkout Session for `$9.99/mo` plan → return `sessionUrl`.  
+  - `POST /webhook` → handle `customer.subscription.created/updated/deleted` → sync `subscriptions` table + `profiles.subscription_tier`.  
+- [ ] **C.2** Set Stripe secrets: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PREMIUM_PRICE_ID`.  
+- [ ] **C.3** Register Stripe webhook pointing to the Edge Function URL.  
+- [ ] **C.4** Deploy `stripe-subscription`.
+
+---
+
+## Phase D — Paywall UI (WS 1.5 / 1.6)
+
+> Graceful mid-conversation gate, counter, and upgrade CTA.
+
+- [ ] **D.1** Add `useSubscription` hook: reads `subscriptions` + `ai_usage` for current user; returns `{ tier, messagesUsed, limit, isSponsored }`.  
+- [ ] **D.2** In `Chat.tsx`: show usage counter badge (e.g., "18 / 25 questions this month") in the input area — visible only for free-tier users.  
+- [ ] **D.3** When `chat_ai_rag_fixed` returns 402, intercept and display `<PaywallDialog>` mid-conversation (not a hard wall — conversation history stays visible).  
+  - Dialog: usage reached, upgrade to Premium for $9.99/mo, "Upgrade Now" button → Stripe Checkout.  
+- [ ] **D.4** `<PaywallDialog>` calls `stripe-subscription/create-checkout` and redirects to Stripe-hosted checkout.  
+- [ ] **D.5** Add superadmin COGS view in `SuperAdminPortal`: table of `user_id, tier, messages_used, token_cost` aggregated by month. (Internal only.)  
+- [ ] **D.6** Lint + build pass.
+
+---
+
+## Phase E — Content-Aware Recommendations (WS 2.1 / 2.2 / 2.3)
+
+> Chat Genie learns about uploaded PDF/course/video content and recommends with priority ordering.
+
+**Current state:** Expert suggestions already tenant-scoped and ordered. Resource suggestions return `products` rows. Cards render in `MessageBubble`. **Gap:** courses and videos not pulled by content type; priority ordering (hospital expert > Whisperoo expert > free resource > paid resource) not strictly enforced.
+
+- [ ] **E.1** In `chat_ai_rag_fixed`: after expert suggestions, build `resource_suggestions` query that:  
+  - Pulls `products` with `type IN ('pdf','course','video')` ordered by: `is_hospital_resource DESC`, `is_free DESC`, `created_at DESC`.  
+  - Caps at 1 per category (1 free + 1 paid max).  
+  - Tenant-scope same as expert scoping (already in place).  
+- [ ] **E.2** Return `recommendations` array in response metadata with shape:  
+  `[{ type: 'expert'|'resource', priority: 1–4, id, name, deep_link }]`  
+  strictly ordered: hospital expert (1) → Whisperoo expert (2) → free resource (3) → paid resource (4).  
+- [ ] **E.3** In `MessageBubble.tsx` / recommendation card: render tappable cards per type:  
+  - Expert cards: "Book 1:1" → deep-link to `/experts/:id`.  
+  - Resource cards: "View" → deep-link to `/products/:id`.  
+  - Show source label (`Hospital Expert`, `Whisperoo Expert`, `Free`, `Premium`).  
+- [ ] **E.4** Deploy `chat_ai_rag_fixed`. Lint + build pass.
+
+---
+
+## Phase F — Hospital Resource Chat (WS 3.1 – 3.6)
+
+> Separate chat experience, strictly grounded in hospital resources. Highest-risk workstream.
+
+- [ ] **F.1** Create Edge Function `hospital_resource_chat`:  
+  - Auth check + tenant_id resolution (must be hospital user; reject B2C).  
+  - Fetch tenant config for department contacts, phone numbers, addresses (deterministic injection — not LLM).  
+  - Retrieval: pgvector similarity search on `expert_documents` filtered by `metadata->>'tenant_id' = userTenantId` only.  
+  - System prompt: "Answer ONLY from the retrieved hospital documents below. If the answer is not in the documents, say so. Do not use general knowledge."  
+  - If retrieval returns 0 chunks above similarity threshold → return structured `{ grounded: false }` fallback (no LLM call).  
+  - On LLM completion: include `sources` array (document titles used).  
+  - Route through safety pipeline: keyword escalation (pre-LLM) + OpenAI moderation pass + audit trail insert (reuse pattern from `chat_ai_rag_fixed`).  
+  - Append disclaimer: "This information is for general reference only and is not medical advice."  
+- [ ] **F.2** New page `src/pages/HospitalChat.tsx`:  
+  - Only rendered/accessible for users with `profile.tenant_id != null`.  
+  - Same conversation UX as `Chat.tsx` but calls `hospital_resource_chat`.  
+  - Shows source citations below each assistant response.  
+  - On `grounded: false` fallback: display "This isn't covered in [Hospital Name]'s resources. Try Whisperoo Chat for this question." + button navigating to `/chat?q=<pre-loaded question>`.  
+  - "Informational, not medical advice" disclaimer banner.  
+  - Paywall enforcement same as Chat Genie (1.4 sponsorship flag read here too).  
+- [ ] **F.3** Add route `/hospital-chat` in `src/App.tsx` (behind `ProtectedRoute requireOnboarding`).  
+- [ ] **F.4** Add "Hospital Resources" nav item in sidebar/mobile tabs — visible only for hospital users.  
+- [ ] **F.5** QA checklist (must pass before merge):  
+  - Ask a question answerable from hospital docs → answer cites source, no general knowledge leaks.  
+  - Ask an off-topic question → fallback message + "Try Whisperoo Chat" button shown.  
+  - B2C user hits `/hospital-chat` → 403 / redirect.  
+  - Safety keyword (e.g. "I want to hurt myself") → escalation response, not a hospital answer.  
+  - Sponsored hospital user → no paywall hit.  
+- [ ] **F.6** Deploy `hospital_resource_chat`. Lint + build pass.
+
+---
+
+## Phase G — Integration, QA & Merge (all WS)
+
+- [ ] **G.1** End-to-end test on staging:  
+  - Free user exhausts 25 messages → paywall dialog mid-conversation.  
+  - User upgrades via Stripe → tier updates → paywall gone.  
+  - Hospital user → no paywall (sponsored OFF currently — confirm hospital1 tenant `is_sponsored` status per business decision).  
+  - Chat Genie returns ≤1 free + ≤1 paid resource card after expert cards.  
+  - Hospital chat grounds answers, cites sources, shows fallback correctly.  
+- [ ] **G.2** COGS view in superadmin shows token cost data.  
+- [ ] **G.3** Regenerate types if any schema changes after Phase A.  
+- [ ] **G.4** `npm run build` clean on `sprint-2` branch.  
+- [ ] **G.5** PR from `sprint-2` → `main`. Review + merge.
+
+---
+
+## Dependency Order
+
+```
+A (DB) → B (enforce) → C (Stripe) → D (UI)
+A (DB) → E (recommendations)
+A (DB) → F (hospital chat)
+B + C + D + E + F → G (integration QA + merge)
+```
+
+Phases B, E, and F can be worked in parallel after Phase A lands.
+
+---
+
 # Bug Fix — Query-based Expert Payment Gateway
 
 ## Plan (checklist)

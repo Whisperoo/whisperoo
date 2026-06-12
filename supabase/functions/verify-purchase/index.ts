@@ -92,24 +92,44 @@ serve(async (req) => {
 
     // Check for R2 URL in file_url field
     let r2Url = null;
+    let supabaseStorageUrl = null;
 
-    // Look for R2 URL in various fields
+    // Look for R2 or Supabase Storage URLs in product fields
     const possibleUrlFields = [
       product.file_url,
       product.primary_file_url,
-      product.download_url,
     ];
 
     for (const urlField of possibleUrlFields) {
-      if (
-        urlField &&
-        typeof urlField === "string" &&
-        urlField.includes("r2.dev")
-      ) {
-        r2Url = urlField.trim();
-        console.log("Found R2 URL in field:", r2Url);
+      if (!urlField || typeof urlField !== "string") continue;
+      const trimmed = urlField.trim();
+      if (trimmed.includes("r2.dev")) {
+        r2Url = trimmed;
+        console.log("Found R2 URL:", r2Url);
         break;
       }
+      if (trimmed.includes(".supabase.co/storage/") && !supabaseStorageUrl) {
+        supabaseStorageUrl = trimmed;
+        console.log("Found Supabase Storage URL:", supabaseStorageUrl);
+      }
+    }
+
+    // Supabase Storage files are public — return URL directly, no proxy needed
+    if (!r2Url && supabaseStorageUrl) {
+      return new Response(
+        JSON.stringify({
+          has_access: true,
+          product: {
+            id: product.id,
+            title: product.title,
+            download_url: supabaseStorageUrl,
+            product_type: product.product_type,
+          },
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     if (!r2Url) {
