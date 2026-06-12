@@ -909,6 +909,7 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
       .eq('expert_verified', true)
       .eq('expert_profile_visibility', true)
       .neq('expert_accepts_new_clients', false)
+      .neq('expert_availability_status', 'unavailable')
       .order('first_name');
 
     if (error || !experts) return [];
@@ -967,7 +968,8 @@ async function findMatchingExpertsByUserTopics(
       .eq('account_type', 'expert')
       .eq('expert_verified', true)
       .eq('expert_profile_visibility', true)
-      .eq('expert_accepts_new_clients', true);
+      .eq('expert_accepts_new_clients', true)
+      .neq('expert_availability_status', 'unavailable');
 
     if (error || !experts) return [];
 
@@ -1142,6 +1144,7 @@ async function getAllAvailableExperts(supabase) {
       .eq('expert_verified', true)
       .eq('expert_profile_visibility', true)
       .eq('expert_accepts_new_clients', true)
+      .neq('expert_availability_status', 'unavailable')
       .order('first_name');
 
     if (error) {
