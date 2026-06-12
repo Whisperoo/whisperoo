@@ -857,6 +857,23 @@ async function findMatchingExpertsByKeywords(supabase, message, userTenantId: st
       ]
     },
     {
+      specialties: ['Pediatric Oral Development', 'Pediatric Dentistry', 'Dental Health', 'Oral Health'],
+      keywords: [
+        'teeth', 'tooth', 'dental', 'dentist', 'dentistry',
+        'oral health', 'oral care', 'oral development',
+        'teething', 'teething pain', 'teething symptoms',
+        'gums', 'gum pain', 'gum health',
+        'cavity', 'cavities', 'tooth decay',
+        'baby teeth', 'first teeth', 'milk teeth', 'permanent teeth',
+        'tooth brushing', 'brushing teeth', 'toothbrush', 'toothpaste',
+        'fluoride', 'orthodontics', 'airway', 'jaw development',
+        // Vietnamese: răng / nha khoa
+        'răng', 'nha khoa', 'mọc răng', 'đau răng',
+        // Spanish: dientes / dental
+        'dientes', 'dental', 'dentista', 'encías', 'caries',
+      ]
+    },
+    {
       specialties: ['Family Dynamics', 'Lifestyle', 'Emotional Support'],
       keywords: [
         'overwhelmed', 'overwhelming',
