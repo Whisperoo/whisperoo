@@ -41,9 +41,10 @@ interface DashboardData {
   resource_utilization?: {
     product_id: string;
     title: string;
+    total_clicks: number;
     total_views: number;
-    total_downloads: number;
     total_saves: number;
+    total_downloads: number;
     total_revenue: number;
   }[];
   qr_metrics?: {
@@ -419,9 +420,10 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
             <thead className="bg-gray-50 text-gray-600 font-medium border-y border-gray-200">
               <tr>
                 <th className="px-4 py-3">Resource Title</th>
+                <th className="px-4 py-3 text-right">Clicks</th>
                 <th className="px-4 py-3 text-right">Views</th>
-                <th className="px-4 py-3 text-right">Downloads</th>
                 <th className="px-4 py-3 text-right">Saves</th>
+                <th className="px-4 py-3 text-right">Downloads</th>
                 <th className="px-4 py-3 text-right">Revenue Generated</th>
               </tr>
             </thead>
@@ -430,15 +432,16 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
                 data!.resource_utilization!.map((row) => (
                   <tr key={row.product_id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-900">{row.title}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{(row.total_clicks ?? 0).toLocaleString()}</td>
                     <td className="px-4 py-3 text-right text-gray-600">{row.total_views.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right text-gray-600">{row.total_downloads.toLocaleString()}</td>
                     <td className="px-4 py-3 text-right text-gray-600">{row.total_saves.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{row.total_downloads.toLocaleString()}</td>
                     <td className="px-4 py-3 text-right font-medium text-green-600">${row.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                     No resource utilization data found for this period.
                   </td>
                 </tr>

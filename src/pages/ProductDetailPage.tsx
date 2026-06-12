@@ -102,10 +102,10 @@ export const ProductDetailPage: React.FC = () => {
     }
   }, [user, productId]);
 
-  // Track view event — fires once when product data is ready
+  // Track click event — user navigated to/opened this resource (discovery)
   useEffect(() => {
     if (productId && product) {
-      productService.trackProductEvent(productId, "view", user?.id).catch(console.error);
+      productService.trackProductEvent(productId, "click", user?.id).catch(console.error);
     }
   }, [productId, product?.id, user?.id]);
 

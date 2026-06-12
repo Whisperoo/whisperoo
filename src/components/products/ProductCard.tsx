@@ -311,8 +311,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       productService.trackProductEvent(product.id, "view", user.id).catch(console.error);
       setShowPreview(true);
     } else {
-      // Show preview modal for non-purchased content (no error messages)
-      productService.trackProductEvent(product.id, "preview", user.id).catch(console.error);
+      // Show preview modal — user opened resource without having saved it
+      productService.trackProductEvent(product.id, "click", user.id).catch(console.error);
       setShowPreviewModal(true);
     }
   };
