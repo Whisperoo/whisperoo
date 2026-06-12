@@ -987,7 +987,7 @@ export const productService = {
   // Track product analytics event
   async trackProductEvent(
     productId: string,
-    eventType: "view" | "preview" | "download" | "share" | "click",
+    eventType: "view" | "preview" | "download" | "share",
     userId?: string,
   ): Promise<void> {
     const { error } = await supabase.from("product_analytics").insert({
