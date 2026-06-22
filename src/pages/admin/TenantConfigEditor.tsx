@@ -57,22 +57,37 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
   const [logoUrl, setLogoUrl] = useState('');
   const [departments, setDepartments] = useState<TenantDepartment[]>([]);
 
-  const fetchTenant = useCallback(async () => {
-    if (!tenantId) { setTenant(null); return; }
+  // Single fetch — all three queries run in parallel so only one setState
+  // batch fires per tenantId change instead of three separate re-renders.
+  const fetchAll = useCallback(async () => {
+    if (!tenantId) {
+      setTenant(null);
+      setQrCodes([]);
+      setSignups([]);
+      setNurseLeaderboard([]);
+      return;
+    }
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('id, name, slug, config')
-        .eq('id', tenantId)
-        .single();
-      if (error) throw error;
-      const cfg = (data.config as TenantConfig) || {};
-      setTenant(data);
-      setDisplayName(cfg.branding?.display_name ?? data.name ?? '');
-      setPrimaryColor(cfg.branding?.primary_color ?? '#1C3263');
-      setLogoUrl(cfg.branding?.logo_url ?? '');
-      setDepartments(cfg.departments ?? []);
+      const [tenantRes, qrRes, signupsRes] = await Promise.all([
+        supabase.from('tenants').select('id, name, slug, config').eq('id', tenantId).single(),
+        supabase.from('qr_codes').select('id, token, label, department, is_active').eq('tenant_id', tenantId).order('created_at', { ascending: true }),
+        supabase.rpc('fn_admin_get_tenant_signups', { p_tenant_id: tenantId }),
+      ]);
+
+      if (tenantRes.data) {
+        const cfg = (tenantRes.data.config as TenantConfig) || {};
+        setTenant(tenantRes.data);
+        setDisplayName(cfg.branding?.display_name ?? tenantRes.data.name ?? '');
+        setPrimaryColor(cfg.branding?.primary_color ?? '#1C3263');
+        setLogoUrl(cfg.branding?.logo_url ?? '');
+        setDepartments(cfg.departments ?? []);
+      }
+      setQrCodes((qrRes.data as QrCodeRow[]) ?? []);
+      if (!signupsRes.error && signupsRes.data) {
+        setSignups(signupsRes.data.signups ?? []);
+        setNurseLeaderboard(signupsRes.data.nurse_leaderboard ?? []);
+      }
     } catch (err) {
       console.error('TenantConfigEditor: fetch error', err);
     } finally {
@@ -80,31 +95,12 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
     }
   }, [tenantId]);
 
-  useEffect(() => { fetchTenant(); }, [fetchTenant]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // Fetch tracked QR codes for this tenant from the qr_codes table.
-  const fetchQrCodes = useCallback(async () => {
-    if (!tenantId) { setQrCodes([]); return; }
-    const { data } = await supabase
-      .from('qr_codes')
-      .select('id, token, label, department, is_active')
-      .eq('tenant_id', tenantId)
-      .order('created_at', { ascending: true });
-    setQrCodes((data as QrCodeRow[]) ?? []);
-  }, [tenantId]);
-
-  useEffect(() => { fetchQrCodes(); }, [fetchQrCodes]);
-
-  const fetchSignups = useCallback(async () => {
-    if (!tenantId) { setSignups([]); setNurseLeaderboard([]); return; }
-    const { data, error } = await supabase.rpc('fn_admin_get_tenant_signups', { p_tenant_id: tenantId });
-    if (!error && data) {
-      setSignups(data.signups ?? []);
-      setNurseLeaderboard(data.nurse_leaderboard ?? []);
-    }
-  }, [tenantId]);
-
-  useEffect(() => { fetchSignups(); }, [fetchSignups]);
+  // Keep individual refresh helpers pointing at the combined fetch so QR
+  // toggle/create/delete actions still refresh everything in one pass.
+  const fetchTenant = fetchAll;
+  const fetchQrCodes = fetchAll;
 
   const handleToggleQrCode = async (qr: QrCodeRow) => {
     try {
