@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Plus, Trash2, Save, Building2, Palette, Link, Phone, Mail, Loader2, CheckCircle2, Users } from 'lucide-react';
+import { Plus, Trash2, Save, Building2, Palette, Link, Phone, Mail, Loader2, CheckCircle2, Users, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { TenantConfig, TenantDepartment } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface TenantConfigEditorProps {
   tenantId: string | null;
@@ -49,6 +55,7 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
   const [creatingQr, setCreatingQr] = useState(false);
   const [signups, setSignups] = useState<any[]>([]);
   const [nurseLeaderboard, setNurseLeaderboard] = useState<{ nurse_name: string; count: number }[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
   const { t } = useTranslation();
 
   // Form state mirrors TenantConfig
@@ -530,7 +537,11 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {signups.map((s) => (
-                  <tr key={s.user_id} className="hover:bg-gray-50">
+                  <tr
+                    key={s.user_id}
+                    onClick={() => setSelectedPatient(s)}
+                    className="hover:bg-indigo-50 cursor-pointer transition-colors"
+                  >
                     <td className="py-2.5 px-3 font-medium text-gray-800">{s.first_name || '—'}</td>
                     <td className="py-2.5 px-3 text-gray-500 whitespace-nowrap">
                       {s.joined_at ? new Date(s.joined_at).toLocaleDateString() : '—'}
@@ -551,6 +562,56 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
           </div>
         )}
       </section>
+
+      {/* ── Patient Detail Modal ── */}
+      <Dialog open={!!selectedPatient} onOpenChange={(open) => { if (!open) setSelectedPatient(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-gray-900">
+              Patient Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedPatient && (
+            <div className="space-y-4 pt-1">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Name</p>
+                  <p className="text-sm font-medium text-gray-800">{selectedPatient.first_name || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Joined</p>
+                  <p className="text-sm text-gray-700">
+                    {selectedPatient.joined_at ? new Date(selectedPatient.joined_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Department</p>
+                  <p className="text-sm text-gray-700">{selectedPatient.department || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Referred by Nurse</p>
+                  {selectedPatient.referred_by_nurse
+                    ? <p className="text-sm font-semibold text-indigo-700">{selectedPatient.referred_by_nurse}</p>
+                    : <p className="text-sm text-gray-400">—</p>}
+                </div>
+              </div>
+
+              {selectedPatient.referral_hint && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Description</p>
+                  <p className="text-sm text-gray-700 bg-gray-50 rounded-xl p-3 leading-relaxed">
+                    {selectedPatient.referral_hint}
+                  </p>
+                </div>
+              )}
+
+              {!selectedPatient.referred_by_nurse && !selectedPatient.referral_hint && (
+                <p className="text-sm text-gray-400 text-center py-2">No nurse referral information provided.</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ── Actions ── */}
       <div className="flex items-center justify-between pt-4 pb-12 border-t border-gray-100">
