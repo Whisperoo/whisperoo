@@ -313,7 +313,7 @@ const CreateAccount: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              {t('auth.createAccount.firstNameLabel')}
+              {t('auth.createAccount.firstNameLabel')} <span className="text-red-500">*</span>
             </label>
             <Input
               value={formData.firstName}
@@ -355,7 +355,7 @@ const CreateAccount: React.FC = () => {
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              {t('auth.createAccount.emailLabel')}
+              {t('auth.createAccount.emailLabel')} <span className="text-red-500">*</span>
             </label>
             <Input
               type="email"
@@ -375,7 +375,7 @@ const CreateAccount: React.FC = () => {
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              {t('auth.createAccount.passwordLabel')}
+              {t('auth.createAccount.passwordLabel')} <span className="text-red-500">*</span>
             </label>
             <Input
               type="password"
