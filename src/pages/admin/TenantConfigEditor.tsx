@@ -521,33 +521,33 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
             No patients have completed onboarding yet.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-auto max-h-80 rounded-xl border border-gray-100">
             <table className="w-full text-sm">
-              <thead>
+              <thead className="sticky top-0 bg-white z-10">
                 <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  <th className="pb-2 text-left">Patient</th>
-                  <th className="pb-2 text-left">Joined</th>
-                  <th className="pb-2 text-left">Referred by Nurse</th>
-                  <th className="pb-2 text-left">Description</th>
-                  <th className="pb-2 text-left">Department</th>
+                  <th className="pb-2 pt-1 px-3 text-left">Patient</th>
+                  <th className="pb-2 pt-1 px-3 text-left">Joined</th>
+                  <th className="pb-2 pt-1 px-3 text-left">Referred by Nurse</th>
+                  <th className="pb-2 pt-1 px-3 text-left">Description</th>
+                  <th className="pb-2 pt-1 px-3 text-left">Department</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {signups.map((s) => (
                   <tr key={s.user_id} className="hover:bg-gray-50">
-                    <td className="py-2.5 pr-4 font-medium text-gray-800">{s.first_name || '—'}</td>
-                    <td className="py-2.5 pr-4 text-gray-500 whitespace-nowrap">
+                    <td className="py-2.5 px-3 font-medium text-gray-800">{s.first_name || '—'}</td>
+                    <td className="py-2.5 px-3 text-gray-500 whitespace-nowrap">
                       {s.joined_at ? new Date(s.joined_at).toLocaleDateString() : '—'}
                     </td>
-                    <td className="py-2.5 pr-4">
+                    <td className="py-2.5 px-3">
                       {s.referred_by_nurse
                         ? <span className="text-indigo-700 font-medium">{s.referred_by_nurse}</span>
                         : <span className="text-gray-400">—</span>}
                     </td>
-                    <td className="py-2.5 pr-4 text-gray-500 max-w-[200px] truncate">
+                    <td className="py-2.5 px-3 text-gray-500 max-w-[200px] truncate">
                       {s.referral_hint || '—'}
                     </td>
-                    <td className="py-2.5 text-gray-500">{s.department || '—'}</td>
+                    <td className="py-2.5 px-3 text-gray-500">{s.department || '—'}</td>
                   </tr>
                 ))}
               </tbody>
