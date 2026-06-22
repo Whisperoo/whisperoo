@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Plus, Trash2, Save, Building2, Palette, Link, Phone, Mail, Loader2, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Save, Building2, Palette, Link, Phone, Mail, Loader2, CheckCircle2, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { TenantConfig, TenantDepartment } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
@@ -47,6 +47,8 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
   const [deleting, setDeleting] = useState(false);
   const [qrCodes, setQrCodes] = useState<QrCodeRow[]>([]);
   const [creatingQr, setCreatingQr] = useState(false);
+  const [signups, setSignups] = useState<any[]>([]);
+  const [nurseLeaderboard, setNurseLeaderboard] = useState<{ nurse_name: string; count: number }[]>([]);
   const { t } = useTranslation();
 
   // Form state mirrors TenantConfig
@@ -92,6 +94,17 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
   }, [tenantId]);
 
   useEffect(() => { fetchQrCodes(); }, [fetchQrCodes]);
+
+  const fetchSignups = useCallback(async () => {
+    if (!tenantId) { setSignups([]); setNurseLeaderboard([]); return; }
+    const { data, error } = await supabase.rpc('fn_admin_get_tenant_signups', { p_tenant_id: tenantId });
+    if (!error && data) {
+      setSignups(data.signups ?? []);
+      setNurseLeaderboard(data.nurse_leaderboard ?? []);
+    }
+  }, [tenantId]);
+
+  useEffect(() => { fetchSignups(); }, [fetchSignups]);
 
   const handleToggleQrCode = async (qr: QrCodeRow) => {
     try {
@@ -475,6 +488,70 @@ const TenantConfigEditor: React.FC<TenantConfigEditorProps> = ({ tenantId }) => 
                 </div>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      {/* ── Signups & Nurse Attribution ── */}
+      <section className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 space-y-5">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-indigo-500" />
+          <h3 className="font-semibold text-gray-800">Signups & Nurse Attribution</h3>
+          <span className="ml-auto text-xs text-gray-400">{signups.length} patient{signups.length !== 1 ? 's' : ''}</span>
+        </div>
+
+        {/* Nurse leaderboard */}
+        {nurseLeaderboard.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Top Referrers</p>
+            <div className="flex flex-wrap gap-2">
+              {nurseLeaderboard.map((entry) => (
+                <span key={entry.nurse_name} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium">
+                  {entry.nurse_name}
+                  <span className="bg-indigo-200 text-indigo-800 text-xs font-bold px-1.5 py-0.5 rounded-full">{entry.count}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Patient table */}
+        {signups.length === 0 ? (
+          <div className="text-center py-8 text-sm text-gray-400 border border-dashed border-gray-200 rounded-xl">
+            No patients have completed onboarding yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  <th className="pb-2 text-left">Patient</th>
+                  <th className="pb-2 text-left">Joined</th>
+                  <th className="pb-2 text-left">Referred by Nurse</th>
+                  <th className="pb-2 text-left">Description</th>
+                  <th className="pb-2 text-left">Department</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {signups.map((s) => (
+                  <tr key={s.user_id} className="hover:bg-gray-50">
+                    <td className="py-2.5 pr-4 font-medium text-gray-800">{s.first_name || '—'}</td>
+                    <td className="py-2.5 pr-4 text-gray-500 whitespace-nowrap">
+                      {s.joined_at ? new Date(s.joined_at).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="py-2.5 pr-4">
+                      {s.referred_by_nurse
+                        ? <span className="text-indigo-700 font-medium">{s.referred_by_nurse}</span>
+                        : <span className="text-gray-400">—</span>}
+                    </td>
+                    <td className="py-2.5 pr-4 text-gray-500 max-w-[200px] truncate">
+                      {s.referral_hint || '—'}
+                    </td>
+                    <td className="py-2.5 text-gray-500">{s.department || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </section>

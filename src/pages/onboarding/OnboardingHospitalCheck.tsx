@@ -39,10 +39,11 @@ const OnboardingHospitalCheck: React.FC = () => {
   const [selectedDept, setSelectedDept] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // If user already has a tenant_id (came via QR code), skip this step
+  // If user already has a tenant_id (came via QR code), skip hospital selection
+  // but still show the nurse referral step
   useEffect(() => {
     if (profile?.tenant_id) {
-      navigate('/onboarding/kids');
+      navigate('/onboarding/referred');
     }
   }, [profile?.tenant_id, navigate]);
 
@@ -104,7 +105,7 @@ const OnboardingHospitalCheck: React.FC = () => {
           description: t('onboarding.hospitalCheck.toast.connectedTo', { name: selectedTenant?.config?.branding?.display_name || selectedTenant?.name }),
         });
 
-        navigate('/onboarding/kids');
+        navigate('/onboarding/referred');
       } catch (err: any) {
         console.error('Error linking hospital:', err);
         toast({
@@ -112,7 +113,7 @@ const OnboardingHospitalCheck: React.FC = () => {
           description: t('onboarding.hospitalCheck.toast.errorDesc'),
           variant: 'destructive',
         });
-        navigate('/onboarding/kids');
+        navigate('/onboarding/referred');
       } finally {
         setIsSaving(false);
       }
