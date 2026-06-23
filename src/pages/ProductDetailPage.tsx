@@ -377,15 +377,15 @@ export const ProductDetailPage: React.FC = () => {
           <div className="lg:col-span-2">
             <Card>
               <CardContent className="p-0">
-                <div className="relative aspect-video bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg overflow-hidden">
+                <div className="rounded-lg overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
                   {product.thumbnail_url &&
                   product.thumbnail_url.trim() &&
                   !product.thumbnail_url.includes("placeholder") ? (
-                    <div className="absolute inset-0">
+                    <div className="relative">
                       <img
                         src={product.thumbnail_url}
                         alt={currentLang === 'es' && product.title_es ? product.title_es : currentLang === 'vi' && product.title_vi ? product.title_vi : product.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-auto block"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                           const fallback = e.currentTarget
@@ -396,7 +396,7 @@ export const ProductDetailPage: React.FC = () => {
 
                       {/* Fallback that shows when image fails to load */}
                       <div
-                        className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100"
+                        className="w-full min-h-[200px] flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100"
                         style={{
                           display: "none",
                         }}
@@ -422,7 +422,7 @@ export const ProductDetailPage: React.FC = () => {
                       {/* Play button overlay for videos */}
                       {(product.product_type === "video" || isCourse) &&
                         hasContent && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm hover:bg-black/30 transition-colors">
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors cursor-pointer">
                             <Button
                               size="lg"
                               className="rounded-full h-16 w-16 bg-white/90 hover:bg-white text-gray-900 shadow-lg"
@@ -434,7 +434,7 @@ export const ProductDetailPage: React.FC = () => {
                         )}
                     </div>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+                    <div className="w-full min-h-[200px] flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
                       <div className="flex flex-col items-center">
                         <div
                           className={`w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg ${product.product_type === "video" ? "bg-gradient-to-br from-red-500 to-red-600" : product.product_type === "consultation" ? "bg-gradient-to-br from-green-500 to-green-600" : "bg-gradient-to-br from-blue-500 to-blue-600"}`}
