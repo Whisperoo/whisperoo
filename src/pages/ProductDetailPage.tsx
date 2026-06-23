@@ -381,7 +381,7 @@ export const ProductDetailPage: React.FC = () => {
                   {product.thumbnail_url &&
                   product.thumbnail_url.trim() &&
                   !product.thumbnail_url.includes("placeholder") ? (
-                    <div className="relative">
+                    <div className="absolute inset-0">
                       <img
                         src={product.thumbnail_url}
                         alt={currentLang === 'es' && product.title_es ? product.title_es : currentLang === 'vi' && product.title_vi ? product.title_vi : product.title}
