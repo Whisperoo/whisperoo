@@ -206,7 +206,17 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
             : undefined,
         });
 
-        if (fnRes.error) throw new Error(fnRes.error.message);
+        if (fnRes.error) {
+          // Extract the real error message from the function response body.
+          // supabase-js wraps all non-2xx responses in a generic FunctionsHttpError;
+          // the actual message is in the response JSON under { error: "..." }.
+          let actualMsg = fnRes.error.message;
+          try {
+            const body = await (fnRes.error as any).context?.json?.();
+            if (body?.error) actualMsg = body.error;
+          } catch {}
+          throw new Error(actualMsg);
+        }
         if (fnRes.data?.error) throw new Error(fnRes.data.error);
 
         const createdId: string = fnRes.data.id;
