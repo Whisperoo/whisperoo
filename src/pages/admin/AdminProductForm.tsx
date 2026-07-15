@@ -3,6 +3,7 @@ import { X, Save, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { CANONICAL_TOPICS, hasCanonicalTopic } from '@/utils/canonicalTopics';
+import { uploadFileWithRetry } from '@/services/cloudflare-storage';
 
 interface AdminProductFormProps {
   productId: string | null; // null or 'new' = create, string = edit
@@ -169,20 +170,22 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
     setError(null);
 
     try {
-      const uploadPublic = async (bucket: 'resource-files' | 'resource-thumbnails', file: File, prefix: string) => {
+      // Routed through Cloudflare R2 (not Supabase Storage) — R2 has no
+      // project-wide upload size ceiling, unlike Supabase Storage buckets
+      // which rejected videos regardless of bucket-level limits.
+      const uploadPublic = async (_bucket: 'resource-files' | 'resource-thumbnails', file: File, prefix: string) => {
         setUploading(true);
         try {
           const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
           const fileName = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
-          const path = `${prefix}/${fileName}`;
+          const filePath = `${prefix}/${fileName}`;
 
-          const { error: upErr } = await supabase.storage.from(bucket).upload(path, file, {
-            upsert: true,
+          const result = await uploadFileWithRetry({
+            filePath,
+            file,
             contentType: file.type || undefined,
           });
-          if (upErr) throw upErr;
-          const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-          return data.publicUrl || null;
+          return result.publicUrl;
         } finally {
           setUploading(false);
         }
