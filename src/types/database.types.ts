@@ -105,6 +105,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "care_checklist_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       care_checklist_templates: {
@@ -112,6 +119,8 @@ export type Database = {
           category: string | null
           created_at: string | null
           description: string | null
+          description_es: string | null
+          description_vi: string | null
           hospital_phone: string | null
           id: string
           is_universal: boolean | null
@@ -120,11 +129,15 @@ export type Database = {
           stage_label: string
           tenant_id: string | null
           title: string
+          title_es: string | null
+          title_vi: string | null
         }
         Insert: {
           category?: string | null
           created_at?: string | null
           description?: string | null
+          description_es?: string | null
+          description_vi?: string | null
           hospital_phone?: string | null
           id?: string
           is_universal?: boolean | null
@@ -133,11 +146,15 @@ export type Database = {
           stage_label: string
           tenant_id?: string | null
           title: string
+          title_es?: string | null
+          title_vi?: string | null
         }
         Update: {
           category?: string | null
           created_at?: string | null
           description?: string | null
+          description_es?: string | null
+          description_vi?: string | null
           hospital_phone?: string | null
           id?: string
           is_universal?: boolean | null
@@ -146,6 +163,8 @@ export type Database = {
           stage_label?: string
           tenant_id?: string | null
           title?: string
+          title_es?: string | null
+          title_vi?: string | null
         }
         Relationships: [
           {
@@ -189,6 +208,114 @@ export type Database = {
           user_query?: string
         }
         Relationships: []
+      }
+      consultation_bookings: {
+        Row: {
+          admin_notes: string | null
+          amount_paid: number | null
+          appointment_name: string
+          booked_at: string | null
+          booking_type: string
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string | null
+          discount_code: string | null
+          expert_id: string
+          expert_name: string
+          id: string
+          payment_status: string
+          product_id: string
+          purchase_id: string | null
+          resource_type: string
+          status: string
+          updated_at: string | null
+          user_email: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_paid?: number | null
+          appointment_name: string
+          booked_at?: string | null
+          booking_type: string
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          discount_code?: string | null
+          expert_id: string
+          expert_name: string
+          id?: string
+          payment_status?: string
+          product_id: string
+          purchase_id?: string | null
+          resource_type?: string
+          status?: string
+          updated_at?: string | null
+          user_email: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_paid?: number | null
+          appointment_name?: string
+          booked_at?: string | null
+          booking_type?: string
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          discount_code?: string | null
+          expert_id?: string
+          expert_name?: string
+          id?: string
+          payment_status?: string
+          product_id?: string
+          purchase_id?: string | null
+          resource_type?: string
+          status?: string
+          updated_at?: string | null
+          user_email?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_bookings_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultation_bookings_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "consultation_bookings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultation_bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultation_bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       course_activities: {
         Row: {
@@ -307,96 +434,44 @@ export type Database = {
           },
         ]
       }
-      consultation_bookings: {
+      discount_codes: {
         Row: {
+          code: string
+          created_at: string | null
+          current_uses: number | null
+          discount_amount: number
+          discount_type: string
           id: string
-          user_id: string
-          user_email: string
-          user_name: string
-          expert_id: string
-          expert_name: string
-          product_id: string
-          appointment_name: string
-          booking_type: string
-          amount_paid: number | null
-          purchase_id: string | null
-          resource_type: string
-          status: string
-          booked_at: string
-          completed_at: string | null
-          cancelled_at: string | null
-          discount_code: string | null
-          admin_notes: string | null
-          created_at: string
-          updated_at: string
+          is_active: boolean | null
+          max_uses: number | null
+          valid_from: string | null
+          valid_until: string | null
         }
         Insert: {
+          code: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_amount: number
+          discount_type: string
           id?: string
-          user_id: string
-          user_email: string
-          user_name: string
-          expert_id: string
-          expert_name: string
-          product_id: string
-          appointment_name: string
-          booking_type: string
-          amount_paid?: number | null
-          purchase_id?: string | null
-          resource_type?: string
-          status?: string
-          booked_at?: string
-          completed_at?: string | null
-          cancelled_at?: string | null
-          discount_code?: string | null
-          admin_notes?: string | null
-          created_at?: string
-          updated_at?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
         }
         Update: {
+          code?: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_amount?: number
+          discount_type?: string
           id?: string
-          user_id?: string
-          user_email?: string
-          user_name?: string
-          expert_id?: string
-          expert_name?: string
-          product_id?: string
-          appointment_name?: string
-          booking_type?: string
-          amount_paid?: number | null
-          purchase_id?: string | null
-          resource_type?: string
-          status?: string
-          booked_at?: string
-          completed_at?: string | null
-          cancelled_at?: string | null
-          discount_code?: string | null
-          admin_notes?: string | null
-          created_at?: string
-          updated_at?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "consultation_bookings_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "consultation_bookings_expert_id_fkey"
-            columns: ["expert_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "consultation_bookings_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       expert_embeddings: {
         Row: {
@@ -429,6 +504,85 @@ export type Database = {
             columns: ["expert_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expert_embeddings_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: true
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      expert_recommendation_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          detected_category: string | null
+          expert_id: string
+          id: string
+          message_id: string
+          reason: string
+          user_id: string
+          user_query: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          detected_category?: string | null
+          expert_id: string
+          id?: string
+          message_id: string
+          reason: string
+          user_id: string
+          user_query?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          detected_category?: string | null
+          expert_id?: string
+          id?: string
+          message_id?: string
+          reason?: string
+          user_id?: string
+          user_query?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expert_recommendation_feedback_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expert_recommendation_feedback_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "expert_recommendation_feedback_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "admin_ai_audit_trail"
+            referencedColumns: ["message_id"]
+          },
+          {
+            foreignKeyName: "expert_recommendation_feedback_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "flagged_messages_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expert_recommendation_feedback_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]
@@ -478,6 +632,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "kids_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       messages: {
@@ -517,6 +678,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      phi_access_log: {
+        Row: {
+          accessed_at: string
+          accessor_role: string
+          accessor_user_id: string
+          action: string
+          id: string
+          patient_user_id: string
+          reason_code: string
+          reason_text: string | null
+          resource_id: string
+          resource_type: string
+        }
+        Insert: {
+          accessed_at?: string
+          accessor_role: string
+          accessor_user_id: string
+          action: string
+          id?: string
+          patient_user_id: string
+          reason_code: string
+          reason_text?: string | null
+          resource_id: string
+          resource_type: string
+        }
+        Update: {
+          accessed_at?: string
+          accessor_role?: string
+          accessor_user_id?: string
+          action?: string
+          id?: string
+          patient_user_id?: string
+          reason_code?: string
+          reason_text?: string | null
+          resource_id?: string
+          resource_type?: string
+        }
+        Relationships: []
       }
       product_analytics: {
         Row: {
@@ -566,6 +766,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -731,30 +938,87 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "product_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      product_wishlists: {
+        Row: {
+          created_at: string | null
+          id: string
+          product_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          product_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          product_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_wishlists_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_wishlists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_wishlists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       products: {
         Row: {
+          booking_confirmation_desc: string | null
+          booking_confirmation_title: string | null
           booking_model: string | null
           content_type: string | null
           created_at: string | null
           description: string | null
           description_es: string | null
           description_vi: string | null
+          difficulty_level: string | null
           duration_minutes: number | null
           expert_id: string | null
           file_size_mb: number | null
           file_url: string | null
           has_multiple_files: boolean | null
-          how_to_schedule: string | null
           hospital_prebook_message: string | null
+          how_to_schedule: string | null
           id: string
           is_active: boolean | null
+          is_free: boolean | null
+          is_hospital_resource: boolean | null
           page_count: number | null
           price: number
           primary_file_url: string | null
           product_type: string
+          status: string | null
           tags: string[] | null
+          tenant_id: string | null
           thumbnail_url: string | null
           title: string
           title_es: string | null
@@ -762,30 +1026,35 @@ export type Database = {
           total_files_count: number | null
           updated_at: string | null
           view_count: number | null
-          tenant_id: string | null
-          is_hospital_resource: boolean | null
         }
         Insert: {
+          booking_confirmation_desc?: string | null
+          booking_confirmation_title?: string | null
           booking_model?: string | null
           content_type?: string | null
           created_at?: string | null
           description?: string | null
           description_es?: string | null
           description_vi?: string | null
+          difficulty_level?: string | null
           duration_minutes?: number | null
           expert_id?: string | null
           file_size_mb?: number | null
           file_url?: string | null
           has_multiple_files?: boolean | null
-          how_to_schedule?: string | null
           hospital_prebook_message?: string | null
+          how_to_schedule?: string | null
           id?: string
           is_active?: boolean | null
+          is_free?: boolean | null
+          is_hospital_resource?: boolean | null
           page_count?: number | null
           price: number
           primary_file_url?: string | null
           product_type: string
+          status?: string | null
           tags?: string[] | null
+          tenant_id?: string | null
           thumbnail_url?: string | null
           title: string
           title_es?: string | null
@@ -793,30 +1062,35 @@ export type Database = {
           total_files_count?: number | null
           updated_at?: string | null
           view_count?: number | null
-          tenant_id?: string | null
-          is_hospital_resource?: boolean | null
         }
         Update: {
+          booking_confirmation_desc?: string | null
+          booking_confirmation_title?: string | null
           booking_model?: string | null
           content_type?: string | null
           created_at?: string | null
           description?: string | null
           description_es?: string | null
           description_vi?: string | null
+          difficulty_level?: string | null
           duration_minutes?: number | null
           expert_id?: string | null
           file_size_mb?: number | null
           file_url?: string | null
           has_multiple_files?: boolean | null
-          how_to_schedule?: string | null
           hospital_prebook_message?: string | null
+          how_to_schedule?: string | null
           id?: string
           is_active?: boolean | null
+          is_free?: boolean | null
+          is_hospital_resource?: boolean | null
           page_count?: number | null
           price?: number
           primary_file_url?: string | null
           product_type?: string
+          status?: string | null
           tags?: string[] | null
+          tenant_id?: string | null
           thumbnail_url?: string | null
           title?: string
           title_es?: string | null
@@ -824,8 +1098,6 @@ export type Database = {
           total_files_count?: number | null
           updated_at?: string | null
           view_count?: number | null
-          tenant_id?: string | null
-          is_hospital_resource?: boolean | null
         }
         Relationships: [
           {
@@ -835,15 +1107,29 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "products_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
         Row: {
           account_type: string | null
+          acquisition_department: string | null
           acquisition_source: string | null
           created_at: string | null
           custom_role: string | null
-          email: string
           expecting_status:
             | Database["public"]["Enums"]["expecting_status"]
             | null
@@ -873,28 +1159,32 @@ export type Database = {
           first_name: string
           has_kids: boolean | null
           id: string
+          inquiry_confirmation_message: string | null
+          inquiry_prebook_message: string | null
           kids_count: number | null
           language_preference: string | null
           onboarded: boolean | null
           parenting_styles: string[]
           personal_context: string | null
-          phone: string | null
           phone_number: string | null
           preferred_language: string | null
           profile_image_url: string | null
+          referral_hint: string | null
+          referred_by_nurse: string | null
           role: Database["public"]["Enums"]["user_role"] | null
+          signup_qr_anon_id: string | null
+          signup_qr_at: string | null
+          signup_qr_code_id: string | null
           tenant_id: string | null
-          inquiry_confirmation_message: string | null
-          inquiry_prebook_message: string | null
           topics_of_interest: string[]
           updated_at: string | null
         }
         Insert: {
           account_type?: string | null
+          acquisition_department?: string | null
           acquisition_source?: string | null
           created_at?: string | null
           custom_role?: string | null
-          email: string
           expecting_status?:
             | Database["public"]["Enums"]["expecting_status"]
             | null
@@ -924,28 +1214,32 @@ export type Database = {
           first_name: string
           has_kids?: boolean | null
           id: string
+          inquiry_confirmation_message?: string | null
+          inquiry_prebook_message?: string | null
           kids_count?: number | null
           language_preference?: string | null
           onboarded?: boolean | null
           parenting_styles?: string[]
           personal_context?: string | null
-          phone?: string | null
           phone_number?: string | null
           preferred_language?: string | null
           profile_image_url?: string | null
+          referral_hint?: string | null
+          referred_by_nurse?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          signup_qr_anon_id?: string | null
+          signup_qr_at?: string | null
+          signup_qr_code_id?: string | null
           tenant_id?: string | null
-          inquiry_confirmation_message?: string | null
-          inquiry_prebook_message?: string | null
           topics_of_interest?: string[]
           updated_at?: string | null
         }
         Update: {
           account_type?: string | null
+          acquisition_department?: string | null
           acquisition_source?: string | null
           created_at?: string | null
           custom_role?: string | null
-          email?: string
           expecting_status?:
             | Database["public"]["Enums"]["expecting_status"]
             | null
@@ -975,23 +1269,34 @@ export type Database = {
           first_name?: string
           has_kids?: boolean | null
           id?: string
+          inquiry_confirmation_message?: string | null
+          inquiry_prebook_message?: string | null
           kids_count?: number | null
           language_preference?: string | null
           onboarded?: boolean | null
           parenting_styles?: string[]
           personal_context?: string | null
-          phone?: string | null
           phone_number?: string | null
           preferred_language?: string | null
           profile_image_url?: string | null
+          referral_hint?: string | null
+          referred_by_nurse?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          signup_qr_anon_id?: string | null
+          signup_qr_at?: string | null
+          signup_qr_code_id?: string | null
           tenant_id?: string | null
-          inquiry_confirmation_message?: string | null
-          inquiry_prebook_message?: string | null
           topics_of_interest?: string[]
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_signup_qr_code_id_fkey"
+            columns: ["signup_qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -1008,6 +1313,7 @@ export type Database = {
           consultation_completed: boolean | null
           consultation_completed_at: string | null
           currency: string | null
+          discount_code: string | null
           expert_id: string | null
           id: string
           metadata: Json | null
@@ -1016,7 +1322,6 @@ export type Database = {
           product_id: string | null
           purchased_at: string | null
           status: string | null
-          discount_code: string | null
           user_id: string | null
         }
         Insert: {
@@ -1025,6 +1330,7 @@ export type Database = {
           consultation_completed?: boolean | null
           consultation_completed_at?: string | null
           currency?: string | null
+          discount_code?: string | null
           expert_id?: string | null
           id?: string
           metadata?: Json | null
@@ -1033,7 +1339,6 @@ export type Database = {
           product_id?: string | null
           purchased_at?: string | null
           status?: string | null
-          discount_code?: string | null
           user_id?: string | null
         }
         Update: {
@@ -1042,6 +1347,7 @@ export type Database = {
           consultation_completed?: boolean | null
           consultation_completed_at?: string | null
           currency?: string | null
+          discount_code?: string | null
           expert_id?: string | null
           id?: string
           metadata?: Json | null
@@ -1050,7 +1356,6 @@ export type Database = {
           product_id?: string | null
           purchased_at?: string | null
           status?: string | null
-          discount_code?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -1060,6 +1365,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "purchases_product_id_fkey"
@@ -1073,6 +1385,92 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      qr_codes: {
+        Row: {
+          created_at: string
+          department: string | null
+          id: string
+          is_active: boolean
+          label: string | null
+          source: string
+          tenant_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          source?: string
+          tenant_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          source?: string
+          tenant_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_codes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_events: {
+        Row: {
+          anon_id: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          occurred_at: string
+          qr_code_id: string
+          user_id: string | null
+        }
+        Insert: {
+          anon_id?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          qr_code_id: string
+          user_id?: string | null
+        }
+        Update: {
+          anon_id?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          qr_code_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_events_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
             referencedColumns: ["id"]
           },
         ]
@@ -1126,6 +1524,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       tenants: {
@@ -1152,6 +1557,48 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           slug?: string
+        }
+        Relationships: []
+      }
+      waitlist_signups: {
+        Row: {
+          created_at: string
+          department: string | null
+          email: string
+          full_name: string
+          id: string
+          journey_stage: string | null
+          metadata: Json
+          phone: string
+          qr_token: string | null
+          source: string | null
+          tenant_slug: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          email: string
+          full_name: string
+          id?: string
+          journey_stage?: string | null
+          metadata?: Json
+          phone: string
+          qr_token?: string | null
+          source?: string | null
+          tenant_slug: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          journey_stage?: string | null
+          metadata?: Json
+          phone?: string
+          qr_token?: string | null
+          source?: string | null
+          tenant_slug?: string
         }
         Relationships: []
       }
@@ -1183,6 +1630,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1232,7 +1686,6 @@ export type Database = {
           role: string | null
           session_id: string | null
           tenant_id: string | null
-          user_email: string | null
           user_id: string | null
           user_name: string | null
         }
@@ -1256,6 +1709,37 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      tenant_user_details: {
+        Row: {
+          acquisition_department: string | null
+          acquisition_source: string | null
+          created_at: string | null
+          first_name: string | null
+          language_preference: string | null
+          onboarded: boolean | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          tenant_id: string | null
+          tenant_name: string | null
+          tenant_slug: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -1288,7 +1772,106 @@ export type Database = {
           tenant_id: string
         }[]
       }
-      fn_get_admin_dashboard: { Args: { p_tenant_id?: string }; Returns: Json }
+      fn_admin_create_expert:
+        | {
+            Args: {
+              p_email?: string
+              p_expert_availability_status?: string
+              p_expert_bio?: string
+              p_expert_consultation_rate?: number
+              p_expert_credentials?: string[]
+              p_expert_experience_years?: number
+              p_expert_rating?: number
+              p_expert_specialties?: string[]
+              p_first_name: string
+              p_inquiry_confirmation_message?: string
+              p_password?: string
+              p_profile_image_url?: string
+              p_tenant_id?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_email?: string
+              p_expert_availability_status?: string
+              p_expert_bio?: string
+              p_expert_consultation_rate?: number
+              p_expert_credentials?: string[]
+              p_expert_experience_years?: number
+              p_expert_rating?: number
+              p_expert_specialties?: string[]
+              p_first_name: string
+              p_inquiry_confirmation_message?: string
+              p_inquiry_prebook_message?: string
+              p_password?: string
+              p_profile_image_url?: string
+              p_tenant_id?: string
+            }
+            Returns: string
+          }
+      fn_admin_get_tenant_signups: {
+        Args: { p_tenant_id: string }
+        Returns: Json
+      }
+      fn_admin_qr_signup_export: {
+        Args: {
+          p_end_date?: string
+          p_start_date?: string
+          p_tenant_id?: string
+        }
+        Returns: {
+          acquisition_source: string
+          created_at: string
+          department: string
+          first_name: string
+          phone: string
+          qr_label: string
+          tenant_name: string
+        }[]
+      }
+      fn_admin_qr_signup_metrics: {
+        Args: {
+          p_end_date?: string
+          p_start_date?: string
+          p_tenant_id?: string
+        }
+        Returns: Json
+      }
+      fn_caller_is_staff_admin: { Args: never; Returns: boolean }
+      fn_get_admin_dashboard: {
+        Args: {
+          p_end_date?: string
+          p_start_date?: string
+          p_tenant_id?: string
+        }
+        Returns: Json
+      }
+      fn_get_appointment_booking_engagement_pct: {
+        Args: {
+          p_end_date?: string
+          p_start_date?: string
+          p_tenant_id?: string
+        }
+        Returns: number
+      }
+      fn_get_resource_utilization: {
+        Args: {
+          p_end_date?: string
+          p_start_date?: string
+          p_tenant_id?: string
+        }
+        Returns: Json
+      }
+      fn_link_user_to_hospital: {
+        Args: { p_department?: string; p_tenant_id: string }
+        Returns: undefined
+      }
+      fn_save_nurse_referral: {
+        Args: { p_nurse_name?: string; p_referral_hint?: string }
+        Returns: undefined
+      }
+      fn_update_own_profile: { Args: { updates: Json }; Returns: undefined }
       get_onboarding_progress: { Args: never; Returns: Json }
       get_pregnancy_week: { Args: { due_date_input: string }; Returns: number }
       get_product_files: {
@@ -1308,6 +1891,10 @@ export type Database = {
       }
       get_user_tenant_id: { Args: never; Returns: string }
       get_weeks_until_due: { Args: { due_date_input: string }; Returns: number }
+      increment_discount_usage: {
+        Args: { discount_id: string }
+        Returns: undefined
+      }
       match_compliance_training: {
         Args: {
           match_count: number
@@ -1325,23 +1912,37 @@ export type Database = {
       search_products_with_experts: {
         Args: { search_term: string }
         Returns: {
+          booking_confirmation_desc: string | null
+          booking_confirmation_title: string | null
+          booking_model: string | null
           content_type: string | null
           created_at: string | null
           description: string | null
+          description_es: string | null
+          description_vi: string | null
+          difficulty_level: string | null
           duration_minutes: number | null
           expert_id: string | null
           file_size_mb: number | null
           file_url: string | null
           has_multiple_files: boolean | null
+          hospital_prebook_message: string | null
+          how_to_schedule: string | null
           id: string
           is_active: boolean | null
+          is_free: boolean | null
+          is_hospital_resource: boolean | null
           page_count: number | null
           price: number
           primary_file_url: string | null
           product_type: string
+          status: string | null
           tags: string[] | null
+          tenant_id: string | null
           thumbnail_url: string | null
           title: string
+          title_es: string | null
+          title_vi: string | null
           total_files_count: number | null
           updated_at: string | null
           view_count: number | null
