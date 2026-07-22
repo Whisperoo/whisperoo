@@ -140,7 +140,6 @@ serve(async (req) => {
         );
         if (upsertErr) throw upsertErr;
 
-        await supabase.from("profiles").update({ expert_embedding: embeddingLiteral } as any).eq("id", expert.id);
         processed++;
       } catch (err) {
         failed++;
