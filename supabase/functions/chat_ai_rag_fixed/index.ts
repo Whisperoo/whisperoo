@@ -166,6 +166,23 @@ serve(async (req) => {
         t.includes('estrés') || t.includes('ansiedad') || t.includes('depresión posparto')
       ) return 'Nervous System Regulation';
 
+      // Toddler Development is intentionally checked BEFORE Pelvic Floor so
+      // "potty/toilet training" can never fall through to a Pelvic Floor match
+      // (both use bathroom/bladder vocabulary but they're unrelated topics —
+      // Pelvic Floor is the PARENT's own postpartum body, Toddler Development
+      // is the CHILD's toileting and behavior). No specialist on the platform
+      // covers this yet, so the category exists just to prevent misrouting.
+      if (
+        t.includes('potty') || t.includes('toilet training') ||
+        t.includes('toddler tantrum') || t.includes('tantrum') ||
+        t.includes('discipline') || t.includes('time out') || t.includes('time-out') ||
+        t.includes('developmental milestone') || t.includes('milestones') ||
+        // Vietnamese
+        t.includes('tập đi vệ sinh') || t.includes('bô') ||
+        // Spanish
+        t.includes('control de esfínteres') || t.includes('rabieta') || t.includes('berrinche')
+      ) return 'Toddler Development';
+
       if (
         t.includes('pelvic floor') || t.includes('perineal') ||
         t.includes('c-section') || t.includes('bleeding') ||
@@ -322,9 +339,19 @@ serve(async (req) => {
       );
       matchedProducts = await findMatchingProductsRAG(supabase, message, userTopics, userTenantId, disabledProductIds);
 
+      // No specialty on the platform covers toddler-development topics like
+      // potty training. Drop all retrieved candidates so nothing reaches the
+      // LLM — otherwise the model rationalizes a match against whichever
+      // loosely-related expert (e.g. Pelvic Floor) surfaces through the
+      // deliberately-loose semantic threshold. The prompt table also tells
+      // the model to withhold recommendations here; this is the stronger gate.
+      if (messageCategory === 'Toddler Development') {
+        matchedExperts = [];
+      }
+
       // If the user is repeating the same topic and semantic matching missed,
       // broaden the match using a category-specific seed phrase.
-      if (isRecurringTopic && matchedExperts.length === 0 && messageCategory && messageCategory !== 'General Parenting') {
+      if (isRecurringTopic && matchedExperts.length === 0 && messageCategory && messageCategory !== 'General Parenting' && messageCategory !== 'Toddler Development') {
         const seed = seedPhraseForCategory(messageCategory);
         matchedExperts = await findMatchingExpertsRAGFirst(
           supabase,
@@ -442,6 +469,7 @@ serve(async (req) => {
           child_id: childId,
           expert_suggestions: displayedExperts.length > 0 ? displayedExperts : undefined,
           original_user_query: message,
+          detected_category: messageCategory,  // enables per-card "wrong match?" flagging tied to the topic the AI thought this was
           ...(debugError ? { ai_error: debugError } : {}),
           ...(moderationEscalationForMeta
             ? { intent: 'escalation', moderation_escalation: true }
@@ -1423,6 +1451,10 @@ The name (e.g. "Hannah", "Francie", "Sarah", "Karen") must appear verbatim in yo
   • Leaking urine / pelvic pain / diastasis / c-section scar / kegels / prolapse / core rehab
     → Pelvic Floor Specialist / Postpartum Recovery
     ✗ NOT for general emotions or life management
+    ✗ NOT for the child's potty/toilet training — Pelvic Floor is the PARENT's own body (bladder control, C-section healing, diastasis), never the child's toileting or behavior, even though both use bathroom/bladder words
+
+  • Potty training / toilet training / toddler tantrums / discipline / developmental milestones
+    → No specialist on the platform currently covers this. Do NOT recommend a Pelvic Floor Specialist here. Answer with general parenting guidance only and do NOT include any expert recommendation.
 
   • Baby sleep / bedtime / naps / night wakings / sleep training / sleep regression
     → Sleep Coach / Infant Sleep Specialist

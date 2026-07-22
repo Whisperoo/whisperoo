@@ -31,6 +31,8 @@ interface Message {
   metadata?: {
     child_id?: string;
     expert_suggestions?: ExpertSuggestion[];
+    detected_category?: string | null;
+    original_user_query?: string;
     [key: string]: unknown;
   };
 }
@@ -246,7 +248,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, selectedChild, i
             </div>
             <div className="flex flex-col space-y-3">
               {sortedExpertSuggestions.map((expert) => (
-                <ExpertSuggestionCard key={expert.id} expert={expert} />
+                <ExpertSuggestionCard
+                  key={expert.id}
+                  expert={expert}
+                  messageId={message.id}
+                  detectedCategory={message.metadata?.detected_category ?? null}
+                  userQuery={previousUserQuery || message.metadata?.original_user_query}
+                />
               ))}
             </div>
           </div>

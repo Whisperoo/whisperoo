@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslation } from 'react-i18next';
+import WrongMatchDialog from './WrongMatchDialog';
 
 interface ExpertSuggestion {
   id: string;
@@ -20,12 +22,16 @@ interface ExpertSuggestion {
 
 interface ExpertSuggestionCardProps {
   expert: ExpertSuggestion;
+  messageId?: string;
+  detectedCategory?: string | null;
+  userQuery?: string;
 }
 
-const ExpertSuggestionCard: React.FC<ExpertSuggestionCardProps> = ({ expert }) => {
+const ExpertSuggestionCard: React.FC<ExpertSuggestionCardProps> = ({ expert, messageId, detectedCategory, userQuery }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const isHospitalExpert = Boolean(expert.tenant_id);
+  const [isFlagOpen, setIsFlagOpen] = useState(false);
 
   const handleViewProfile = () => {
     navigate(`/experts/${expert.id}`);
@@ -71,14 +77,38 @@ const ExpertSuggestionCard: React.FC<ExpertSuggestionCardProps> = ({ expert }) =
           </p>
 
           {/* Action Button */}
-          <Button 
+          <Button
             onClick={handleViewProfile}
             className="w-full bg-action-primary hover:bg-action-primary/80 text-action-primary-foreground text-xs py-2 h-8"
           >
             View Full Profile
           </Button>
+
+          {/* Wrong-match flag — only shown when we have a messageId to tie the feedback to */}
+          {messageId && (
+            <button
+              type="button"
+              onClick={() => setIsFlagOpen(true)}
+              className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 transition-colors"
+              title="Flag this recommendation as a wrong match"
+            >
+              <Flag className="w-3 h-3" />
+              Wrong match?
+            </button>
+          )}
         </div>
       </CardContent>
+      {messageId && (
+        <WrongMatchDialog
+          isOpen={isFlagOpen}
+          onClose={() => setIsFlagOpen(false)}
+          messageId={messageId}
+          expertId={expert.id}
+          expertName={expert.name}
+          detectedCategory={detectedCategory}
+          userQuery={userQuery}
+        />
+      )}
     </Card>
   );
 };
