@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { CANONICAL_TOPICS, hasCanonicalTopic } from '@/utils/canonicalTopics';
 import { uploadFileWithRetry } from '@/services/cloudflare-storage';
+import { removeStoredFileUrl } from '@/services/storage-cleanup';
 
 interface AdminProductFormProps {
   productId: string | null; // null or 'new' = create, string = edit
@@ -81,7 +82,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
   const [uploading, setUploading] = useState(false);
   const [tenants, setTenants] = useState<{ id: string; name: string }[]>([]);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
-  const [removedFileIds, setRemovedFileIds] = useState<string[]>([]);
+  const [removedFiles, setRemovedFiles] = useState<{ id: string; file_url: string }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -191,16 +192,25 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
         }
       };
 
-      let nextFileUrl = form.file_url.trim() || null;
-      let nextThumbUrl = form.thumbnail_url.trim() || null;
+      const prevFileUrl = form.file_url.trim() || null;
+      const prevThumbUrl = form.thumbnail_url.trim() || null;
+      let nextFileUrl = prevFileUrl;
+      let nextThumbUrl = prevThumbUrl;
 
       if (resourceFile) {
         const prefix = `resources/${form.expert_id || 'unknown'}/${isNew ? 'new' : productId}`;
         nextFileUrl = await uploadPublic('resource-files', resourceFile, prefix);
+        // Clean up the replaced object only after the new upload succeeded.
+        if (prevFileUrl && prevFileUrl !== nextFileUrl) {
+          await removeStoredFileUrl(prevFileUrl);
+        }
       }
       if (thumbFile) {
         const prefix = `resources/${form.expert_id || 'unknown'}/${isNew ? 'new' : productId}`;
         nextThumbUrl = await uploadPublic('resource-thumbnails', thumbFile, prefix);
+        if (prevThumbUrl && prevThumbUrl !== nextThumbUrl) {
+          await removeStoredFileUrl(prevThumbUrl);
+        }
       }
 
       const selectedExpert = experts.find(e => e.id === form.expert_id);
@@ -243,16 +253,21 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
       }
 
       // Process additional files: delete removed rows, then upsert pending rows
-      for (const fid of removedFileIds) {
-        await supabase.from('product_files').delete().eq('id', fid);
+      for (const removed of removedFiles) {
+        const { error: delErr } = await supabase.from('product_files').delete().eq('id', removed.id);
+        if (delErr) throw delErr;
+        if (removed.file_url) await removeStoredFileUrl(removed.file_url);
       }
 
       for (let i = 0; i < pendingFiles.length; i++) {
         const pf = pendingFiles[i];
-        let finalUrl = pf.file_url.trim();
+        const prevUrl = pf.file_url.trim();
+        let finalUrl = prevUrl;
         let fileName = pf.display_title.trim() || `file-${i + 1}`;
         let fileSizeMb: number | null = null;
         let mimeType: string | null = null;
+        // 'pdf' is not a valid product_files.file_type (CHECK constraint only
+        // allows video/document/audio/image/other) — PDFs fall under 'document'.
         let fileType = 'document';
 
         if (pf.file) {
@@ -265,14 +280,14 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
             mimeType = pf.file.type || null;
             if (mimeType?.startsWith('video/')) fileType = 'video';
             else if (mimeType?.startsWith('audio/')) fileType = 'audio';
-            else if (mimeType === 'application/pdf') fileType = 'pdf';
+            else if (mimeType?.startsWith('image/')) fileType = 'image';
           }
         }
 
         if (!finalUrl) continue;
 
         if (pf.id) {
-          await supabase.from('product_files').update({
+          const { error: updErr } = await supabase.from('product_files').update({
             display_title: pf.display_title.trim() || fileName,
             file_url: finalUrl,
             file_name: fileName,
@@ -281,8 +296,13 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
             file_type: fileType,
             sort_order: i,
           }).eq('id', pf.id);
+          if (updErr) throw updErr;
+          // Clean up the replaced object only after the update succeeded.
+          if (pf.file && prevUrl && prevUrl !== finalUrl) {
+            await removeStoredFileUrl(prevUrl);
+          }
         } else {
-          await supabase.from('product_files').insert({
+          const { error: insErr } = await supabase.from('product_files').insert({
             product_id: savedProductId,
             display_title: pf.display_title.trim() || fileName,
             file_url: finalUrl,
@@ -293,6 +313,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
             sort_order: i,
             is_primary: false,
           });
+          if (insErr) throw insErr;
         }
       }
 
@@ -665,7 +686,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ productId, onClose,
                         <button
                           type="button"
                           onClick={() => {
-                            if (pf.id) setRemovedFileIds(prev => [...prev, pf.id!]);
+                            if (pf.id) setRemovedFiles(prev => [...prev, { id: pf.id!, file_url: pf.file_url }]);
                             setPendingFiles(prev => prev.filter((_, i) => i !== idx));
                           }}
                           className="text-gray-400 hover:text-red-500 shrink-0"
