@@ -1533,6 +1533,45 @@ export type Database = {
           },
         ]
       }
+      specialty_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          keywords: string[]
+          mapped_specialties: string[]
+          name: string
+          prompt_notes: string | null
+          seed_phrase: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          keywords?: string[]
+          mapped_specialties?: string[]
+          name: string
+          prompt_notes?: string | null
+          seed_phrase?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          keywords?: string[]
+          mapped_specialties?: string[]
+          name?: string
+          prompt_notes?: string | null
+          seed_phrase?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tenants: {
         Row: {
           config: Json | null
