@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { RefreshCw, Users, Clock, Activity, AlertTriangle, Sparkles, MessageSquare, ArrowUp } from 'lucide-react';
+import { RefreshCw, Users, Clock, Activity, AlertTriangle, Sparkles, MessageSquare, ArrowUp, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
 import KpiCard from './KpiCard';
@@ -74,6 +74,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   // Initialize to last 30 days by default
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
@@ -158,6 +159,71 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
   }, [tenantId, startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleExportQrSignups = useCallback(async () => {
+    setExporting(true);
+    try {
+      const { data: rows, error: exportErr } = await supabase.rpc(
+        'fn_admin_qr_signup_export',
+        {
+          p_tenant_id: tenantId ?? null,
+          p_start_date: startDate || null,
+          p_end_date: endDate || null,
+        }
+      );
+      if (exportErr) throw exportErr;
+      const list = (rows as Array<{
+        first_name: string | null;
+        phone: string | null;
+        tenant_name: string | null;
+        qr_label: string | null;
+        department: string | null;
+        acquisition_source: string | null;
+        created_at: string;
+      }>) || [];
+
+      if (list.length === 0) {
+        alert('No signups match the current filters. Nothing to export.');
+        return;
+      }
+
+      const headers = ['First Name', 'Phone', 'Hospital', 'QR Label', 'Department', 'Acquisition Source', 'Signup Date'];
+      const escape = (v: string | null | undefined) => {
+        const s = v == null ? '' : String(v);
+        // Wrap in quotes and double any embedded quotes — RFC 4180 CSV escaping.
+        return `"${s.replace(/"/g, '""')}"`;
+      };
+      const lines = [
+        headers.map(escape).join(','),
+        ...list.map((r) => [
+          r.first_name,
+          r.phone,
+          r.tenant_name,
+          r.qr_label,
+          r.department,
+          r.acquisition_source,
+          new Date(r.created_at).toISOString(),
+        ].map(escape).join(',')),
+      ];
+      // Prefix BOM so Excel opens UTF-8 characters (Vietnamese/Spanish names) correctly.
+      const csv = '﻿' + lines.join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const tenantSlug = list[0]?.tenant_name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'all';
+      link.href = url;
+      link.download = `qr-signups-${tenantSlug}-${startDate || 'start'}-${endDate || 'end'}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Export failed';
+      alert(`Export failed: ${msg}`);
+    } finally {
+      setExporting(false);
+    }
+  }, [tenantId, startDate, endDate]);
 
   if (loading) {
     return (
@@ -461,14 +527,26 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
                 Scans and completed signups attributed to immutable hospital QR tokens.
               </p>
             </div>
-            <div className="text-xs text-gray-500">
-              <span className="font-semibold text-gray-800">{data.qr_metrics.totals?.scans ?? 0}</span> scans ·{' '}
-              <span className="font-semibold text-gray-800">{data.qr_metrics.totals?.signups ?? 0}</span> signups
-              {(data.qr_metrics.totals?.unattributed_signups ?? 0) > 0 && (
-                <span className="ml-2 text-amber-700">
-                  ({data.qr_metrics.totals?.unattributed_signups} unattributed)
-                </span>
-              )}
+            <div className="flex items-center gap-4">
+              <div className="text-xs text-gray-500">
+                <span className="font-semibold text-gray-800">{data.qr_metrics.totals?.scans ?? 0}</span> scans ·{' '}
+                <span className="font-semibold text-gray-800">{data.qr_metrics.totals?.signups ?? 0}</span> signups
+                {(data.qr_metrics.totals?.unattributed_signups ?? 0) > 0 && (
+                  <span className="ml-2 text-amber-700">
+                    ({data.qr_metrics.totals?.unattributed_signups} unattributed)
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleExportQrSignups}
+                disabled={exporting || (data.qr_metrics.totals?.signups ?? 0) === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Export current filter as CSV (First Name, Phone, Hospital, QR Label, Department, Source, Date)"
+              >
+                {exporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                Export CSV
+              </button>
             </div>
           </div>
 
