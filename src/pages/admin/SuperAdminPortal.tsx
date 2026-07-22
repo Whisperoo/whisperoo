@@ -4,7 +4,7 @@ import { LANDING_URL } from '@/config/urls';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
-import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut, CalendarCheck, Shield } from 'lucide-react';
+import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut, CalendarCheck, Shield, Tags } from 'lucide-react';
 import HospitalSelector from './HospitalSelector';
 import MetricsDash from './MetricsDash';
 import AIInteractionsPanel from './AIInteractionsPanel';
@@ -14,8 +14,9 @@ import ExpertCurationPanel from './ExpertCurationPanel';
 import DiscountCodesPanel from './DiscountCodesPanel';
 import ConsultationBookingsPanel from './ConsultationBookingsPanel';
 import PhiAccessLogPanel from './PhiAccessLogPanel';
+import ChatTopicCategoriesPanel from './ChatTopicCategoriesPanel';
 
-type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'bookings' | 'discounts' | 'phi' | 'config';
+type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'bookings' | 'discounts' | 'phi' | 'topics' | 'config';
 
 const SuperAdminPortal: React.FC = () => {
   const { user, profile, loading, signOut } = useAuth();
@@ -130,6 +131,7 @@ const SuperAdminPortal: React.FC = () => {
                   { id: 'bookings', icon: CalendarCheck,   label: 'Appointment Requests' },
                   { id: 'discounts', icon: PackageSearch, label: 'Discounts' },
                   { id: 'phi',      icon: Shield,         label: 'PHI Access Log' },
+                  { id: 'topics',   icon: Tags,           label: 'Chat Topics' },
                   { id: 'config',   icon: Settings2,      label: t('admin.portal.tabs.config')   },
                 ] as { id: Tab; icon: React.ElementType; label: string }[]).map(({ id, icon: Icon, label }) => (
                   <button
@@ -161,6 +163,7 @@ const SuperAdminPortal: React.FC = () => {
         {activeTab === 'bookings' && <ConsultationBookingsPanel tenantId={selectedTenantId} />}
         {activeTab === 'discounts' && <DiscountCodesPanel tenantId={selectedTenantId} />}
         {activeTab === 'phi'      && <PhiAccessLogPanel />}
+        {activeTab === 'topics'   && <ChatTopicCategoriesPanel />}
         {activeTab === 'config'   && <TenantConfigEditor tenantId={selectedTenantId} />}
       </main>
     </div>

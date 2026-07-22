@@ -23,6 +23,36 @@ function detectLanguage(message: string): string | null {
   return null;
 }
 
+interface SpecialtyCategory {
+  name: string;
+  keywords: string[];
+  mapped_specialties: string[];
+  seed_phrase: string | null;
+  prompt_notes: string | null;
+  sort_order: number;
+}
+
+/**
+ * Admin-manageable chat topic taxonomy (Sprint 2 follow-up, Phase 2).
+ * Replaces 4 previously-hardcoded blocks (detectMessageCategory,
+ * SPECIALTY_KEYWORDS, seedPhraseForCategory, and the prompt's "HOW TO PICK
+ * THE RIGHT EXPERT" table) with rows loaded fresh per request, so admins can
+ * add/edit categories from the Super Admin panel without a code deploy.
+ * Loaded once per request via the service-role client, which bypasses RLS.
+ */
+async function loadSpecialtyCategories(supabase): Promise<SpecialtyCategory[]> {
+  const { data, error } = await supabase
+    .from('specialty_categories')
+    .select('name, keywords, mapped_specialties, seed_phrase, prompt_notes, sort_order')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true });
+  if (error) {
+    safeLogError('loadSpecialtyCategories', error);
+    return [];
+  }
+  return (data || []) as SpecialtyCategory[];
+}
+
 /** OpenAI Moderation (C4): escalate when flagged for self-harm or violence — complements keyword list. */
 async function shouldEscalateFromOpenAIModeration(apiKey: string, text: string): Promise<boolean> {
   try {
@@ -108,6 +138,9 @@ serve(async (req) => {
 
     const { message, sessionId, childId } = await req.json();
 
+    // Load the admin-manageable topic taxonomy once for this request.
+    const specialtyCategories = await loadSpecialtyCategories(supabase);
+
     // 1.1 & 1.2 High-Risk Flags & Intent Classification
     const ESCALATION_KEYWORDS = [
       "suicide", "bleeding", "emergency", "fever over", "self-harm", "harm", "kill",
@@ -134,102 +167,13 @@ serve(async (req) => {
     else if (isMedicalQuestion) intent = 'medical_question';
 
     // ── Admin Dashboard: Category tagging ────────────────────────
-    // Maps message content to one of 6 display categories for the
-    // AI Interaction Audit Trail and Common Concern Themes chart.
-    // Written into messages.metadata.category — no schema change needed.
-    const detectMessageCategory = (text: string): string => {
-      const t = text.toLowerCase();
-      if (
-        t.includes('breastfeed') || t.includes('nursing') ||
-        t.includes('latch') || t.includes('milk supply') ||
-        t.includes('pump') || t.includes('weaning') ||
-        t.includes('formula') || t.includes('bottle feed') ||
-        t.includes('lactation') ||
-        // Vietnamese
-        t.includes('sữa mẹ') || t.includes('cho bú') || t.includes('bú mẹ') ||
-        t.includes('hút sữa') || t.includes('tắc tia sữa') || t.includes('cai sữa') ||
-        // Spanish
-        t.includes('lactancia') || t.includes('amamantar') || t.includes('leche materna')
-      ) return 'Baby Feeding';
-
-      if (
-        t.includes('depress') || t.includes('anxiet') ||
-        t.includes('hopeless') || t.includes('worthless') ||
-        t.includes('mental health') || t.includes('overwhelmed') ||
-        t.includes('postpartum depression') || t.includes('ppd') ||
-        t.includes('self-harm') || t.includes('harm') ||
-        t.includes('suicide') || t.includes('nervous system') ||
-        t.includes('stress') || t.includes('regulation') ||
-        // Vietnamese
-        t.includes('căng thẳng') || t.includes('lo lắng') || t.includes('kiệt sức') ||
-        // Spanish
-        t.includes('estrés') || t.includes('ansiedad') || t.includes('depresión posparto')
-      ) return 'Nervous System Regulation';
-
-      // Toddler Development is intentionally checked BEFORE Pelvic Floor so
-      // "potty/toilet training" can never fall through to a Pelvic Floor match
-      // (both use bathroom/bladder vocabulary but they're unrelated topics —
-      // Pelvic Floor is the PARENT's own postpartum body, Toddler Development
-      // is the CHILD's toileting and behavior). No specialist on the platform
-      // covers this yet, so the category exists just to prevent misrouting.
-      if (
-        t.includes('potty') || t.includes('toilet training') ||
-        t.includes('toddler tantrum') || t.includes('tantrum') ||
-        t.includes('discipline') || t.includes('time out') || t.includes('time-out') ||
-        t.includes('developmental milestone') || t.includes('milestones') ||
-        // Vietnamese
-        t.includes('tập đi vệ sinh') || t.includes('bô') ||
-        // Spanish
-        t.includes('control de esfínteres') || t.includes('rabieta') || t.includes('berrinche')
-      ) return 'Toddler Development';
-
-      if (
-        t.includes('pelvic floor') || t.includes('perineal') ||
-        t.includes('c-section') || t.includes('bleeding') ||
-        t.includes('lochia') || t.includes('after birth') ||
-        t.includes('recovery') || t.includes('vaginal pressure') ||
-        // Vietnamese
-        t.includes('sàn chậu') || t.includes('tiểu không kiểm soát') ||
-        // Spanish
-        t.includes('suelo pélvico') || t.includes('cesárea')
-      ) return 'Pelvic Floor';
-
-      if (
-        t.includes('sleep') || t.includes('bedtime') ||
-        t.includes('nap') || t.includes('night waking') ||
-        t.includes('sleep training') || t.includes('regression') ||
-        // Vietnamese
-        t.includes('ngủ') || t.includes('giấc ngủ') || t.includes('thức đêm') ||
-        // Spanish
-        t.includes('dormir') || t.includes('sueño') || t.includes('siesta')
-      ) return 'Sleep Coaching';
-
-      if (
-        t.includes('yoga') || t.includes('fitness') ||
-        t.includes('exercise') || t.includes('stretch') ||
-        t.includes('workout') ||
-        // Vietnamese
-        t.includes('tập thể dục') || t.includes('tập yoga') ||
-        // Spanish
-        t.includes('ejercicio') || t.includes('yoga prenatal')
-      ) return 'Fitness/yoga';
-
-      if (
-        t.includes('teeth') || t.includes('dental') ||
-        t.includes('cavity') || t.includes('brushing') ||
-        t.includes('dentist')
-      ) return 'Pediatric Dentistry';
-
-      if (
-        t.includes('work') || t.includes('career') ||
-        t.includes('job') || t.includes('childcare') ||
-        t.includes('daycare') || t.includes('nanny')
-      ) return 'Back to Work';
-
-      return 'General Parenting';
-    };
-
-    const messageCategory = detectMessageCategory(messageLower);
+    // Maps message content to a category name for the AI Interaction Audit
+    // Trail and Common Concern Themes chart. Written into
+    // messages.metadata.category — no schema change needed. Categories are
+    // loaded from specialty_categories (admin-manageable); sort_order
+    // controls check order so e.g. Toddler Development is always checked
+    // before Pelvic Floor. Falls back to 'General Parenting' if nothing matches.
+    const messageCategory = detectMessageCategory(messageLower, specialtyCategories);
 
     let currentSessionId = sessionId;
     if (!currentSessionId) {
@@ -336,6 +280,7 @@ serve(async (req) => {
         disabledExpertIds,
         userTopics,
         onboardingWeight,
+        specialtyCategories,
       );
       matchedProducts = await findMatchingProductsRAG(supabase, message, userTopics, userTenantId, disabledProductIds);
 
@@ -352,7 +297,7 @@ serve(async (req) => {
       // If the user is repeating the same topic and semantic matching missed,
       // broaden the match using a category-specific seed phrase.
       if (isRecurringTopic && matchedExperts.length === 0 && messageCategory && messageCategory !== 'General Parenting' && messageCategory !== 'Toddler Development') {
-        const seed = seedPhraseForCategory(messageCategory);
+        const seed = seedPhraseForCategory(messageCategory, specialtyCategories);
         matchedExperts = await findMatchingExpertsRAGFirst(
           supabase,
           `${message}\n\nTopic: ${messageCategory}\nKeywords: ${seed}`,
@@ -361,6 +306,7 @@ serve(async (req) => {
           disabledExpertIds,
           userTopics,
           onboardingWeight,
+          specialtyCategories,
         );
       }
 
@@ -399,7 +345,8 @@ serve(async (req) => {
           message, context, matchedExperts, matchedProducts, intent, complianceContext,
           { topics: userTopics, expectingStatus: userExpectingStatus, parentingStyles: userParentingStyles, personalContext: userPersonalContext },
           userLanguage,
-          isRecurringTopic
+          isRecurringTopic,
+          specialtyCategories,
         );
 
         // Support returning { response, error } for debugging
@@ -616,6 +563,7 @@ async function findMatchingExpertsRAGFirst(
   disabledExpertIds: string[] = [],
   userTopics: string[] = [],
   onboardingWeight: number = 1.0,
+  specialtyCategories: SpecialtyCategory[] = [],
 ) {
   console.log(`=== Expert Matching Started (onboardingWeight=${onboardingWeight.toFixed(2)}) ===`);
 
@@ -624,7 +572,7 @@ async function findMatchingExpertsRAGFirst(
 
   // Fallback to keyword matching if semantic search returns no results
   if (experts.length === 0) {
-    experts = await findMatchingExpertsByKeywords(supabase, message, userTenantId);
+    experts = await findMatchingExpertsByKeywords(supabase, message, userTenantId, specialtyCategories);
   }
 
   // Last-resort fallback: if both semantic and keyword searches return nothing,
@@ -635,11 +583,11 @@ async function findMatchingExpertsRAGFirst(
   // a dietitian for a sleep question even if both appear in matchedExperts.
   if (experts.length === 0 && userTopics.length > 0) {
     const topicSeeds = userTopics
-      .map((t: string) => seedPhraseForCategory(t))
+      .map((t: string) => seedPhraseForCategory(t, specialtyCategories))
       .filter((seed: string) => seed.trim())
       .join(' ');
     if (topicSeeds.trim()) {
-      experts = await findMatchingExpertsByKeywords(supabase, topicSeeds, userTenantId);
+      experts = await findMatchingExpertsByKeywords(supabase, topicSeeds, userTenantId, specialtyCategories);
       if (experts.length > 0) {
         console.log(`Topic-seed fallback returned ${experts.length} experts from topics: ${userTopics.join(', ')}`);
       }
@@ -762,186 +710,27 @@ async function findMatchingExpertsBySemantic(supabase, message) {
   }
 }
 
-// Keyword-based fallback for expert matching when semantic search misses
-async function findMatchingExpertsByKeywords(supabase, message, userTenantId: string | null = null) {
+// Keyword-based fallback for expert matching when semantic search misses.
+// Groups now come from specialty_categories (admin-manageable) instead of a
+// hardcoded array. Every active category is checked independently — a
+// message can match multiple categories at once, unlike detectMessageCategory
+// which is a first-match-wins classifier (sort_order doesn't apply here).
+async function findMatchingExpertsByKeywords(
+  supabase,
+  message,
+  userTenantId: string | null = null,
+  specialtyCategories: SpecialtyCategory[] = [],
+) {
   const messageLower = message.toLowerCase();
 
-  // Specialty keyword maps — covers both clinical terms and natural language parents actually type.
-  // Rule: each group should ONLY match its specialty. Do NOT add generic phrases that
-  // would match messages about other topics (e.g. "just had my baby" should not be in
-  // Pelvic Floor because it matches every postpartum message).
-  const SPECIALTY_KEYWORDS = [
-    {
-      specialties: ['Pelvic Floor', 'Pelvic Health', 'Postpartum Recovery'],
-      keywords: [
-        // Physical symptoms — specific, not generic
-        'pee', 'peed', 'peeing', 'leak', 'leaking', 'leaks', 'incontinence',
-        'pelvic', 'pelvic floor', 'pelvic pain', 'pelvic pressure',
-        'sneeze', 'kegel', 'bladder', 'prolapse',
-        'diastasis', 'diastasis recti', 'ab separation', 'core recovery', 'core rehab',
-        'perineal', 'perineum', 'vaginal pressure', 'vaginal pain',
-        'c-section', 'csection', 'c section', 'cesarean', 'scar tissue',
-        'postpartum physical', 'postpartum healing', 'birth recovery',
-        'core strength after baby', 'pelvic floor weakness',
-        // Vietnamese: sàn chậu / tiểu không kiểm soát
-        'sàn chậu', 'tiểu không kiểm soát', 'rỉ nước tiểu', 'mổ lấy thai',
-        // Spanish: suelo pélvico / pérdidas de orina
-        'suelo pélvico', 'pérdidas de orina', 'cesárea', 'kegel',
-      ]
-    },
-    {
-      specialties: ['Sleep Training', 'Sleep', 'Infant Sleep'],
-      keywords: [
-        'sleep', 'nap', 'napping', 'bedtime', 'bed time',
-        'night waking', 'night wakes', 'wakes up at night', 'waking up at night',
-        'wake up', 'wakes up', 'waking up',
-        'sleep training', 'sleep train', 'cry it out', 'ferber',
-        'sleep regression', 'regression',
-        "won't sleep", 'not sleeping', 'trouble sleeping', 'sleep issues', 'sleep problems',
-        "won't nap", 'skipping naps', 'fighting sleep', 'overtired', 'over tired',
-        'co-sleeping', 'cosleeping', 'bed sharing',
-        'crying at night', 'up all night', 'all night',
-        // Vietnamese: ngủ / giấc ngủ / thức đêm
-        'ngủ', 'giấc ngủ', 'thức đêm', 'ru ngủ', 'không chịu ngủ',
-        // Spanish: dormir / sueño / siesta
-        'dormir', 'sueño', 'siesta', 'no duerme', 'despertarse de noche',
-      ]
-    },
-    {
-      specialties: ['Breastfeeding', 'Lactation', 'Feeding', 'Baby Feeding'],
-      keywords: [
-        // Most critical: both spellings
-        'breastfeed', 'breastfeeding', 'breastfed',
-        'breast feed', 'breast feeding', 'breast fed',
-        'breast milk', 'breastmilk',
-        // Common baby feeding terms
-        'nursing', 'nurse my baby', 'latch', 'latching', 'latch on',
-        "won't latch", 'not latching', 'latch issues', 'latch problems', 'latch difficulties',
-        // Supply
-        'milk supply', 'low milk', 'milk production', 'not enough milk',
-        'drying up', 'dry up', 'increase milk', 'boost milk',
-        // Physical issues
-        'nipple', 'nipple pain', 'sore nipple', 'cracked nipple',
-        'mastitis', 'breast infection', 'clogged duct', 'blocked duct',
-        'engorged', 'engorgement',
-        // Other
-        'lactation', 'lactation consultant', 'colostrum',
-        'pumping', 'pump', 'pumped', 'breast pump',
-        'weaning', 'wean', 'stop breastfeeding',
-        'formula', 'formula feeding', 'bottle feeding', 'bottle',
-        'feeding my baby', 'baby feeding', 'feeding issues', 'feeding problems',
-        'feeding difficulties',
-        // Vietnamese: breastfeeding / sữa mẹ / cho bú / hút sữa
-        'sữa mẹ', 'cho bú', 'bú mẹ', 'ti mẹ', 'hút sữa', 'tắc tia sữa', 'cai sữa', 'cho con bú', 'bú sữa',
-        // Spanish: lactancia / amamantar / leche materna
-        'lactancia', 'amamantar', 'pecho', 'leche materna', 'dar el pecho', 'lactación',
-        'sacaleches', 'extractor de leche',
-      ]
-    },
-    {
-      specialties: ['Nutrition', 'Postpartum Nutrition', 'Prenatal Nutrition'],
-      keywords: [
-        'nutrition', 'nutritionist', 'dietitian', 'diet',
-        'meal', 'meals', 'meal plan', 'meal prep',
-        'food', 'eating', 'eating habits', 'healthy eating',
-        'protein', 'vitamin', 'vitamins', 'supplement', 'supplements',
-        'calorie', 'calories', 'hydration', 'dehydrated',
-        'prenatal nutrition', 'postpartum nutrition',
-        'weight loss', 'losing weight', 'postpartum weight',
-        'hungry', 'appetite', 'cravings',
-        'iron', 'calcium', 'omega',
-        // Vietnamese: dinh dưỡng / ăn uống
-        'dinh dưỡng', 'chế độ ăn', 'ăn uống', 'thực phẩm',
-        // Spanish: nutrición / dieta / alimentación
-        'nutrición', 'nutricionista', 'dietista', 'dieta', 'alimentación',
-      ]
-    },
-    {
-      specialties: ['Chiropractic', 'Pediatric Chiropractic'],
-      keywords: [
-        'chiropractic', 'chiropractor',
-        'alignment', 'misalignment', 'spine', 'spinal',
-        'tension', 'tight muscles', 'neck tension',
-        'colic', 'colicky', 'gassy baby', 'gas pain',
-        'reflux', 'acid reflux', 'spit up',
-        'torticollis', 'head tilt', 'flat head',
-        'nervous system',
-      ]
-    },
-    {
-      specialties: ['Yoga', 'Prenatal Yoga', 'Postnatal Yoga', 'Postpartum Fitness'],
-      keywords: [
-        'yoga', 'prenatal yoga', 'postnatal yoga',
-        'prenatal exercise', 'postnatal exercise', 'postpartum exercise',
-        'exercise', 'workout', 'working out', 'fitness',
-        'stretch', 'stretching',
-        'mindfulness', 'breathing exercise', 'meditation',
-        'get in shape', 'get back in shape', 'in shape', 'lose weight',
-        'postpartum fitness', 'body after baby', 'toning',
-        // Vietnamese: tập thể dục / yoga
-        'tập thể dục', 'tập yoga', 'vận động', 'thở', 'thiền',
-        // Spanish: ejercicio / yoga prenatal
-        'ejercicio', 'yoga prenatal', 'yoga posnatal', 'fitness posparto',
-      ]
-    },
-    {
-      specialties: ['Pediatric Oral Development', 'Pediatric Dentistry', 'Dental Health', 'Oral Health'],
-      keywords: [
-        'teeth', 'tooth', 'dental', 'dentist', 'dentistry',
-        'oral health', 'oral care', 'oral development',
-        'teething', 'teething pain', 'teething symptoms',
-        'gums', 'gum pain', 'gum health',
-        'cavity', 'cavities', 'tooth decay',
-        'baby teeth', 'first teeth', 'milk teeth', 'permanent teeth',
-        'tooth brushing', 'brushing teeth', 'toothbrush', 'toothpaste',
-        'fluoride', 'orthodontics', 'airway', 'jaw development',
-        // Vietnamese: răng / nha khoa
-        'răng', 'nha khoa', 'mọc răng', 'đau răng',
-        // Spanish: dientes / dental
-        'dientes', 'dental', 'dentista', 'encías', 'caries',
-      ]
-    },
-    {
-      specialties: ['Family Dynamics', 'Lifestyle', 'Emotional Support'],
-      keywords: [
-        'overwhelmed', 'overwhelming',
-        'relationship', 'partner', 'husband', 'spouse', 'marriage',
-        'family dynamics', 'identity', 'balance',
-        'stress', 'stressed', 'stressful',
-        'mental health', 'anxiety', 'anxious',
-        'postpartum depression', 'ppd', 'postpartum anxiety',
-        // Natural language for "I am struggling"
-        "can't manage", 'struggling to manage', 'hard to manage',
-        'struggling', 'struggle',
-        'too much to handle', 'too much on my plate',
-        "can't cope", 'hard to cope', 'feeling lost',
-        'exhausted', 'exhaustion', 'so tired', 'burned out', 'burnout',
-        // Life management
-        'housework', 'house work', 'chores', 'managing everything',
-        'responsibilities', 'do it all', "can't do it all",
-        'life after baby', 'adjustment', 'adjusting',
-        'new mom', 'new parent', 'new mother', 'first time mom',
-        'self care', 'self-care', 'mom guilt', 'guilt',
-        'lost my identity', 'not myself', 'finding balance',
-        'feeling alone', 'lonely', 'isolated',
-        'overwhelmed with baby',
-        // Vietnamese: căng thẳng / lo lắng / mệt mỏi
-        'căng thẳng', 'lo lắng', 'mệt mỏi', 'kiệt sức', 'cảm thấy cô đơn',
-        // Spanish: estrés / ansiedad / agotada
-        'estrés', 'ansiedad', 'agotada', 'depresión posparto', 'abrumada',
-      ]
-    }
-  ];
-
-  // Find which specialties match the user's message
-  const matchedSpecialtyGroups = SPECIALTY_KEYWORDS.filter(group =>
-    group.keywords.some(keyword => messageLower.includes(keyword))
+  const matchedCategories = specialtyCategories.filter(cat =>
+    cat.keywords.some(keyword => messageLower.includes(keyword))
   );
 
-  if (matchedSpecialtyGroups.length === 0) return [];
+  if (matchedCategories.length === 0) return [];
 
-  // Get all matched specialty names
-  const matchedSpecialties = matchedSpecialtyGroups.flatMap(g => g.specialties);
+  const matchedSpecialties = matchedCategories.flatMap(c => c.mapped_specialties);
+  if (matchedSpecialties.length === 0) return [];
 
   try {
     // Query experts whose specialties overlap with matched keywords.
@@ -1051,25 +840,49 @@ async function findMatchingExpertsByUserTopics(
   }
 }
 
-function seedPhraseForCategory(category: string): string {
-  switch (category) {
-    case 'Baby Feeding':
-      return 'breastfeeding latch milk supply nursing pumping bottle formula';
-    case 'Sleep Coaching':
-      return 'baby sleep bedtime nap night waking sleep training regression';
-    case 'Pelvic Floor':
-      return 'pelvic floor postpartum recovery leaking incontinence prolapse diastasis';
-    case 'Nervous System Regulation':
-      return 'stress overwhelmed anxiety regulation postpartum emotions support';
-    case 'Fitness/yoga':
-      return 'postpartum exercise yoga stretching breathing mindfulness';
-    case 'Pediatric Dentistry':
-      return 'teething brushing teeth dentist cavities';
-    case 'Back to Work':
-      return 'return to work childcare daycare pumping at work schedule';
-    default:
-      return category.toLowerCase();
+// Seed phrase used to broaden a recurring-topic re-retrieval when the first
+// pass missed. Looked up from specialty_categories; falls back to the
+// lowercased category name itself if no row matches (preserves prior default).
+function seedPhraseForCategory(category: string, specialtyCategories: SpecialtyCategory[] = []): string {
+  const match = specialtyCategories.find((c) => c.name === category);
+  return match?.seed_phrase || category.toLowerCase();
+}
+
+// First-match-wins message categorization, checked in specialty_categories.sort_order.
+// Falls back to 'General Parenting' if nothing matches. Categories list is
+// loaded once per request (loadSpecialtyCategories) — already sorted ascending.
+function detectMessageCategory(text: string, specialtyCategories: SpecialtyCategory[] = []): string {
+  const t = text.toLowerCase();
+  for (const cat of specialtyCategories) {
+    if (cat.keywords.some((kw) => t.includes(kw))) return cat.name;
   }
+  return 'General Parenting';
+}
+
+// Builds the "HOW TO PICK THE RIGHT EXPERT" table shown to the LLM, from
+// specialty_categories instead of a hardcoded block — admins can add/edit
+// categories from the Super Admin panel without a code deploy. A category
+// only gets a row if it has real specialties to recommend OR explicit
+// prompt_notes (covers "no specialist for this topic" categories like
+// Toddler Development) — categories with neither (e.g. Back to Work) are
+// silently excluded, matching the original table's coverage exactly.
+function buildExpertPickingTable(specialtyCategories: SpecialtyCategory[]): string {
+  const rows = specialtyCategories
+    .filter((c) => c.mapped_specialties.length > 0 || c.prompt_notes)
+    .map((c) => {
+      const topicLine = c.keywords.slice(0, 8).join(' / ');
+      const specialtyLine = c.mapped_specialties.length > 0
+        ? c.mapped_specialties.join(' / ')
+        : 'No specialist on the platform currently covers this.';
+      let row = `  • ${topicLine}\n    → ${specialtyLine}`;
+      if (c.prompt_notes) {
+        for (const line of c.prompt_notes.split(' || ')) {
+          row += `\n    ✗ ${line}`;
+        }
+      }
+      return row;
+    });
+  return rows.join('\n\n');
 }
 
 
@@ -1345,7 +1158,8 @@ async function generateEnhancedAIResponse(
   message, context, matchedExperts, matchedProducts = [], intent = 'general', complianceContext = '',
   userInterests: { topics: string[]; expectingStatus: string; parentingStyles: string[]; personalContext: string } = { topics: [], expectingStatus: '', parentingStyles: [], personalContext: '' },
   userLanguage: string = 'en',
-  isRecurringTopic: boolean = false
+  isRecurringTopic: boolean = false,
+  specialtyCategories: SpecialtyCategory[] = [],
 ) {
   const openaiApiKey = (Deno.env.get('OPENAI_API_KEY') || '').trim();
   if (!openaiApiKey) {
@@ -1440,33 +1254,7 @@ The name (e.g. "Hannah", "Francie", "Sarah", "Karen") must appear verbatim in yo
     systemPrompt += `\n\nHOW TO PICK THE RIGHT EXPERT — match the user's question topic to the correct specialty:
 
   TOPIC → CORRECT SPECIALTY (only recommend when the question is about THIS topic):
-  • Breastfeeding / nursing / latch / milk supply / pumping / weaning / formula
-    → Lactation Consultant / Breastfeeding Specialist
-    ✗ NOT a Dietitian (dietitians handle what the parent eats, NOT baby feeding technique)
-
-  • Parent's own diet / what to eat / weight loss / supplements / prenatal nutrition / postpartum diet
-    → Dietitian / Nutrition Specialist
-    ✗ NOT a Lactation Consultant (lactation is for nursing technique, not the parent's food choices)
-
-  • Leaking urine / pelvic pain / diastasis / c-section scar / kegels / prolapse / core rehab
-    → Pelvic Floor Specialist / Postpartum Recovery
-    ✗ NOT for general emotions or life management
-    ✗ NOT for the child's potty/toilet training — Pelvic Floor is the PARENT's own body (bladder control, C-section healing, diastasis), never the child's toileting or behavior, even though both use bathroom/bladder words
-
-  • Potty training / toilet training / toddler tantrums / discipline / developmental milestones
-    → No specialist on the platform currently covers this. Do NOT recommend a Pelvic Floor Specialist here. Answer with general parenting guidance only and do NOT include any expert recommendation.
-
-  • Baby sleep / bedtime / naps / night wakings / sleep training / sleep regression
-    → Sleep Coach / Infant Sleep Specialist
-
-  • Exercise / yoga / postnatal movement / getting back in shape / stretching
-    → Yoga / Fitness / Postnatal Movement
-
-  • Overwhelm / stress / anxiety / mom guilt / relationship struggles / burnout / life after baby
-    → Family Dynamics / Emotional Support / LCSW
-
-  • Colic / baby tension / torticollis / spinal alignment / nervous system
-    → Chiropractor / Pediatric Chiropractic
+${buildExpertPickingTable(specialtyCategories)}
 
   RULE: If an expert from the list above has a specialty that is a DIRECT match for the user's question topic, you MUST recommend them by their exact name.
   If NO expert in the list matches the actual topic (e.g. only a dietitian is listed but the question is about breastfeeding technique), do NOT recommend anyone — answer with general guidance only.`;
