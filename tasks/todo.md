@@ -734,3 +734,153 @@ Note: product files currently use Cloudflare R2 via `src/services/storage.ts` (c
 - Moderation escalations update the user `messages` row metadata and set assistant metadata `intent` / `moderation_escalation`.
 - `admin_phi_access_log` allows `limit` up to **10000**; `PhiAccessLogPanel` export uses a fresh invoke with that cap.
 - **Manual still required:** `supabase functions deploy chat_ai_rag_fixed admin_phi_access_log`; fill `docs/llm-data-flow.md` BAA table; A2/A3/A4/B4/D1/D4 per master HIPAA checklist.
+
+# Bug Fix — Admin Content Upload: RLS gap, silent errors, orphaned storage, untracked table
+
+## Context
+
+Follow-up to the R2 upload-size fix. Auditing the full `AdminProductForm.tsx` → `cloudflare-storage.ts` → `r2-storage` edge function → DB path (including a live `supabase db query --linked` check of RLS policies, not just reading migration files) surfaced 4 real gaps, ranked by severity. This plan covers the Critical + High items as small, isolated changes. Medium/Low items are listed at the end as optional/deferred so scope stays tight per the "small and isolated" rule — flag if you want any of those included too.
+
+## Plan (checklist)
+
+### 1. Add missing admin RLS policy on `product_files` — Critical
+- [x] New additive migration `supabase/migrations/20260716000002_admin_manage_product_files.sql`:
+  ```sql
+  CREATE POLICY "Admins can manage all product files" ON product_files
+    FOR ALL USING (fn_caller_is_staff_admin()) WITH CHECK (fn_caller_is_staff_admin());
+  ```
+  (mirrors the existing `"Admins can manage all products"` policy on `products`)
+- [ ] **NOT YET RUN — held per instruction not to touch production.** `supabase db push` still needs to happen before this takes effect live.
+- [ ] Regenerate `src/types/database.types.ts` (no-op for this change — RLS policies aren't reflected in generated types — but re-run after `db push` as habit).
+
+### 2. Stop silently swallowing `product_files` write errors — Critical (code-only)
+- [x] `AdminProductForm.tsx` `handleSave` now captures `{ error }` from every `product_files` insert/update/delete call and throws on failure (previously unchecked).
+
+### 3. Clean up orphaned storage objects on replace/remove — High
+- [x] Imported `removeStoredFileUrl` from `src/services/storage-cleanup.ts` into `AdminProductForm.tsx`.
+- [x] `resourceFile` replacing `form.file_url` now deletes the old object after the new upload succeeds.
+- [x] `thumbFile` replacing `form.thumbnail_url` — same.
+- [x] Each `pendingFiles[i].file` replacing an existing `pf.file_url` (edit case) — same.
+- [x] Removing a file (`removedFiles`, renamed from `removedFileIds` to also carry `file_url`) now deletes the stored object after the DB row delete succeeds.
+
+**Bonus fix found while touching this code:** the additional-files loop set `file_type: 'pdf'` for PDF uploads, but the live `product_files_file_type_check` CHECK constraint (confirmed via `supabase db query --linked`) only allows `video/document/audio/image/other` — so **every PDF uploaded as an Additional File via the admin panel was silently failing** (masked by the same swallowed-error bug from #2). Fixed: PDFs now correctly fall under `'document'` (the pre-existing default), and added proper `'image'` detection (previously images were also mislabeled `'document'`).
+
+### 4. Reconcile `product_files` into the migration tracker — High (ops)
+- [x] Pulled the live table definition (columns, constraints, indexes, trigger, RLS policies) for `product_files` via `supabase db query --linked` (read-only).
+- [x] Wrote documentation-only migration `supabase/migrations/20260716000001_document_product_files_table.sql` (`CREATE TABLE IF NOT EXISTS` + indexes/trigger/RLS matching the live shape exactly, idempotent, no schema changes).
+- [ ] **NOT YET RUN.** Needs `supabase migration repair 20260716000001 --status applied` against the linked project once approved (registers it as already-applied without re-executing the SQL there).
+- [ ] Confirm `supabase migration list` shows no drift afterward.
+
+### Verification done so far (code-level only, per "don't push to production")
+- [x] `npx tsc --noEmit` — clean, no type errors.
+- [x] `npm run build` — clean production build.
+- [x] `npx eslint src/pages/admin/AdminProductForm.tsx` — 0 errors, same 4 pre-existing `any`-type warnings as before the change, nothing new.
+- [x] Read-only `supabase db query --linked` checks confirmed: RLS is enabled on `product_files`, the exact 5 existing policies (no admin policy — confirming the bug), the CHECK constraint values, FK, indexes, and trigger.
+- [ ] **Not yet possible:** no Docker available locally (`docker`/`docker ps` not found), so the new RLS policy and the documentation migration have **not been executed against any real Postgres** yet — only reviewed by hand against the live schema dump. Real behavioral verification (does an admin's insert actually succeed once policy 2 is applied) requires either a local Supabase stack (needs Docker) or pushing to the linked project.
+- [ ] Manual UI test (as super admin, edit a product authored by a different expert, add/remove/replace an Additional File + thumbnail) — blocked until the migrations are actually applied somewhere, since the RLS gap is exactly what's being fixed.
+
+## Deferred / optional (not in this pass unless requested)
+- MIME-type/extension allow-list on `r2-storage`'s `presign_put` action (Medium) — any file type is currently accepted.
+- No rollback if the R2 upload succeeds but the DB write fails afterward (Medium).
+- Single-PUT only (no multipart for >~5GiB files) and no real incremental upload progress (Low).
+- `uploadFileWithRetry` retries permanent errors (e.g. 403) the same as transient ones (Low).
+
+## Review
+
+Code and migration files are written and pass static verification (typecheck, build, lint, and manual review against the live schema/policy dump). **Nothing has been pushed or deployed** — no `supabase db push`, no `migration repair`, no `functions deploy`, no `fly deploy` — per instruction. The two new migration files and the `AdminProductForm.tsx` changes are sitting in the working tree, uncommitted, awaiting your decision to apply them.
+
+# Feature — QR Signup Attribution CSV Export
+
+## Root cause / current state
+
+- The "QR Signup Attribution" panel (`MetricsDash.tsx`) is fed entirely by `fn_admin_qr_signup_metrics` (`supabase/migrations/20260610000007_fix_qr_signups_onboarded_no_email_ref.sql`), which returns **aggregates only**: one row per QR label with total scans/signups/conversion. There is no per-signup row list anywhere in this pipeline — nothing to export yet.
+- `email` cannot come from `profiles` — it was deliberately dropped there in the HIPAA migration (`20260504000001`) and now lives only in `auth.users`, which isn't reachable from a normal RLS-scoped client query.
+- **Decision (confirmed):** export RLS-visible fields only — no `auth.users` join, no email column, no new audited edge function. Columns: First Name, Phone, Department, QR Label, Acquisition Source, Signup Date.
+
+## Plan (checklist)
+
+- [x] New additive migration `20260716000003_qr_signup_export.sql`: RPC `fn_admin_qr_signup_export(p_tenant_id, p_start_date, p_end_date)` returning per-signup rows, gated by the same admin check as `fn_admin_qr_signup_metrics`.
+- [x] `MetricsDash.tsx`: "Export CSV" button in the QR Signup Attribution panel header (disabled when signup count is zero), spinner during export.
+- [x] Button calls the new RPC with the panel's applied tenant/date filters, converts rows to RFC-4180-escaped CSV client-side (BOM-prefixed for Excel UTF-8), triggers browser download via `Blob` + `URL.createObjectURL` (`qr-signups-<tenant>-<start>-<end>.csv`). Empty-result case shows an alert instead of downloading an empty file.
+- [ ] Regenerate `src/types/database.types.ts` — pending until migration is applied.
+- [ ] Verify against a real hospital tenant — pending migration deploy.
+
+---
+
+# Bug Fix + Feature — AI recommends the wrong specialty (potty training → Pelvic Floor) + admin-manageable topic taxonomy + wrong-match flagging
+
+## Root cause (confirmed by reading `chat_ai_rag_fixed/index.ts`)
+
+Two independent layers both missed, and they compounded:
+
+1. **Retrieval layer is intentionally loose.** `findMatchingExpertsBySemantic` uses `match_threshold: 0.10` — deliberately low so thin-bio experts and non-English queries still surface (`supabase/functions/chat_ai_rag_fixed/index.ts:686-693`). The comment there says this is fine because "the AI-mention filter downstream is the real quality gate." For this query, Becca (Pelvic Floor) cleared that low bar and was the *only* candidate passed to the LLM.
+2. **The downstream quality gate has a real gap.** The system prompt's "HOW TO PICK THE RIGHT EXPERT" table (`index.ts:1412-1440`) enumerates 7 topic→specialty buckets (breastfeeding, diet, pelvic floor, sleep, fitness, emotional support, chiropractic) — **none for toddler-development topics like potty training.** With only one candidate in front of it and no bucket telling it "this doesn't match," the model rationalized a connection between "potty" (child toileting) and "pelvic floor" (parent's own bladder/postpartum body) — plausible surface-level overlap (both are bathroom/bladder vocabulary), but a completely different population and clinical context. `detectMessageCategory` (`index.ts:140-215`) also has no toddler-development bucket, so this topic silently falls through to `'General Parenting'`.
+3. **Structural gap behind both:** the entire specialty taxonomy is hardcoded in `chat_ai_rag_fixed/index.ts` across four separate arrays/functions (`SPECIALTY_KEYWORDS`, `detectMessageCategory`, `seedPhraseForCategory`, and the prompt's topic table), plus a *fifth*, separate hardcoded taxonomy in `supabase/functions/_shared/topicAliases.ts` (onboarding-topic↔specialty overlap scoring) and a *sixth* in `src/utils/canonicalTopics.ts` (admin product tagging). Adding a new topic today means a code change + edge function redeploy — not scalable, and exactly what you flagged.
+
+## Decisions (confirmed)
+
+- Potty training / toddler-development topics: **no specialist today** — answer with general guidance only, never force a recommendation, since no expert type on the platform currently covers it.
+- Scalability: **build admin-manageable categories** from the Super Admin panel instead of hardcoding another keyword array.
+- Wrong-match flagging: **dedicated per-expert-card control**, not just the existing message-level thumbs-down.
+
+## Plan — Phase 1: immediate correctness fix (ships fast, independent of Phase 2)
+
+- [x] Added explicit "Potty training / toilet training / toddler tantrums / discipline / developmental milestones → No specialist currently on the platform" bucket to the prompt's "HOW TO PICK THE RIGHT EXPERT" table, plus a `✗ NOT for the child's potty/toilet training` disqualifier under the Pelvic Floor row.
+- [x] Added `Toddler Development` category to `detectMessageCategory` (checked *before* Pelvic Floor so potty/toilet/tantrum can never fall through), with EN/VI/ES keywords.
+- [x] Belt-and-suspenders: hard-clear `matchedExperts = []` when `messageCategory === 'Toddler Development'`, so no candidate even reaches the LLM. Also suppresses the recurring-topic seed-phrase re-retrieval for this category.
+- [x] Did **not** add a matching group to `SPECIALTY_KEYWORDS` — there is genuinely no specialty on the platform to route toddler development to.
+- [ ] Deploy `chat_ai_rag_fixed` — pending sign-off.
+- [ ] Manually re-test the exact "potty training" conversation — pending deploy.
+
+## Plan — Phase 2: admin-manageable topic categories (the scalable system)
+
+> Scope note: this replaces the *matching pipeline* taxonomy inside `chat_ai_rag_fixed` only (`SPECIALTY_KEYWORDS` + `detectMessageCategory` + `seedPhraseForCategory` + the prompt table). It deliberately does **not** touch `topicAliases.ts` (onboarding-topic↔specialty ranking bonus) or `canonicalTopics.ts` (admin product tagging) — those are separate systems serving different purposes; conflating all three taxonomies into one migration would be a much bigger, riskier change than what was asked for.
+
+- [ ] New additive migration: table `specialty_categories` — `id, name text, keywords text[], seed_phrase text, mapped_specialties text[] (empty = "no specialist, general guidance only"), is_active boolean default true, created_at, updated_at`. RLS: admin/super_admin manage (via `fn_caller_is_staff_admin()`), service-role read (edge function).
+- [ ] Seed the migration with the *current* hardcoded groups as initial rows (Pelvic Floor, Sleep Training, Breastfeeding, Nutrition, Chiropractic, Yoga, Dental, Family Dynamics) plus the new Phase 1 "Toddler Development → no specialist" row — so Phase 1's fix becomes a real, editable row instead of throwaway code, and nothing regresses when the code stops reading the hardcoded arrays.
+- [ ] New Super Admin panel section: "Chat Topic Categories" — list/create/edit/deactivate rows (name, comma-separated keywords, optional seed phrase, optional mapped specialties, active toggle).
+- [ ] Refactor `chat_ai_rag_fixed`: load active rows from `specialty_categories` at request time (cheap query, table will stay small) and use them to build `detectMessageCategory`'s matching, the keyword-fallback expert search, `seedPhraseForCategory`, and the prompt's "HOW TO PICK THE RIGHT EXPERT" table dynamically instead of from hardcoded arrays.
+- [ ] Regenerate `src/types/database.types.ts`.
+- [ ] Verify: create a test category from the admin panel, confirm a chat message using its keywords picks it up without any code deploy.
+
+## Plan — Phase 3: "mark this recommendation as wrong" flagging
+
+- [x] New additive migration `20260716000004_expert_recommendation_feedback.sql`: table `expert_recommendation_feedback` (message_id, user_id, expert_id, detected_category, user_query, reason, comment, created_at) with CHECK on `reason`, FKs with `ON DELETE CASCADE`, and RLS (user-owner insert; admin `fn_caller_is_staff_admin()` select/update/delete).
+- [x] `chat_ai_rag_fixed`: store `detected_category` on the assistant message metadata so the flag control has it available (previously only `original_user_query` was passed through).
+- [x] New `WrongMatchDialog.tsx` (reason picker + optional free-text comment + toast, same pattern as `ComplianceFeedbackDialog.tsx`).
+- [x] `ExpertSuggestionCard.tsx` gained a small `Flag` "Wrong match?" control (only shown when `messageId` prop is available, i.e. only in chat cards, not on the standalone experts page).
+- [x] `MessageBubble.tsx` passes `messageId`, `detectedCategory`, and `userQuery` to each `ExpertSuggestionCard`.
+- [ ] Admin review view for flagged rows grouped by expert + category — **NOT built yet.** Data is captured live; the admin surface is deferred until we see actual signal (I'd suggest we add it as a new tab in `ExistingAdminContent.tsx` once we have some flags coming in, to inform the UI shape from real data).
+- [ ] Regenerate `src/types/database.types.ts` — pending migration deploy.
+- [ ] Verify end-to-end — pending migration deploy.
+
+## Dependency order
+
+```
+Phase 1 (prompt + keyword fix) — ships independently, fixes today's bug
+Phase 2 (admin categories) — depends on nothing but Phase 1's data informs the seed rows
+Phase 3 (wrong-match flagging) — independent of 1/2, but most valuable once Phase 2 exists (flagged data → tune categories)
+```
+
+## Review
+
+### Implemented in this pass
+
+- **Phase 1 (AI safety)** — code-only edits in `chat_ai_rag_fixed/index.ts`:
+  - New `Toddler Development` category in `detectMessageCategory` with EN/VI/ES keywords, checked before Pelvic Floor so potty/toilet/tantrum inputs never route through it.
+  - Hard-clear `matchedExperts` for that category so no candidate reaches the LLM.
+  - Updated prompt table with an explicit "no specialist" rule for toddler development *and* an explicit disqualifier under Pelvic Floor for the child's toileting.
+- **QR CSV export** — migration `20260716000003_qr_signup_export.sql` (RPC) + button/handler in `MetricsDash.tsx`.
+- **Phase 3 wrong-match flagging** — migration `20260716000004_expert_recommendation_feedback.sql` + new `WrongMatchDialog.tsx` + `ExpertSuggestionCard.tsx` control + `MessageBubble.tsx` wiring + `chat_ai_rag_fixed` now stamps `detected_category` on assistant message metadata.
+- **Phase 2 (admin-manageable topic taxonomy)** — **not started in this pass.** It's the largest scope and depends on nothing else here; would need its own iteration. Phase 1's hardcoded fix ships the safety win now; Phase 2 makes it editable later.
+
+### Static verification (all pass)
+
+- `npx tsc --noEmit -p .` — clean.
+- `npm run build` — clean (`✓ built in 1m 19s`).
+- `npx eslint` on the four modified/new files — 0 errors, only 5 pre-existing `any` warnings in `MetricsDash.tsx`, nothing new.
+
+### Not run (per instruction)
+
+- No `supabase db push`, no `functions deploy`, no `fly deploy`, no `migration repair`. Two new migrations (`20260716000003`, `20260716000004`) and one edge-function change sit in the working tree waiting on your sign-off.
+- Admin review UI for the flagged rows is deferred until data starts arriving, so the surface can be shaped to what the flags actually look like.

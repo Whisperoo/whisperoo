@@ -68,6 +68,12 @@ interface DashboardData {
       created_at: string;
     }>;
   };
+  independent_signups?: Array<{
+    first_name: string | null;
+    phone: string | null;
+    acquisition_source: string | null;
+    created_at: string;
+  }>;
 }
 
 const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
@@ -75,6 +81,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingIndependent, setExportingIndependent] = useState(false);
   // Initialize to last 30 days by default
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
@@ -141,7 +148,25 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
       if (qrErr && !qrAccessDenied) {
         console.warn('QR metrics unavailable:', qrErr);
       }
-      
+
+      // Independent/unaffiliated signups (tenant_id IS NULL) — only meaningful in
+      // the "All Hospitals" view; a specific tenant selection can never include them.
+      let independentSignups: DashboardData['independent_signups'] = undefined;
+      if (!tenantId) {
+        const { data: indepData, error: indepErr } = await supabase.rpc(
+          'fn_admin_independent_signups_export',
+          {
+            p_start_date: startDate || null,
+            p_end_date: endDate || null,
+          }
+        );
+        if (indepErr) {
+          console.warn('Independent signups unavailable:', indepErr);
+        } else {
+          independentSignups = (indepData as DashboardData['independent_signups']) || [];
+        }
+      }
+
       setData({
         ...(result as DashboardData),
         kpis: {
@@ -150,6 +175,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         },
         resource_utilization: resourceData || [],
         qr_metrics: qrErr ? undefined : (qrData as any),
+        independent_signups: independentSignups,
       });
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data');
@@ -224,6 +250,43 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
       setExporting(false);
     }
   }, [tenantId, startDate, endDate]);
+
+  const handleExportIndependentSignups = useCallback(() => {
+    const list = data?.independent_signups ?? [];
+    if (list.length === 0) {
+      alert('No independent signups match the current filters. Nothing to export.');
+      return;
+    }
+    setExportingIndependent(true);
+    try {
+      const headers = ['First Name', 'Phone', 'Acquisition Source', 'Signup Date'];
+      const escape = (v: string | null | undefined) => {
+        const s = v == null ? '' : String(v);
+        return `"${s.replace(/"/g, '""')}"`;
+      };
+      const lines = [
+        headers.map(escape).join(','),
+        ...list.map((r) => [
+          r.first_name,
+          r.phone,
+          r.acquisition_source,
+          new Date(r.created_at).toISOString(),
+        ].map(escape).join(',')),
+      ];
+      const csv = '﻿' + lines.join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `independent-signups-${startDate || 'start'}-${endDate || 'end'}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportingIndependent(false);
+    }
+  }, [data?.independent_signups, startDate, endDate]);
 
   if (loading) {
     return (
@@ -636,6 +699,72 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Independent / Unaffiliated Signups ── */}
+      {/* Only meaningful in the "All Hospitals" view — HospitalSelector's tenantId=null
+          currently means "no filter" everywhere else in this dashboard (matches every
+          row), so this section is the only place tenant_id IS NULL is isolated on its
+          own. "Independent" is a proxy definition (no tenant, onboarded) — the
+          onboarding "I'm independent" choice doesn't set a distinct flag today. */}
+      {!tenantId && data?.independent_signups && (
+        <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 flex flex-col gap-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-[15px] font-semibold text-gray-900">Independent / Unaffiliated Signups</h3>
+              <p className="text-xs text-gray-400">
+                Users not linked to any hospital tenant (no QR/hospital affiliation).
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-xs text-gray-500">
+                <span className="font-semibold text-gray-800">{data.independent_signups.length}</span> signups
+              </div>
+              <button
+                type="button"
+                onClick={handleExportIndependentSignups}
+                disabled={exportingIndependent || data.independent_signups.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Export current filter as CSV (First Name, Phone, Acquisition Source, Date)"
+              >
+                {exportingIndependent ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          {data.independent_signups.length === 0 ? (
+            <p className="text-center text-gray-500 text-sm py-4">No independent signups found for this period.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 text-gray-600 font-medium border-y border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3">First Name</th>
+                    <th className="px-4 py-3">Phone</th>
+                    <th className="px-4 py-3">Acquisition Source</th>
+                    <th className="px-4 py-3 text-right">Signup Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {data.independent_signups.slice(0, 20).map((row, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-gray-900">{row.first_name || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{row.phone || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{row.acquisition_source || '—'}</td>
+                      <td className="px-4 py-3 text-right text-gray-600">{new Date(row.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {data.independent_signups.length > 20 && (
+                <p className="text-xs text-gray-400 mt-2 text-center">
+                  Showing 20 of {data.independent_signups.length} — use Export CSV for the full list.
+                </p>
+              )}
             </div>
           )}
         </div>
