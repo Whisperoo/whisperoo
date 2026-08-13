@@ -543,10 +543,10 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           <h3 className="text-[15px] font-semibold text-gray-900">Resource Utilization</h3>
         </div>
         <p className="text-xs text-gray-400 mb-6">Detailed engagement and revenue metrics per product.</p>
-        
-        <div className="overflow-x-auto">
+
+        <div className="overflow-auto max-h-80 rounded-xl border border-gray-100">
           <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50 text-gray-600 font-medium border-y border-gray-200">
+            <thead className="sticky top-0 z-10 bg-gray-50 text-gray-600 font-medium border-y border-gray-200">
               <tr>
                 <th className="px-4 py-3">Resource Title</th>
                 <th className="px-4 py-3 text-right">Claims</th>
@@ -739,9 +739,9 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           {data.independent_signups.length === 0 ? (
             <p className="text-center text-gray-500 text-sm py-4">No independent signups found for this period.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-80 rounded-xl border border-gray-100">
               <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 text-gray-600 font-medium border-y border-gray-200">
+                <thead className="sticky top-0 z-10 bg-gray-50 text-gray-600 font-medium border-y border-gray-200">
                   <tr>
                     <th className="px-4 py-3">First Name</th>
                     <th className="px-4 py-3">Phone</th>
@@ -750,7 +750,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {data.independent_signups.slice(0, 20).map((row, idx) => (
+                  {data.independent_signups.map((row, idx) => (
                     <tr key={idx} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 font-medium text-gray-900">{row.first_name || '—'}</td>
                       <td className="px-4 py-3 text-gray-600">{row.phone || '—'}</td>
@@ -760,11 +760,6 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
                   ))}
                 </tbody>
               </table>
-              {data.independent_signups.length > 20 && (
-                <p className="text-xs text-gray-400 mt-2 text-center">
-                  Showing 20 of {data.independent_signups.length} — use Export CSV for the full list.
-                </p>
-              )}
             </div>
           )}
         </div>
