@@ -58,10 +58,13 @@ interface DashboardData {
       scans: number;
       signups: number;
     }>;
+    // Note: fn_admin_qr_signup_metrics still returns an `email` key, but it is hardcoded
+    // to NULL::text purely to preserve the payload shape after the HIPAA migration dropped
+    // profiles.email. It is deliberately not modelled or rendered here — it can never
+    // carry a value, and the column it fed always displayed "—".
     unattributed_rows?: Array<{
       id: string;
       first_name: string | null;
-      email: string | null;
       tenant_id: string | null;
       acquisition_source: string | null;
       acquisition_department: string | null;
@@ -608,7 +611,6 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
                     <tr>
                       <th className="px-3 py-2 text-left font-semibold">Created</th>
                       <th className="px-3 py-2 text-left font-semibold">User</th>
-                      <th className="px-3 py-2 text-left font-semibold">Email</th>
                       <th className="px-3 py-2 text-left font-semibold">Department</th>
                       <th className="px-3 py-2 text-left font-semibold">User ID</th>
                     </tr>
@@ -621,9 +623,6 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
                         </td>
                         <td className="px-3 py-2 text-amber-900/90">
                           {row.first_name || '—'}
-                        </td>
-                        <td className="px-3 py-2 text-amber-900/90">
-                          {row.email || '—'}
                         </td>
                         <td className="px-3 py-2 text-amber-900/90">
                           {row.acquisition_department || '—'}

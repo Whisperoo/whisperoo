@@ -97,7 +97,12 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
       } else if (data) {
         setForm({
           first_name: data.first_name || '',
-          email: data.email || '',
+          // Email is create-only. `profiles.email` was dropped by the HIPAA migration
+          // (20260504000001_hipaa_remove_email.sql) and now lives solely in auth.users,
+          // which this client-side query cannot reach. Reading `data.email` here silently
+          // yielded undefined and rendered an empty, permanently-disabled Email box on the
+          // Edit Expert form. The field is hidden entirely when editing instead.
+          email: '',
           password: '',
           profile_image_url: data.profile_image_url || '',
           expert_bio: data.expert_bio || '',
@@ -407,16 +412,17 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
                   className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Email {isNew ? '*' : ''}</label>
-                <input
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="expert@example.com"
-                  disabled={!isNew}
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400"
-                />
-              </div>
+              {isNew && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Email *</label>
+                  <input
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="expert@example.com"
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
             </div>
 
             {isNew && (
