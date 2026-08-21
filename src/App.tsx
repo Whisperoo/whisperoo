@@ -10,7 +10,6 @@ import { NavigationProvider } from "@/contexts/NavigationContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ExpertDashboard } from "./components/expert/ExpertDashboard";
-import { AdminProductsPage } from "./pages/AdminProductsPage";
 import Chat from "./pages/Chat";
 import Dashboard from "./pages/Dashboard";
 import ExpertDetails from "./pages/ExpertDetails";
@@ -262,14 +261,6 @@ const App = () => {
                       <AppLayout>
                         <ExpertProfileSettings />
                       </AppLayout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/products"
-                  element={
-                    <ProtectedRoute requireAuth={true} requireMfa={true}>
-                      <AdminProductsPage />
                     </ProtectedRoute>
                   }
                 />
