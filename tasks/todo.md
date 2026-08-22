@@ -884,3 +884,113 @@ Phase 3 (wrong-match flagging) — independent of 1/2, but most valuable once Ph
 
 - No `supabase db push`, no `functions deploy`, no `fly deploy`, no `migration repair`. Two new migrations (`20260716000003`, `20260716000004`) and one edge-function change sit in the working tree waiting on your sign-off.
 - Admin review UI for the flagged rows is deferred until data starts arriving, so the surface can be shaped to what the flags actually look like.
+
+---
+
+# Phase 2 — Hospital Pilot: Staging Environment + Admin Portal Gaps
+
+Scope: from `Whisperoo_Phase2_Quotation.pdf` + client conversation (2026-08-20). Client confirmed priority order: **staging environment first**, feature work after. Confirmed decisions below came from an explicit Q&A round with the client — not assumptions.
+
+## Confirmed decisions (client-approved, 2026-08-20)
+
+- Staging = brand-new, separate Supabase project (not shared with prod) — isolates any test/hospital-adjacent data from real production data.
+- Staging Fly.io app: new app `whisperoo-staging`, domain `staging.whisperoo.app`.
+- Staging Stripe: test-mode keys, not live keys.
+- Staging Cloudflare R2: separate bucket, not shared with prod.
+- Dead `/admin/products` page (insecure `email.includes('admin')` gate, unlinked, unused) → remove entirely.
+- "Content" tab in Super Admin Portal stays named "Content" — SOW's "Products tab" language maps to this existing tab, no rename.
+- QR Signup CSV export gets email added via a **new audited edge function** (service-role read of `auth.users`), with export access logged (who/when/what) — `profiles.email` was intentionally dropped in the HIPAA migration, so this is new work, not a bug fix in the RPC.
+- Independent/Unaffiliated Signups feature (removed in `31b48a8`) gets rebuilt as part of the new All/Hospital/B2C segment filter — the earlier removal was about shipping straight to prod without a staging safety net, not a rejection of the feature itself; this time it ships through staging first.
+
+## Stack findings this plan depends on (from audit, 2026-08-20)
+
+- Multi-tenancy (`tenants` table, `profiles.tenant_id`) is already fully shipped — not greenfield.
+- Only one Supabase project exists today (`whisperoo`, ref `wznevejkaefokgibkknt`, us-east-2). Only one Fly app exists (`whisperoo-app`). No staging equivalents yet.
+- `scripts/fly-deploy.ps1` reads `.env`, passes `VITE_*` vars as Docker build args, deploys to `whisperoo-app`, then prints manual GoDaddy DNS + Supabase Auth URL steps. No Cloudflare `wrangler` CLI installed on this machine — R2 bucket creation will go through the R2 S3-compatible API (same `R2_ACCESS_KEY_ID`/secret, different endpoint call) or the Cloudflare dashboard if that token lacks bucket-create scope.
+- Railway hosts a separate lightweight QR-redirect service (`redirect-server.cjs` per `railway.toml`) — out of scope for staging unless client wants QR flows testable on staging too (not yet asked).
+
+## Plan — Part 1: Staging Supabase project
+
+> **BLOCKED (2026-08-22):** `supabase projects create whisperoo-staging --org-id xacbamzejorrcnvqrzxx --region us-east-2` fails with
+> `"Your account does not have the necessary privileges to access this endpoint"` (Supabase access-control error).
+> Read access is fine — `projects list` / `orgs list` both work across every org. Only project *creation* in the Whisperoo org is denied,
+> which points at the account holding a **Developer** (not Owner/Administrator) role in that org. Supabase Developers cannot create projects.
+> **Needs client action:** either (a) client promotes our account to Owner/Administrator on the Whisperoo Supabase org, or
+> (b) client creates the empty `whisperoo-staging` project themselves (us-east-2) and grants us access. Everything downstream is ready to run the moment this clears.
+> Note: a DB password was already generated into `.env.staging` (git-ignored) and can be reused when the project is created via option (a).
+
+- [x] `.gitignore` updated to cover `.env.staging` before any secret was written to it.
+- [ ] `supabase projects create whisperoo-staging` (org `xacbamzejorrcnvqrzxx`, region `us-east-2` to match prod) — capture new project ref. **← blocked, see above**
+- [ ] Apply all existing migrations from `supabase/migrations/` to the new project in order (`supabase db push` against the staging ref).
+- [ ] Deploy all Edge Functions (`chat_ai_rag_fixed`, `fn_get_chat_context`, `fn_update_session_summary`, `create-payment`, `verify-purchase`, and any others under `supabase/functions/`) to the staging project.
+- [ ] Set Edge Function secrets on staging project: `OPENAI_API_KEY` (reuse), `STRIPE_SECRET_KEY` (test), `STRIPE_WEBHOOK_SECRET` (test), `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`/`R2_ENDPOINT` (staging bucket creds), `SUPABASE_SERVICE_ROLE_KEY` (staging project's own), `GOOGLE_TRANSLATE_API_KEY` (reuse).
+- [ ] Supabase Dashboard (staging project) → Auth → URL Configuration: Site URL `https://staging.whisperoo.app`, Redirect URLs `https://staging.whisperoo.app/**`.
+- [ ] Regenerate types from staging to confirm schema parity with prod `database.types.ts` (should be identical — sanity check only, don't commit a divergent copy).
+
+## Plan — Part 2: Staging Cloudflare R2 bucket
+
+- [ ] Create new R2 bucket (e.g. `whisperoo-staging-uploads`) via R2 S3-compatible API using existing account credentials; fall back to asking client to create it via Cloudflare dashboard if the current token can't create buckets.
+- [ ] Get the staging bucket's public URL (`VITE_CLOUDFLARE_R2_PUBLIC_URL` equivalent) and confirm CORS config matches what `src/services/cloudflare-storage.ts` expects.
+
+## Plan — Part 3: Staging Fly.io app + deploy script
+
+- [ ] `flyctl apps create whisperoo-staging`.
+- [ ] New `fly.staging.toml` (copy of `fly.toml`, `app = "whisperoo-staging"`, same Dockerfile/VM sizing).
+- [ ] New `.env.staging` (git-ignored, alongside existing `.env`) with staging `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_STRIPE_PUBLISHABLE_KEY` (test), `VITE_CLOUDFLARE_ACCOUNT_ID`, `VITE_CLOUDFLARE_R2_BUCKET_NAME` (staging), `VITE_CLOUDFLARE_R2_PUBLIC_URL` (staging).
+- [ ] New `scripts/fly-deploy-staging.ps1` — same pattern as `fly-deploy.ps1` but reads `.env.staging`, deploys to `whisperoo-staging` with `-c fly.staging.toml`, issues a cert for `staging.whisperoo.app` instead of `app.whisperoo.app`, prints the matching GoDaddy DNS instructions.
+- [ ] Run the staging deploy; confirm the app boots on Fly's default `*.fly.dev` URL before DNS is wired.
+- [ ] Hand client the exact GoDaddy A/AAAA records for `staging.whisperoo.app` (client controls DNS — not something to do without their DNS access).
+
+## Plan — Part 4: Smoke test staging end-to-end
+
+- [ ] Signup → onboarding → dashboard flow works against the staging DB with test data only.
+- [ ] Super Admin Portal loads, all tabs render (metrics, ai, content, experts, bookings, discounts, phi, topics, config).
+- [ ] One AI chat round-trip works (confirms `chat_ai_rag_fixed` + OpenAI + pgvector all wired correctly on staging).
+- [ ] One Stripe test-mode purchase completes (confirms `create-payment`/`verify-purchase` wired to test keys).
+- [ ] Confirm no production data is reachable from staging (separate project, so this should be structurally guaranteed — verify anyway).
+
+## Plan — Part 5 (backlog, not started): Admin dashboard B2C segment + CSV/email export
+
+> **Environment constraint (2026-08-22):** there is currently **no database to execute SQL against** — staging does not exist yet (blocked, see Part 1) and Docker is not installed on this machine, so `supabase start` cannot provide a local Postgres either. Anything requiring SQL execution is therefore written-but-unverified. Code-only items were fully verified.
+>
+> Also discovered: `node_modules` was not installed in this working copy, so `npx tsc` was silently resolving to a stub package rather than the real compiler. Dependencies were installed via `npm ci` before any verification was trusted.
+
+### Done and verified (branch `phase2/admin-portal-gaps`)
+
+- [x] **Remove dead `src/pages/AdminProductsPage.tsx` + its route.** This was not merely dead code — the `/admin/products` route was live and reachable by URL, gated only by `user?.email?.includes('admin')`, so any authenticated user with "admin" anywhere in their email address (e.g. `admin.smith@gmail.com`) could reach product file management. Route + import removed from `App.tsx`; page deleted. `ProductFileUploader.tsx` was deleted alongside it — the page was its only consumer, and product file management already exists properly in `AdminProductForm.tsx` under the Content tab.
+- [x] **Fix Edit-Expert blank email field.** Root cause confirmed: `profiles` genuinely has no `email` column in the generated types (`database.types.ts:1126-1181`), and `normalizedEmail` is only ever consumed inside the `isNew` branch (`AdminExpertForm.tsx:190,224`). Email is therefore *create-only* — on edit it could never populate or save, so it rendered as a permanently-empty disabled box. Fixed by dropping the dead `data.email` read and rendering the field only when `isNew`, matching the existing Password field precedent. No auth.users lookup needed.
+- [x] **Remove the dead "Email" column in the Unattributed QR Signups table.** Removed from both the TS type and the table markup, with a comment recording that `fn_admin_qr_signup_metrics` still returns a hardcoded `NULL::text AS email` purely to preserve payload shape.
+
+Verification: `tsc --noEmit` clean; `npm run build` succeeds; `eslint` on the changed files shows **no new** problems (the single `no-empty` error in `AdminExpertForm.tsx` is pre-existing — confirmed by linting `main`'s copy of the same file, which reports the identical count).
+
+### Written but NOT verified — needs a database
+
+- [~] **Segment filter migration** — `20260822000001_admin_dashboard_segment_filter.sql`. Adds `p_segment text DEFAULT 'all'` ('all' | 'hospital' | 'b2c') to `fn_get_admin_dashboard` and introduces helper `fn_profile_in_segment(uuid, text, uuid)` which replaces all 27 occurrences of the old `(p_tenant_id IS NULL OR p.tenant_id = p_tenant_id)` predicate. Generated mechanically from the current function definition (script asserted exactly 27 substitutions) so the diff is provably limited to the signature + predicate; the other ~300 lines are byte-identical. Drops the old 3-arg signature first to avoid an ambiguous overload. Includes rollback notes. **Never executed — must be applied and tested on staging first.**
+
+### Not started — deliberately sequenced after the migration is proven
+
+- [ ] Add the All/Hospital/B2C selector to `MetricsDash.tsx`. **Held back on purpose:** the frontend must not send `p_segment` until the migration is live, or the dashboard breaks against the current production RPC (unknown-parameter error). Migrate first, then wire the UI.
+- [ ] Capture "independent" explicitly at onboarding time (`OnboardingHospitalCheck.tsx` "No, I'm independent" branch currently writes no field) instead of relying on the `tenant_id IS NULL` proxy.
+- [ ] Re-wire `fn_admin_independent_signups_export` (RPC already exists) with a rebuilt frontend button/handler in `MetricsDash.tsx`, matching the QR export pattern.
+- [ ] New audited edge function for email export (service-role `auth.users` read + access log entry), wired into the QR Signup export (and Independent Signups export once revived).
+
+## Plan — Part 6 (blocked, not started): Expert profile rework
+
+- Blocked on Figma file ("Whisperoo — changes for Dev") landing. Per client's own SOW: don't start the UI build, but the data model can be scoped now.
+- [ ] Additive migration: `testimonials` table (`expert_id`, `author_name`, `author_context`, `quote`, `date`, `display_order`, `published boolean`).
+- [ ] Additive migration: extend expert-side columns — `video_url`, `gallery_image_urls text[]`, `extended_bio text`.
+- [ ] Admin UI for testimonials CRUD in `AdminExpertForm.tsx` (testimonials are admin-entered, not expert self-service) — hold for Figma to confirm the shape, but the RLS/table can go in ahead of time.
+
+## Plan — Part 7 (blocked, not started): Messaging infra + onboarding consent
+
+- Blocked on SendGrid API key, Twilio SID/auth token + sending number, and client legal's consent copy. Client is setting up SendGrid "today" (per chat).
+- [ ] Additive migration: `email_opt_in`, `email_opt_in_at`, `email_opt_in_ip`, `email_consent_version`, `sms_opt_in`, `sms_opt_in_at`, `sms_opt_in_ip`, `sms_consent_version` on `profiles`.
+- [ ] Two separate, unchecked-by-default checkboxes in onboarding/signup (not combined, not bundled into Terms) — confirmed with client: both stay unchecked by default (TCPA compliance for SMS was the deciding factor; client agreed to leave both unchecked rather than defaulting either to checked).
+- [ ] SendGrid integration (transactional + sequenced email), triggered off existing user state — needs API key.
+- [ ] Twilio (Verify or Messaging API) integration for SMS — needs SID/token/sending number.
+- [ ] Inbound STOP/HELP/START handling via Twilio webhook → Edge Function → writes opt-out back to `profiles` immediately, suppression applied across all sequences (not per-campaign).
+- [ ] Consent copy versioning: store which exact version ID of the consent language was shown at signup, not just a boolean.
+
+## Review
+
+*(To fill in once Part 1–4 are executed and verified.)*
