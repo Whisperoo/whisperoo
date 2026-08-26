@@ -10,7 +10,13 @@
 -- ─────────────────────────────
 create extension if not exists "uuid-ossp";
 create extension if not exists "pgcrypto";
-create extension if not exists "pgvector";     -- 1536-dim OpenAI/Claude
+create extension if not exists "vector";       -- 1536-dim OpenAI/Claude
+-- NOTE (2026-08-26): this line read `"pgvector"` until the staging build.
+-- Supabase's July-2025 Postgres image shipped a `pgvector.control` alias that
+-- installed the extension under its canonical name `vector`; newer images dropped
+-- that alias, so `"pgvector"` now errors with "extension is not available".
+-- Verified against prod (wznevejkaefokgibkknt): `pg_extension` holds `vector` 0.8.0,
+-- NOT `pgvector` — so this edit makes the file match what prod actually applied.
 
 -- ─────────────────────────────
 -- 1. PROFILES  (parent / primary user)
@@ -27,11 +33,11 @@ create table public.profiles (
 
 -- auto-update timestamp
 create or replace function public.set_profile_updated_at()
-returns trigger language plpgsql as $
+returns trigger language plpgsql as $$
 begin
   new.updated_at := now();
   return new;
-end; $;
+end; $$;
 
 create trigger trg_set_profile_updated
 before update on public.profiles
@@ -58,11 +64,11 @@ create table public.children (
 );
 
 create or replace function public.set_child_updated_at()
-returns trigger language plpgsql as $
+returns trigger language plpgsql as $$
 begin
   new.updated_at := now();
   return new;
-end; $;
+end; $$;
 
 create trigger trg_set_child_updated
  before update on public.children

@@ -13,13 +13,18 @@ ADD COLUMN due_date date,
 ADD COLUMN expected_name text;
 
 -- Update RLS policy name and reference to new table name
-DROP POLICY IF EXISTS "parent_reads_writes_kids" ON public.children;
+-- FIX (2026-08-26): read "ON public.children" until the staging build. Line 7 above
+-- already renamed the table, so by this point public.children no longer exists and the
+-- statement aborted with 42P01. IF EXISTS guards the policy, not the relation.
+-- The policy was created on children in 20250701000001 and rides the rename to kids.
+DROP POLICY IF EXISTS "parent_reads_writes_kids" ON public.kids;
 CREATE POLICY "parent_reads_writes_kids" ON public.kids
   USING  ( parent_id = auth.uid() )
   WITH CHECK ( parent_id = auth.uid() );
 
 -- Update trigger function name to match new table
-DROP TRIGGER IF EXISTS trg_set_child_updated ON public.children;
+-- FIX (2026-08-26): same defect as line 16 — was "ON public.children" after the rename.
+DROP TRIGGER IF EXISTS trg_set_child_updated ON public.kids;
 CREATE TRIGGER trg_set_kids_updated
  BEFORE UPDATE ON public.kids
  FOR EACH ROW EXECUTE PROCEDURE public.set_child_updated_at();
