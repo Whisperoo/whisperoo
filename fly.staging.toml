@@ -1,0 +1,65 @@
+# ============================================================
+# Whisperoo — Fly.io STAGING application configuration
+#
+# ⚠️  THIS IS STAGING. Production config lives in fly.toml (app "whisperoo-app").
+#
+# Deploy with:
+#   .\scripts\fly-deploy-staging.ps1
+#
+# ...which reads .env.staging (NOT .env) and passes -c fly.staging.toml.
+# Never run a bare `fly deploy` from this repo root — it picks up fly.toml
+# and would deploy to PRODUCTION.
+#
+# ⚠️  AFTER FIRST DEPLOY — do these in order:
+#   1. fly certs create staging.whisperoo.app -c fly.staging.toml
+#   2. fly certs show staging.whisperoo.app -c fly.staging.toml  ← copy A/AAAA for GoDaddy
+#   3. In the STAGING Supabase project (auttveumgltfedjptwfw) → Auth → URL Configuration:
+#        Site URL:      https://staging.whisperoo.app
+#        Redirect URLs: https://staging.whisperoo.app/**
+# ============================================================
+
+app = "whisperoo-staging"
+primary_region = "iad"   # same region as production
+
+[build]
+  dockerfile = "Dockerfile.fly"
+
+[[services]]
+  internal_port = 8080
+  protocol      = "tcp"
+  auto_stop_machines  = true
+  auto_start_machines = true
+  # Staging: allow scale-to-zero. Production keeps 1 warm for fast cold starts;
+  # staging trades a slow first request for lower cost.
+  min_machines_running = 0
+
+  [services.concurrency]
+    type       = "connections"
+    hard_limit = 200
+    soft_limit = 150
+
+  [[services.ports]]
+    port     = 80
+    handlers = ["http"]
+    force_https = true          # redirect all HTTP → HTTPS
+
+  [[services.ports]]
+    port     = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+    interval      = "10s"
+    timeout       = "5s"
+    grace_period  = "30s"
+    method        = "get"
+    path          = "/"
+
+[env]
+  NODE_ENV = "production"   # the SPA is still built as a production bundle
+
+# Machine size — matches production (1 shared CPU, 256 MB) so staging is a
+# realistic performance proxy, not just a functional one.
+[[vm]]
+  cpu_kind = "shared"
+  cpus     = 1
+  memory_mb = 256
