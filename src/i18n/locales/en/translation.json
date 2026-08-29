@@ -54,7 +54,7 @@
     },
     "contactCard": {
       "title": "Not seeing what you need?",
-      "description": "Message our free support concierge \u2014 a real person who can point you to the right resource, expert, or next step.",
+      "description": "Message our free support concierge — a real person who can point you to the right resource, expert, or next step.",
       "button": "Message the Concierge",
       "orEmail": "Or email"
     }
@@ -95,11 +95,71 @@
     }
   },
   "auth": {
+    "updatePassword": {
+      "validatingLink": "Validating reset link...",
+      "invalidLink": "Invalid or expired link",
+      "invalidLinkDesc": "Please request a new password reset link.",
+      "error": "Error",
+      "validateError": "Failed to validate reset link.",
+      "passwordsDontMatch": "Passwords don't match",
+      "passwordsDontMatchDesc": "Please make sure both passwords are identical.",
+      "passwordTooShort": "Password too short",
+      "passwordTooShortDesc": "Password must be at least 6 characters long.",
+      "passwordUpdated": "Password updated!",
+      "passwordUpdatedDesc": "Your password has been successfully reset.",
+      "updateFailed": "Update failed",
+      "updateFailedDesc": "Failed to update password. Please try again.",
+      "title": "Set New Password",
+      "subtitle": "Choose a strong, memorable password",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password (min. 6 characters)",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your new password",
+      "requirement1": "At least 6 characters long",
+      "requirement2": "Avoid common words or patterns",
+      "updating": "Updating Password...",
+      "resetButton": "Reset Password",
+      "rememberPassword": "Remember your password?",
+      "backToSignIn": "Back to Sign In"
+    },
+    "createAccount": {
+      "title": "Create Account",
+      "welcomeTo": "Welcome to {{name}}",
+      "subtitle": "Join the parenting community",
+      "signingUpVia": "Signing up via {{name}} — {{dept}}",
+      "applyExpert": "Apply as Expert",
+      "firstNameLabel": "First Name",
+      "firstNamePlaceholder": "Enter your first name",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Enter your email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Create a password (min. 6 characters)",
+      "or": "or",
+      "agreeTerms": "I agree to the Terms of Service and Privacy Policy",
+      "createButton": "Create Account",
+      "creatingButton": "Creating Account...",
+      "alreadyHaveAccount": "Already have an account?",
+      "loginLink": "Sign In",
+      "errors": {
+        "firstNameRequired": "First name is required",
+        "emailRequired": "Email is required",
+        "invalidEmail": "Please enter a valid email address",
+        "passwordRequired": "Password is required",
+        "passwordLength": "Password must be at least 6 characters",
+        "agreeTermsRequired": "You must agree to the terms"
+      },
+      "toast": {
+        "success": "Account created!",
+        "welcome": "Welcome to Whisperoo! Let's set up your profile.",
+        "errorCreating": "Error creating account",
+        "tryAgainLater": "Something went wrong. Please try again later."
+      }
+    },
     "login": {
       "title": "Welcome Back",
-      "resetTitle": "Reset Password",
       "subtitle": "Sign in to your account",
-      "resetSubtitle": "Enter your email to receive a reset link",
+      "resetTitle": "Reset Password",
+      "resetSubtitle": "Enter your email and we'll send you a reset link",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -108,66 +168,32 @@
       "signingInButton": "Signing In...",
       "sendResetLinkButton": "Send Reset Link",
       "sendingButton": "Sending...",
-      "forgotPassword": "Forgot your password?",
+      "forgotPassword": "Forgot password?",
       "backToSignIn": "Back to Sign In",
       "noAccount": "Don't have an account?",
       "createAccountLink": "Create Account",
       "toast": {
-        "errorSigningIn": "Error signing in",
-        "tryAgainLater": "Please try again later.",
         "welcomeBack": "Welcome back!",
-        "signedInSuccess": "You have successfully signed in.",
+        "signedInSuccess": "Successfully signed in.",
+        "errorSigningIn": "Error signing in",
+        "tryAgainLater": "Something went wrong. Please try again later.",
         "emailRequired": "Email required",
         "enterEmailAddress": "Please enter your email address.",
-        "emailSent": "Email sent!",
-        "resetLinkSent": "Reset link sent to {{email}}. Check your inbox.",
+        "emailSent": "Email sent",
+        "resetLinkSent": "Check {{email}} for a password reset link.",
         "resetFailed": "Reset failed",
-        "failedToSendReset": "Failed to send reset email. Please try again.",
+        "failedToSendReset": "Failed to send reset email.",
         "tooManyAttempts": "Too many attempts. Please wait a few minutes.",
         "enterValidEmail": "Please enter a valid email address."
       }
     },
-    "createAccount": {
-      "applyExpert": "Apply As Expert",
-      "title": "Create Account",
-      "welcomeTo": "Welcome to {{name}}",
-      "subtitle": "Time is precious so we'll make this quick!",
-      "signingUpVia": "Signing up via {{name}} — {{dept}} Department",
-      "firstNameLabel": "First Name",
-      "firstNamePlaceholder": "Enter your first name",
-      "emailLabel": "Email",
-      "emailPlaceholder": "Enter your email",
-      "passwordLabel": "Password",
-      "passwordPlaceholder": "Create a password",
-      "or": "or",
-      "agreeTerms": "I agree to the Terms of Service and Privacy Policy",
-      "createButton": "Create Account",
-      "creatingButton": "Creating Account...",
-      "alreadyHaveAccount": "Already have an account?",
-      "loginLink": "Login",
-      "errors": {
-        "firstNameRequired": "First name is required",
-        "emailRequired": "Email is required",
-        "invalidEmail": "Please enter a valid email address",
-        "passwordRequired": "Password is required",
-        "passwordLength": "Password must be at least 6 characters",
-        "agreeTermsRequired": "You must agree to the terms and conditions"
-      },
-      "toast": {
-        "errorCreating": "Error creating account",
-        "tryAgainLater": "Please try again later.",
-        "success": "Account created successfully!",
-        "welcome": "Welcome to Whispéroo!"
-      }
-    },
-    "verifyOTP": {
-      "title": "Verify Phone Number",
-      "subtitle": "We sent a code to {{phone}}",
-      "codeLabel": "Verification Code",
-      "codePlaceholder": "Enter 6-digit code",
-      "verifyButton": "Verify",
-      "verifyingButton": "Verifying...",
-      "resendCode": "Resend Code"
+    "timeout": {
+      "sessionExtended": "Session Extended",
+      "activeAgain": "We've extended your session.",
+      "warningTitle": "Session Expiring Soon",
+      "warningDesc": "Your session will expire in 5 minutes due to inactivity. Please interact with the page to stay logged in.",
+      "expiredTitle": "Session Expired",
+      "expiredDesc": "For your security, you have been logged out due to inactivity."
     }
   },
   "chat": {
@@ -869,6 +895,14 @@
         "postpartumVisits": "% of post-delivery patients who have completed their 6-week postpartum follow-up checklist item. Sourced from care_checklist_completions.",
         "dau": "Count of distinct user sessions recorded in the past 24 hours. A session is counted when a user loads any authenticated page.",
         "mau": "Count of distinct users with at least one session in the past 30 days. Delta compares current 30-day window vs the previous 30-day window."
+      },
+      "segment": {
+        "all": "All",
+        "b2c": "B2C",
+        "b2cDisabledHint": "Clear the hospital selection to view B2C users",
+        "hospital": "Hospital",
+        "label": "Segment",
+        "qrExportUnavailableB2c": "QR signups are hospital-attributed, so there is nothing to export for the B2C segment"
       }
     },
     "kpi": {
@@ -950,108 +984,6 @@
       "saving": "Saving…",
       "saveConfig": "Save Configuration",
       "saved": "Saved!"
-    }
-  },
-  "auth": {
-    "updatePassword": {
-      "validatingLink": "Validating reset link...",
-      "invalidLink": "Invalid or expired link",
-      "invalidLinkDesc": "Please request a new password reset link.",
-      "error": "Error",
-      "validateError": "Failed to validate reset link.",
-      "passwordsDontMatch": "Passwords don't match",
-      "passwordsDontMatchDesc": "Please make sure both passwords are identical.",
-      "passwordTooShort": "Password too short",
-      "passwordTooShortDesc": "Password must be at least 6 characters long.",
-      "passwordUpdated": "Password updated!",
-      "passwordUpdatedDesc": "Your password has been successfully reset.",
-      "updateFailed": "Update failed",
-      "updateFailedDesc": "Failed to update password. Please try again.",
-      "title": "Set New Password",
-      "subtitle": "Choose a strong, memorable password",
-      "newPassword": "New Password",
-      "newPasswordPlaceholder": "Enter new password (min. 6 characters)",
-      "confirmPassword": "Confirm Password",
-      "confirmPasswordPlaceholder": "Confirm your new password",
-      "requirement1": "At least 6 characters long",
-      "requirement2": "Avoid common words or patterns",
-      "updating": "Updating Password...",
-      "resetButton": "Reset Password",
-      "rememberPassword": "Remember your password?",
-      "backToSignIn": "Back to Sign In"
-    },
-    "createAccount": {
-      "title": "Create Account",
-      "welcomeTo": "Welcome to {{name}}",
-      "subtitle": "Join the parenting community",
-      "signingUpVia": "Signing up via {{name}} — {{dept}}",
-      "applyExpert": "Apply as Expert",
-      "firstNameLabel": "First Name",
-      "firstNamePlaceholder": "Enter your first name",
-      "emailLabel": "Email",
-      "emailPlaceholder": "Enter your email",
-      "passwordLabel": "Password",
-      "passwordPlaceholder": "Create a password (min. 6 characters)",
-      "or": "or",
-      "agreeTerms": "I agree to the Terms of Service and Privacy Policy",
-      "createButton": "Create Account",
-      "creatingButton": "Creating Account...",
-      "alreadyHaveAccount": "Already have an account?",
-      "loginLink": "Sign In",
-      "errors": {
-        "firstNameRequired": "First name is required",
-        "emailRequired": "Email is required",
-        "invalidEmail": "Please enter a valid email address",
-        "passwordRequired": "Password is required",
-        "passwordLength": "Password must be at least 6 characters",
-        "agreeTermsRequired": "You must agree to the terms"
-      },
-      "toast": {
-        "success": "Account created!",
-        "welcome": "Welcome to Whisperoo! Let's set up your profile.",
-        "errorCreating": "Error creating account",
-        "tryAgainLater": "Something went wrong. Please try again later."
-      }
-    },
-    "login": {
-      "title": "Welcome Back",
-      "subtitle": "Sign in to your account",
-      "resetTitle": "Reset Password",
-      "resetSubtitle": "Enter your email and we'll send you a reset link",
-      "emailLabel": "Email",
-      "emailPlaceholder": "Enter your email",
-      "passwordLabel": "Password",
-      "passwordPlaceholder": "Enter your password",
-      "signInButton": "Sign In",
-      "signingInButton": "Signing In...",
-      "sendResetLinkButton": "Send Reset Link",
-      "sendingButton": "Sending...",
-      "forgotPassword": "Forgot password?",
-      "backToSignIn": "Back to Sign In",
-      "noAccount": "Don't have an account?",
-      "createAccountLink": "Create Account",
-      "toast": {
-        "welcomeBack": "Welcome back!",
-        "signedInSuccess": "Successfully signed in.",
-        "errorSigningIn": "Error signing in",
-        "tryAgainLater": "Something went wrong. Please try again later.",
-        "emailRequired": "Email required",
-        "enterEmailAddress": "Please enter your email address.",
-        "emailSent": "Email sent",
-        "resetLinkSent": "Check {{email}} for a password reset link.",
-        "resetFailed": "Reset failed",
-        "failedToSendReset": "Failed to send reset email.",
-        "tooManyAttempts": "Too many attempts. Please wait a few minutes.",
-        "enterValidEmail": "Please enter a valid email address."
-      }
-    },
-    "timeout": {
-      "sessionExtended": "Session Extended",
-      "activeAgain": "We've extended your session.",
-      "warningTitle": "Session Expiring Soon",
-      "warningDesc": "Your session will expire in 5 minutes due to inactivity. Please interact with the page to stay logged in.",
-      "expiredTitle": "Session Expired",
-      "expiredDesc": "For your security, you have been logged out due to inactivity."
     }
   }
 }

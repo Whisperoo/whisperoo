@@ -12,6 +12,15 @@ interface MetricsDashProps {
   tenantId: string | null;
 }
 
+/**
+ * Dashboard audience filter, matching the p_segment argument on the dashboard RPCs.
+ *  - 'all'      every profile, optionally narrowed by the selected hospital
+ *  - 'hospital' tenant-affiliated profiles only
+ *  - 'b2c'      unaffiliated profiles only (tenant_id IS NULL); p_tenant_id is ignored
+ * Anything else is rejected server-side with 'Invalid segment'.
+ */
+type DashboardSegment = 'all' | 'hospital' | 'b2c';
+
 interface DashboardData {
   kpis: {
     total_enrolled: number | null;
@@ -88,7 +97,18 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
     const d = new Date();
     return d.toISOString().split('T')[0];
   });
+  // All / Hospital / B2C. Sent as p_segment to every dashboard RPC.
+  const [segment, setSegment] = useState<DashboardSegment>('all');
   const { t } = useTranslation();
+
+  // 'b2c' means "profiles with no tenant", and fn_profile_in_segment ignores
+  // p_tenant_id for it. Combining it with a selected hospital would therefore
+  // silently report ALL unaffiliated users rather than that hospital's — a
+  // contradiction. The option is disabled below whenever a hospital is selected;
+  // this resets it if a hospital is picked while B2C is already active.
+  useEffect(() => {
+    if (tenantId && segment === 'b2c') setSegment('all');
+  }, [tenantId, segment]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -99,7 +119,8 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         { 
           p_tenant_id: tenantId ?? null,
           p_start_date: startDate || null,
-          p_end_date: endDate || null
+          p_end_date: endDate || null,
+          p_segment: segment
         }
       );
       if (rpcError) throw rpcError;
@@ -111,6 +132,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           p_tenant_id: tenantId ?? null,
           p_start_date: startDate || null,
           p_end_date: endDate || null,
+          p_segment: segment,
         }
       );
       // Fail-soft: if KPI function isn't deployed yet, don't break the whole dashboard.
@@ -123,7 +145,8 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         { 
           p_tenant_id: tenantId ?? null,
           p_start_date: startDate || null,
-          p_end_date: endDate || null
+          p_end_date: endDate || null,
+          p_segment: segment
         }
       );
       if (resourceError) throw resourceError;
@@ -135,6 +158,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           p_tenant_id: tenantId ?? null,
           p_start_date: startDate || null,
           p_end_date: endDate || null,
+          p_segment: segment,
         }
       );
       const qrAccessDenied =
@@ -159,7 +183,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
     } finally {
       setLoading(false);
     }
-  }, [tenantId, startDate, endDate]);
+  }, [tenantId, startDate, endDate, segment]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -167,6 +191,10 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
     setExporting(true);
     try {
       const { data: rows, error: exportErr } = await supabase.rpc(
+        // NOTE: deliberately NOT given p_segment. This export is QR-attributed by
+        // definition, so 'hospital' and 'all' return the same rows and 'b2c' would be
+        // an empty set. Rather than add a no-op argument, the export button is disabled
+        // for the B2C segment (see the QR section below).
         'fn_admin_qr_signup_export',
         {
           p_tenant_id: tenantId ?? null,
@@ -270,12 +298,39 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           </div>
           <div className="flex flex-col">
             <label className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-1">End Date</label>
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="text-sm border border-gray-200 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             />
+          </div>
+          <div className="flex flex-col">
+            <label
+              htmlFor="metrics-segment"
+              className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-1"
+            >
+              {t('admin.metrics.segment.label')}
+            </label>
+            <select
+              id="metrics-segment"
+              value={segment}
+              onChange={(e) => setSegment(e.target.value as DashboardSegment)}
+              className="text-sm border border-gray-200 rounded-md px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            >
+              <option value="all">{t('admin.metrics.segment.all')}</option>
+              <option value="hospital">{t('admin.metrics.segment.hospital')}</option>
+              {/* Disabled while a specific hospital is selected: 'b2c' ignores
+                  p_tenant_id server-side, so the pairing is contradictory. */}
+              <option value="b2c" disabled={!!tenantId}>
+                {t('admin.metrics.segment.b2c')}
+              </option>
+            </select>
+            {tenantId && (
+              <span className="text-[10px] text-gray-400 mt-1 max-w-[12rem] leading-tight">
+                {t('admin.metrics.segment.b2cDisabledHint')}
+              </span>
+            )}
           </div>
           {/* <button 
             onClick={fetchData}
@@ -543,9 +598,20 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
               <button
                 type="button"
                 onClick={handleExportQrSignups}
-                disabled={exporting || (data.qr_metrics.totals?.signups ?? 0) === 0}
+                // Explicitly disabled for B2C rather than relying on the signups===0
+                // check: fn_admin_qr_signup_export has no p_segment argument, so it
+                // would return every QR signup and silently contradict the filter.
+                disabled={
+                  exporting ||
+                  segment === 'b2c' ||
+                  (data.qr_metrics.totals?.signups ?? 0) === 0
+                }
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Export current filter as CSV (First Name, Phone, Hospital, QR Label, Department, Source, Date)"
+                title={
+                  segment === 'b2c'
+                    ? t('admin.metrics.segment.qrExportUnavailableB2c')
+                    : 'Export current filter as CSV (First Name, Phone, Hospital, QR Label, Department, Source, Date)'
+                }
               >
                 {exporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                 Export CSV
