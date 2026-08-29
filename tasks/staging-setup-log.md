@@ -1003,3 +1003,65 @@ Production still has the 3-argument signatures. Sending `p_segment` there fails 
 - `fn_get_appointment_booking_engagement_pct` has **no auth guard at all** and is granted to
   `anon` — it returns only an aggregate percentage, but it is reachable without the
   admin check the other three enforce. Same triage.
+
+---
+
+## 2026-08-29 — 🔴 Baseline gap found during QA: objects outside the `public` schema
+
+First real QA session on staging immediately exposed a defect in how the baseline
+was taken. Signup succeeded in `auth.users` but the app then looped on
+`Profile does not exist for user ...` with repeated **406** responses.
+
+**Root cause: the prod dump was taken with `--schema=public`.** Anything living
+outside that schema was silently omitted. The `handle_new_user()` *function* came
+across (it lives in `public`), but the **trigger that fires it does not** — it sits on
+`auth.users`. So no `profiles` row was ever created on signup.
+
+| Object | Prod | Staging (before fix) |
+|---|---|---|
+| `on_auth_user_created` trigger on `auth.users` | present | **missing** |
+| `public.handle_new_user()` | present | present |
+| `storage.buckets` rows | 7 | **3** |
+| `storage` RLS policies | 26 | **7** |
+
+The 3 buckets and 7 policies staging did have were leftovers from the pre-baseline
+push attempts — `DROP SCHEMA public CASCADE` never touched `storage`.
+
+**Fixes applied to staging:**
+
+1. `CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();`
+2. Backfilled the `profiles` row the trigger would have created for the QA account,
+   using the same expression the function uses, then promoted it to `super_admin`.
+3. Copied all 7 `storage.buckets` definitions from prod (generated `INSERT ... ON CONFLICT
+   DO NOTHING` from the live rows).
+4. Copied all storage RLS policies from prod. Staging now reports **7 buckets and 26
+   policies**, matching production exactly.
+
+**Correction to the 12:18 entry.** It stated that the ownership rule blocking
+`ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY` "applies to `CREATE POLICY`,
+meaning all four policy statements would have failed identically." That was an
+inference, and it is **wrong**: `CREATE POLICY` on `storage.objects` succeeds as
+`postgres`. Only the `ALTER` requires table ownership. The fail-soft rewrite of
+`20250712000001` is still correct and still needed for the ALTER — but the stated
+reason overreached.
+
+**Lesson for any future environment rebuild:** `pg_dump --schema=public` is not
+sufficient to clone this project. At minimum it also needs the `auth.users` trigger
+and the `storage` schema's buckets and policies. Verify object counts per schema,
+not just `public`, before declaring a baseline complete.
+
+---
+
+## 2026-08-29 — `LANDING_URL` made environment-driven
+
+QA also found that `localhost:8080` redirected to the production marketing site.
+Not a config fault: `Splash.tsx` sends any logged-out visitor at `/` to `LANDING_URL`,
+which was hardcoded to `https://whisperoo.app`. Locally that bounces you off the app
+before you can reach signup — and once `staging.whisperoo.app` exists, its front door
+would have handed visitors to production.
+
+`src/config/urls.ts` now reads `import.meta.env.VITE_LANDING_URL` with the production
+URL as fallback, so production behaviour is unchanged and `.env` needs no edit.
+`.env.staging` sets `VITE_LANDING_URL=/auth/create` — a relative path is valid for
+`window.location.replace` and keeps the visitor inside the environment. Documented in
+`.env.example`.
