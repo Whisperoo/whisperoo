@@ -994,3 +994,74 @@ Verification: `tsc --noEmit` clean; `npm run build` succeeds; `eslint` on the ch
 ## Review
 
 *(To fill in once Part 1–4 are executed and verified.)*
+
+---
+
+# Phase 2 — MetricsDash All/Hospital/B2C segment selector
+
+Prerequisite now satisfied: `20260822000001_admin_dashboard_segment_filter.sql` is
+applied and verified on staging (27 helper call sites, 0 stale predicates, helper truth
+table confirmed live).
+
+## Findings from reading the code before writing any UI
+
+### 🔴 Blocker-level finding: only ONE of the four dashboard RPCs supports `p_segment`
+
+`MetricsDash.tsx` calls four RPCs. The migration only extended the first:
+
+| RPC | Feeds | Has `p_segment`? |
+|---|---|---|
+| `fn_get_admin_dashboard` | most KPIs, enrollment/escalation trends, feature usage, concern themes | ✅ yes |
+| `fn_get_appointment_booking_engagement_pct` | Appointment Booking Engagement KPI | ❌ no |
+| `fn_get_resource_utilization` | Resource Utilization table | ❌ no |
+| `fn_admin_qr_signup_metrics` | QR signup metrics + unattributed rows | ❌ no |
+
+Wiring the selector to only the first RPC produces a **silently mixed dashboard**: pick
+"B2C" and the headline KPIs filter correctly while three sections keep showing all-segment
+numbers, with nothing on screen saying so. On a HIPAA-adjacent reporting surface that is
+worse than having no filter at all. QR metrics are conceptually meaningless under 'b2c'
+anyway, since QR signups are hospital-attributed by definition.
+
+### Segment semantics (from the migration, confirmed live)
+
+- `all` — legacy behaviour, optionally narrowed by `p_tenant_id`
+- `hospital` — `tenant_id IS NOT NULL`, optionally narrowed to one tenant
+- `b2c` — `tenant_id IS NULL`; **`p_tenant_id` is ignored entirely**
+
+### Edge cases the UI must handle
+
+- [ ] `tenantId` prop is non-null (a specific hospital is selected in the portal) **and**
+      segment = `b2c` → contradictory: the helper ignores `p_tenant_id`, so the user asks
+      for "Memorial Hospital + B2C" and silently gets *all* unaffiliated users. Must be
+      prevented in the UI, not just tolerated.
+- [ ] Invalid segment is rejected server-side (`RAISE EXCEPTION 'Invalid segment'`) — good,
+      but the UI must never be able to send one.
+- [ ] Segment must participate in the `useCallback` dependency array (currently
+      `[tenantId, startDate, endDate]`) or the dashboard won't refetch on change.
+- [ ] Existing CSV export filename includes tenant + dates; should record segment too, or
+      exports become ambiguous.
+- [ ] Deploying this UI to **production** breaks the dashboard until the migration ships
+      there — prod still has the 3-arg signature. Staging-only until then.
+
+### Brand / i18n consistency
+
+- [ ] Use `t()` for the new label and options, with keys added to **all three** locales
+      (`en`, `es`, `vi`) — the app ships Spanish and Vietnamese per SOW 5.1/5.2.
+- [ ] Match the existing filter-bar styling exactly: `text-sm border border-gray-200
+      rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500`, with the `text-[10px]
+      uppercase tracking-wider` label treatment.
+- [ ] Note: the existing "Start Date"/"End Date" labels are hardcoded English, i.e. already
+      inconsistent with the app's own i18n. New work should not copy that bug.
+
+## Decision needed before implementing
+
+Two ways to resolve the mixed-dashboard problem — see chat.
+
+## Separate pre-existing finding (NOT introduced here, not fixed here)
+
+`fn_get_admin_dashboard` guards on `account_type IN ('admin','super_admin','superadmin')`
+but never binds the caller to their own tenant, and `p_tenant_id` is caller-supplied. A
+hospital-level `admin` can therefore request any other tenant's aggregates, or all tenants,
+by passing a different `p_tenant_id`. The function is SECURITY DEFINER so table RLS does not
+apply. This predates the segment work — the old inline predicate had the same property.
+Logged for separate triage.

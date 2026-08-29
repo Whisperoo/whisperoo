@@ -876,3 +876,130 @@ root, since that picks up `fly.toml` and targets production.
 | Auth URL config | after the Fly app exists |
 
 Nothing has been committed to git — all changes sit in the working tree awaiting review.
+
+---
+
+## 2026-08-27 — Work committed (4 chunks)
+
+| Commit | Contents |
+|---|---|
+| `7bd1213` | `fix(db): repair three migrations that were never replayable` |
+| `79bda38` | `fix(db): add missing migration for profiles.account_type` |
+| `1aa9097` | `chore(staging): add Fly.io staging config and deploy script` |
+| `1fd97e2` | `docs(staging): add append-only ops log for the staging build` |
+
+Branch `phase2/admin-portal-gaps`. `supabase/.temp/cli-latest` left uncommitted — it is
+pre-existing CLI version-cache noise, modified before this session began, and not ours
+to fold into these commits.
+
+---
+
+## 2026-08-27 — Part 2: Cloudflare R2 staging bucket — ⛔ BLOCKED on credentials
+
+**Known R2 configuration (from `.env`, prod):**
+
+| Setting | Value |
+|---|---|
+| Account ID | `1ff5b57c64eb2a008d4abd84ee0f5612` |
+| Prod bucket | `whisperoo-files` |
+| Prod public URL | `https://pub-e55ae18a75f944f4ba682bb36668ea5d.r2.dev` |
+| S3 endpoint (derived in `r2-storage/index.ts:24-26`) | `https://<account-id>.r2.cloudflarestorage.com` |
+
+**Blocker:** `R2_SECRET_ACCESS_KEY` **does not exist locally** — checked `.env`,
+`.env.staging` and `.env.example`, zero occurrences. Only `R2_ACCESS_KEY_ID` is
+present. Every S3 request must be SigV4-signed with both halves, so the API route
+cannot proceed without the secret. R2 shows the secret only once at token creation,
+so it most likely needs a fresh token.
+
+**Second, separate issue — the public URL cannot be created over the S3 API at all.**
+Prod's `pub-<hash>.r2.dev` hostname comes from enabling public access on the bucket,
+which is a Cloudflare account-level operation (dashboard or `api.cloudflare.com`), not
+an S3 bucket operation. Even with working S3 keys, `VITE_CLOUDFLARE_R2_PUBLIC_URL`
+for staging requires either the dashboard or a Cloudflare API token.
+
+**Permission note for whichever path is chosen:** creating a bucket over the S3 API
+needs an R2 token with **Admin Read & Write**. An "Object Read & Write" token can put
+and get objects but cannot create buckets.
+
+**Reassurance recorded:** issuing a new R2 API token does **not** revoke the existing
+one. R2 tokens are independent, so prod's current credentials keep working.
+
+**Five secrets still pending on staging:** `CLOUDFLARE_ACCOUNT_ID`,
+`CLOUDFLARE_R2_ACCESS_KEY_ID`, `CLOUDFLARE_R2_SECRET_ACCESS_KEY`,
+`CLOUDFLARE_R2_BUCKET_NAME`, `CLOUDFLARE_R2_ENDPOINT`.
+
+---
+
+## 2026-08-27 — Phase 2: dashboard segment filter completed end-to-end
+
+### New migration: `20260827000001_segment_filter_remaining_dashboard_rpcs.sql`
+
+`20260822000001` only extended `fn_get_admin_dashboard`, but `MetricsDash.tsx` calls
+**four** RPCs. Wiring a selector to one of them would have produced a silently mixed
+dashboard whose numbers do not reconcile. User chose to extend all four.
+
+Generated mechanically from the live prod definitions (extracted from the pg_dump), with
+the transform asserting **exactly 9 substitutions and 0 stale predicates** — everything
+outside the changed predicates is byte-identical to what is running in production.
+
+| Function | Predicates replaced |
+|---|---|
+| `fn_get_resource_utilization` | 5 |
+| `fn_admin_qr_signup_metrics` | 2 |
+| `fn_get_appointment_booking_engagement_pct` | 2 |
+
+Two judgement calls, both documented in the migration header:
+
+1. **Anonymous analytics rows.** `product_analytics` rows with `pa.user_id IS NULL` were
+   previously counted under *any* tenant filter. Carrying that through unchanged would
+   double-count them in both `hospital` and `b2c`, so segments would not sum to `all`.
+   They are now included only when `p_segment = 'all'` — legacy behaviour preserved
+   exactly for the default, and segments partition cleanly.
+2. **QR under B2C.** `fn_admin_qr_signup_metrics` filters `qc.tenant_id`, so `b2c`
+   returns no QR codes. Correct and intentional: QR signups are hospital-attributed by
+   definition, so "B2C QR signups" is an empty set, not a bug.
+
+### Verified on staging (applied via `db push`)
+
+| Check | Result |
+|---|---|
+| All four signatures carry `p_segment`, each appearing once | ✅ no ambiguous overloads |
+| Stale `IS NULL OR x.tenant_id = p_tenant_id` predicates across all four | **0** |
+| Helper call sites | dashboard 27, resource_util 5, qr 2, appt 2 |
+| Invalid segment rejected | ✅ (guarded fns hit auth first — correct ordering) |
+| **Runtime test: 4 RPCs × 3 segments = 12 calls** | ✅ all executed; plpgsql bodies compile and run |
+
+The runtime test ran inside a transaction that seeded a temporary `super_admin` profile,
+set `request.jwt.claims`, exercised every combination, and **rolled back** — nothing
+persisted. This matters because plpgsql bodies are not fully validated until executed.
+
+### Frontend (`MetricsDash.tsx`)
+
+- New `DashboardSegment` union type; `p_segment` passed to all four dashboard RPCs.
+- `segment` added to both `useCallback` dependency arrays so the dashboard refetches.
+- **`fn_admin_qr_signup_export` deliberately NOT given `p_segment`** — a bulk edit
+  initially added it to all five call sites and was reverted. That RPC has no such
+  argument and the call would have failed. The export is QR-attributed by definition, so
+  the button is disabled for B2C instead, with an explanatory tooltip.
+- **Contradiction guard:** `b2c` ignores `p_tenant_id` server-side, so pairing it with a
+  selected hospital would silently report *all* unaffiliated users. The option is disabled
+  while a hospital is selected, plus an effect resets `b2c` → `all` if a hospital is picked
+  afterwards.
+- i18n keys added to **all three** locales (en/es/vi); Vietnamese verified as real UTF-8
+  (`Phân khúc`, codepoints checked) rather than mojibake.
+
+`tsc --noEmit` exits 0.
+
+### ⚠️ Do not deploy this frontend to production yet
+
+Production still has the 3-argument signatures. Sending `p_segment` there fails until both
+`20260822000001` and `20260827000001` are pushed to prod. **Staging only** for now.
+
+### Pre-existing findings noted, not fixed here
+
+- `fn_get_admin_dashboard` guards on role but never binds the caller to their own tenant;
+  `p_tenant_id` is caller-supplied, so a hospital `admin` can request any tenant's
+  aggregates. Predates this work. Spawned as a separate task.
+- `fn_get_appointment_booking_engagement_pct` has **no auth guard at all** and is granted to
+  `anon` — it returns only an aggregate percentage, but it is reachable without the
+  admin check the other three enforce. Same triage.
