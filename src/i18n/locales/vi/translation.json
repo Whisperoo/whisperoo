@@ -900,6 +900,19 @@
         "hospital": "Bệnh viện",
         "label": "Phân khúc",
         "qrExportUnavailableB2c": "Lượt đăng ký bằng mã QR được quy cho bệnh viện, nên không có gì để xuất cho phân khúc B2C"
+      },
+      "independent": {
+        "colDate": "Ngày đăng ký",
+        "colName": "Tên",
+        "colPhone": "Số điện thoại",
+        "colSource": "Nguồn",
+        "empty": "Không tìm thấy lượt đăng ký độc lập nào trong khoảng thời gian này.",
+        "exportCsv": "Xuất CSV",
+        "exportTitle": "Xuất bộ lọc hiện tại dưới dạng CSV (tên, số điện thoại, nguồn, ngày)",
+        "nothingToExport": "Không có lượt đăng ký độc lập nào khớp với bộ lọc hiện tại. Không có gì để xuất.",
+        "signups": "lượt đăng ký",
+        "subtitle": "Người dùng không liên kết với bệnh viện nào (không qua mã QR hay bệnh viện).",
+        "title": "Đăng ký độc lập / không liên kết"
       }
     },
     "kpi": {

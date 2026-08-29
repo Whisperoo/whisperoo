@@ -56,6 +56,22 @@ interface DashboardData {
     total_saves: number;
     total_revenue: number;
   }[];
+  /**
+   * Unaffiliated signups (profiles.tenant_id IS NULL). Populated from
+   * fn_admin_independent_signups_export, which returns full rows — the count
+   * shown in the UI is just list.length, so one RPC serves both purposes.
+   *
+   * "Independent" is a proxy definition (no tenant + onboarded), not a captured
+   * intent signal: the onboarding "No, I'm independent" choice still sets no
+   * field. It therefore also catches pre-hospital-pilot signups. Accepted
+   * imprecision, carried over from the original implementation.
+   */
+  independent_signups?: Array<{
+    first_name: string | null;
+    phone: string | null;
+    acquisition_source: string | null;
+    created_at: string;
+  }>;
   qr_metrics?: {
     totals: { scans: number; signups: number; attributed_signups?: number; unattributed_signups?: number };
     by_qr: Array<{
@@ -87,6 +103,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingIndependent, setExportingIndependent] = useState(false);
   // Initialize to last 30 days by default
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
@@ -169,8 +186,36 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
         console.warn('QR metrics unavailable:', qrErr);
       }
 
+      // Independent / unaffiliated signups (tenant_id IS NULL).
+      //
+      // Skipped in two cases, because the answer is knowably empty:
+      //   - a specific hospital is selected: an affiliated tenant can never
+      //     contain unaffiliated users
+      //   - segment is 'hospital': that segment is tenant-affiliated by definition
+      //
+      // The RPC takes no p_tenant_id and no p_segment — "independent" already
+      // means tenant_id IS NULL, so both would be redundant.
+      let independentSignups: DashboardData['independent_signups'] = undefined;
+      if (!tenantId && segment !== 'hospital') {
+        const { data: indepData, error: indepErr } = await supabase.rpc(
+          'fn_admin_independent_signups_export',
+          {
+            p_start_date: startDate || null,
+            p_end_date: endDate || null,
+          }
+        );
+        // Fail-soft, matching the QR metrics treatment: a missing or forbidden
+        // export must not take the whole dashboard down.
+        if (indepErr) {
+          console.warn('Independent signups unavailable:', indepErr);
+        } else {
+          independentSignups = (indepData as DashboardData['independent_signups']) || [];
+        }
+      }
+
       setData({
         ...(result as DashboardData),
+        independent_signups: independentSignups,
         kpis: {
           ...((result as DashboardData).kpis ?? {}),
           appointment_checklist_engagement_pct: apptErr ? null : (apptPct as number | null) ?? null,
@@ -186,6 +231,48 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
   }, [tenantId, startDate, endDate, segment]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Exports from already-fetched rows rather than re-calling the RPC: the fetch
+  // above returns full rows, so a second round trip would only risk showing a
+  // different set than the table on screen.
+  const handleExportIndependentSignups = useCallback(() => {
+    const list = data?.independent_signups ?? [];
+    if (list.length === 0) {
+      alert(t('admin.metrics.independent.nothingToExport'));
+      return;
+    }
+    setExportingIndependent(true);
+    try {
+      const headers = ['First Name', 'Phone', 'Acquisition Source', 'Signup Date'];
+      const escape = (v: string | null | undefined) => {
+        const s = v == null ? '' : String(v);
+        // Wrap in quotes and double any embedded quotes — RFC 4180 CSV escaping.
+        return `"${s.replace(/"/g, '""')}"`;
+      };
+      const lines = [
+        headers.map(escape).join(','),
+        ...list.map((r) => [
+          r.first_name,
+          r.phone,
+          r.acquisition_source,
+          new Date(r.created_at).toISOString(),
+        ].map(escape).join(',')),
+      ];
+      // Prefix BOM so Excel opens UTF-8 characters (Vietnamese/Spanish names) correctly.
+      const csv = '﻿' + lines.join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `independent-signups-${startDate || 'start'}-${endDate || 'end'}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportingIndependent(false);
+    }
+  }, [data?.independent_signups, startDate, endDate, t]);
 
   const handleExportQrSignups = useCallback(async () => {
     setExporting(true);
@@ -574,6 +661,76 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
           </table>
         </div>
       </div>
+
+      {/* ── Independent / Unaffiliated Signups ──
+          Rendered only when the data was actually fetched, which the fetch above
+          skips for a selected hospital or the 'hospital' segment — both are
+          knowably empty. "Independent" is a proxy definition (no tenant +
+          onboarded); the onboarding "I'm independent" choice sets no distinct
+          flag today, so this also catches pre-hospital-pilot signups. */}
+      {data?.independent_signups && (
+        <div className="bg-white rounded-[16px] border border-gray-200 shadow-sm p-6 flex flex-col gap-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-[15px] font-semibold text-gray-900">
+                {t('admin.metrics.independent.title')}
+              </h3>
+              <p className="text-xs text-gray-400">
+                {t('admin.metrics.independent.subtitle')}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-xs text-gray-500">
+                <span className="font-semibold text-gray-800">{data.independent_signups.length}</span>{' '}
+                {t('admin.metrics.independent.signups')}
+              </div>
+              <button
+                type="button"
+                onClick={handleExportIndependentSignups}
+                disabled={exportingIndependent || data.independent_signups.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title={t('admin.metrics.independent.exportTitle')}
+              >
+                {exportingIndependent
+                  ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  : <Download className="w-3.5 h-3.5" />}
+                {t('admin.metrics.independent.exportCsv')}
+              </button>
+            </div>
+          </div>
+
+          {data.independent_signups.length === 0 ? (
+            <p className="text-center text-gray-500 text-sm py-4">
+              {t('admin.metrics.independent.empty')}
+            </p>
+          ) : (
+            <div className="overflow-auto max-h-80 rounded-xl border border-gray-100">
+              <table className="w-full text-sm text-left">
+                <thead className="sticky top-0 z-10 bg-gray-50 text-gray-600 font-medium border-y border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3">{t('admin.metrics.independent.colName')}</th>
+                    <th className="px-4 py-3">{t('admin.metrics.independent.colPhone')}</th>
+                    <th className="px-4 py-3">{t('admin.metrics.independent.colSource')}</th>
+                    <th className="px-4 py-3 text-right">{t('admin.metrics.independent.colDate')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {data.independent_signups.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-gray-900">{row.first_name || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{row.phone || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{row.acquisition_source || '—'}</td>
+                      <td className="px-4 py-3 text-gray-500 text-right whitespace-nowrap">
+                        {new Date(row.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── QR Signup Attribution ── */}
       {data?.qr_metrics && (

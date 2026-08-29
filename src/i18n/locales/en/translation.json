@@ -903,6 +903,19 @@
         "hospital": "Hospital",
         "label": "Segment",
         "qrExportUnavailableB2c": "QR signups are hospital-attributed, so there is nothing to export for the B2C segment"
+      },
+      "independent": {
+        "colDate": "Signup Date",
+        "colName": "First Name",
+        "colPhone": "Phone",
+        "colSource": "Acquisition Source",
+        "empty": "No independent signups found for this period.",
+        "exportCsv": "Export CSV",
+        "exportTitle": "Export current filter as CSV (First Name, Phone, Acquisition Source, Date)",
+        "nothingToExport": "No independent signups match the current filters. Nothing to export.",
+        "signups": "signups",
+        "subtitle": "Users not linked to any hospital (no QR or hospital affiliation).",
+        "title": "Independent / Unaffiliated Signups"
       }
     },
     "kpi": {

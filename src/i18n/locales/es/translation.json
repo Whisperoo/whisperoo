@@ -900,6 +900,19 @@
         "hospital": "Hospital",
         "label": "Segmento",
         "qrExportUnavailableB2c": "Los registros por QR se atribuyen a hospitales, por lo que no hay nada que exportar para el segmento B2C"
+      },
+      "independent": {
+        "colDate": "Fecha de registro",
+        "colName": "Nombre",
+        "colPhone": "Teléfono",
+        "colSource": "Origen",
+        "empty": "No se encontraron registros independientes en este período.",
+        "exportCsv": "Exportar CSV",
+        "exportTitle": "Exportar el filtro actual como CSV (nombre, teléfono, origen, fecha)",
+        "nothingToExport": "Ningún registro independiente coincide con los filtros actuales. No hay nada que exportar.",
+        "signups": "registros",
+        "subtitle": "Usuarios no vinculados a ningún hospital (sin QR ni afiliación hospitalaria).",
+        "title": "Registros independientes / sin afiliación"
       }
     },
     "kpi": {
