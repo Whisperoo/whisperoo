@@ -1065,3 +1065,70 @@ URL as fallback, so production behaviour is unchanged and `.env` needs no edit.
 `.env.staging` sets `VITE_LANDING_URL=/auth/create` — a relative path is valid for
 `window.location.replace` and keeps the visitor inside the environment. Documented in
 `.env.example`.
+
+---
+
+## 2026-08-31 — Cross-schema audit + full QA seed + a real bug it exposed
+
+### Cross-schema audit (following the `--schema=public` lesson)
+
+Compared every schema, not just `public`. Two more gaps found and closed:
+
+| | Prod | Staging (before) | Action |
+|---|---|---|---|
+| `pg_net` extension | installed | **missing** | installed |
+| `pgaudit` extension | installed | **missing** | installed |
+| `public` functions | 149 | 150 | expected — staging is ahead by `fn_profile_in_segment` |
+
+`pg_net` mattered: `fn_auto_translate` calls `net.http_*`, and it is wired to triggers on
+`profiles`, `products` and `care_checklist_templates`. Without the extension, **any profile
+update would have errored** — which would have broken onboarding the moment QA got past
+signup. Verified after installing: a `profiles` UPDATE now survives the trigger.
+
+`auth`, `storage`, `vault`, `graphql` and `extensions` otherwise match.
+
+### QA seed part 2 (`scripts/qa/seed-staging-qa-content.sql`)
+
+5 experts, 9 products (paid / free / hospital / consultation, with es+vi titles),
+16 analytics events, 4 purchases, 3 bookings, 4 chat sessions, 8 messages (one flagged).
+Engagement is split unevenly across hospital and B2C users **on purpose** — uniform data
+cannot prove a segment filter works.
+
+Four schema mismatches found while writing it, each fixed against the real constraints
+rather than assumption: `expert_credentials` is `text[]`; `p`/`s` are not hex digits so
+those UUIDs were invalid; `product_type` is `video|document|audio|course|consultation` and
+`content_type` is `single|bundle|course|collection`; `booking_type` is `direct|inquiry`
+with payment state in a separate `payment_status` column.
+
+**Interaction worth recording:** now that `on_auth_user_created` exists, inserting into
+`auth.users` auto-creates a bare `profiles` row — so the seeds' `ON CONFLICT DO NOTHING`
+silently set none of their fields. Both seed scripts were changed to `DO UPDATE`. Before
+the trigger was restored they worked by accident.
+
+### 🔴 Bug the seed exposed in our own migration
+
+With data in place, B2C reported **6 product views where only 4 B2C users had viewed
+anything**. The extra 2 were anonymous rows (`pa.user_id IS NULL`).
+
+`20260827000001` documents that anonymous analytics count only under `'all'`, so segments
+partition cleanly. **The predicate it shipped did not do that.**
+`fn_get_resource_utilization` LEFT JOINs profiles onto analytics; for a row with no user
+the join yields `tenant_id = NULL`, and `fn_profile_in_segment`'s `b2c` branch is exactly
+`tenant_id IS NULL` — so it returned true and the `OR (p_segment='all' AND ...)` guard
+never got a chance to matter. `hospital` was never affected: its branch requires
+`tenant_id IS NOT NULL`, which a null join fails.
+
+Fixed forward in `20260831000001` — both predicates become
+`fn_profile_in_segment(...) AND (pa.user_id IS NOT NULL OR p_segment = 'all')`.
+
+Verified after: **all 12 = hospital 6 + b2c 4 + anonymous 2**, matching the seed exactly.
+
+This is the clearest argument yet for seeding realistic data: signature checks, runtime
+calls and 12 green segment combinations all passed while this was wrong. Only non-uniform
+data with anonymous traffic in it surfaced the defect.
+
+### Still-empty dashboard areas (not defects)
+
+`concern_themes` renders empty because `messages` has no category column in the real
+production schema — the themes chart sources categories elsewhere. Noted rather than
+forced; worth confirming what actually feeds it before seeding for it.

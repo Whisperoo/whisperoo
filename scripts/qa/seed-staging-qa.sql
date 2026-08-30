@@ -95,7 +95,15 @@ FROM (VALUES
   ('facade00-0000-4000-8000-000000000015'::uuid, 'QA Hospital Five',  'organic', NULL,      20),
   ('facade00-0000-4000-8000-000000000016'::uuid, 'QA Hospital Six',   'organic', NULL,      27)
 ) AS p(id, first_name, src, dept, days)
-ON CONFLICT (id) DO NOTHING;
+-- DO UPDATE, not DO NOTHING: the on_auth_user_created trigger creates a bare
+-- profiles row for each auth.users insert above, so DO NOTHING would leave
+-- tenant_id and onboarded unset and the seed would appear to do nothing.
+ON CONFLICT (id) DO UPDATE SET
+  first_name = EXCLUDED.first_name, account_type = EXCLUDED.account_type,
+  onboarded = EXCLUDED.onboarded, tenant_id = EXCLUDED.tenant_id,
+  acquisition_source = EXCLUDED.acquisition_source,
+  acquisition_department = EXCLUDED.acquisition_department,
+  created_at = EXCLUDED.created_at;
 
 -- ---------------------------------------------------------------------------
 -- 4. Unaffiliated / B2C profiles (tenant_id NULL) -> 'all' + 'b2c'
@@ -109,7 +117,12 @@ FROM (VALUES
   ('facade00-0000-4000-8000-000000000023'::uuid, 'QA Direct Three', 16),
   ('facade00-0000-4000-8000-000000000024'::uuid, 'QA Direct Four',  25)
 ) AS p(id, first_name, days)
-ON CONFLICT (id) DO NOTHING;
+-- See the note above: the signup trigger pre-creates the row.
+ON CONFLICT (id) DO UPDATE SET
+  first_name = EXCLUDED.first_name, account_type = EXCLUDED.account_type,
+  onboarded = EXCLUDED.onboarded, tenant_id = EXCLUDED.tenant_id,
+  acquisition_source = EXCLUDED.acquisition_source,
+  created_at = EXCLUDED.created_at;
 
 COMMIT;
 
