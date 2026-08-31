@@ -79,9 +79,24 @@ const OnboardingHospitalCheck: React.FC = () => {
   const selectedTenant = activeTenants.find(t => t.id === selectedTenantId);
   const departments = selectedTenant?.config?.departments || [];
 
+  /**
+   * Record the answer to the hospital question.
+   *
+   * Fail-soft on purpose: this is analytics, and a reporting write must never
+   * block someone from finishing onboarding. A failure leaves the column NULL,
+   * which reads as "never answered" rather than asserting something untrue.
+   */
+  const recordAffiliation = async (value: 'hospital' | 'independent' | 'skipped') => {
+    const { error } = await supabase.rpc('fn_set_hospital_affiliation', { p_value: value });
+    if (error) console.warn('Could not record hospital affiliation:', error);
+  };
+
   const handleNext = async () => {
     if (isPatient === 'no') {
-      // B2C user — no tenant affiliation
+      // B2C user — no tenant affiliation. Recorded explicitly rather than left to
+      // be inferred from tenant_id IS NULL, which cannot tell "said no" apart from
+      // "was never asked".
+      await recordAffiliation('independent');
       navigate('/onboarding/kids');
       return;
     }
@@ -96,6 +111,9 @@ const OnboardingHospitalCheck: React.FC = () => {
         });
 
         if (error) throw error;
+
+        // Answered "yes" and picked a hospital.
+        await recordAffiliation('hospital');
 
         // Refresh the local profile state after successful RPC
         await refreshProfile();
@@ -124,7 +142,10 @@ const OnboardingHospitalCheck: React.FC = () => {
     navigate('/onboarding/role');
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    // Skipping is its own answer. Recording it keeps "declined to say" distinct
+    // from "said they are independent" -- the proxy definition conflates them.
+    await recordAffiliation('skipped');
     navigate('/onboarding/kids');
   };
 

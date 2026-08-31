@@ -1132,3 +1132,56 @@ data with anonymous traffic in it surfaced the defect.
 `concern_themes` renders empty because `messages` has no category column in the real
 production schema — the themes chart sources categories elsewhere. Noted rather than
 forced; worth confirming what actually feeds it before seeding for it.
+
+---
+
+## 2026-08-31 — Onboarding: capture hospital-affiliation intent
+
+`20260831000002_capture_hospital_affiliation_intent.sql` + `OnboardingHospitalCheck.tsx`.
+
+**Problem:** "independent" was never captured. The "No, I'm independent" branch simply
+navigated onward and wrote nothing; Skip wrote nothing either. Everything downstream
+inferred it from `tenant_id IS NULL`, which silently merges three different populations:
+people who answered "no", people who skipped, and everyone who signed up before the
+hospital pilot existed (or while no tenants were active, when the question is not even
+shown). Reporting that mixture to a hospital as "independent signups" overstates it.
+
+**Added:** `profiles.hospital_affiliation` (`hospital` | `independent` | `skipped`, CHECK
+constrained) and `hospital_affiliation_at`. A text enum, not a boolean — "not affiliated"
+and "did not say" are different facts and a boolean cannot hold both. Existing rows stay
+NULL, which correctly reads as *never asked* rather than asserting independence.
+
+`fn_set_hospital_affiliation(text)` is SECURITY DEFINER for the same reason
+`fn_link_user_to_hospital` is (RLS recursion on profiles, see 20260507000003 /
+20260507000012), scoped to `auth.uid()`, and validates the value server-side.
+
+All three onboarding branches now record: "no" → `independent`, successful hospital link →
+`hospital`, Skip → `skipped`. The automatic skip when no tenants are active deliberately
+writes nothing — nobody was asked. The write is **fail-soft**: a reporting write must
+never block someone from finishing onboarding, and a failure leaves NULL, which is honest.
+
+**Deliberately NOT changed:** `fn_admin_independent_signups_export` still uses the
+`tenant_id IS NULL` proxy. Switching it to the new column would instantly drop every
+pre-existing signup out of the export — a reporting change the client should agree to,
+not a side effect of adding a column. The column needs to accumulate data first.
+
+Verified on staging: RPC writes value + timestamp, rejects invalid input, and refuses
+unauthenticated callers (auth checked before validation).
+
+### ⛔ Could not regenerate `database.types.ts`
+
+CLAUDE.md requires regenerating after any schema change. Both routes are blocked:
+
+- `supabase gen types --linked` → **403**, the narrow PAT lacks that endpoint
+- `supabase gen types --db-url ...` → **needs Docker**, which is not installed
+
+The first attempt also **truncated the file to one line**; restored from git (2142 lines
+intact). Worth remembering that `gen types` writes its error into the output file.
+
+Impact is lower than it looks: `src/lib/supabase.ts` calls `createClient(url, key)`
+**without** the `<Database>` generic, so the generated types are not actually wired into
+the client. `tsc --noEmit` passes and no RPC call is type-checked against them today.
+Still a real debt — the file no longer describes the schema.
+
+To unblock: either widen the PAT to cover type generation, or install Docker (which would
+also restore `db dump`, `db diff` and `supabase start`).
