@@ -845,7 +845,17 @@
     },
     "hospital": {
       "allHospitals": "Todos los Hospitales",
-      "aggregateView": "Vista Agregada"
+      "aggregateView": "Vista Agregada",
+      "scope": {
+        "directLabel": "Registros directos",
+        "directSub": "Sin afiliación hospitalaria",
+        "hospitalsHeading": "Hospitales",
+        "hospitalsLabel": "Todos los hospitales",
+        "hospitalsSub": "Solo pacientes de hospital",
+        "platformLabel": "Plataforma completa",
+        "platformSub": "Todos",
+        "singleHospitalSub": "Un solo hospital"
+      }
     },
     "metrics": {
       "loadingDashboard": "Cargando datos del panel...",
@@ -893,14 +903,6 @@
         "dau": "Recuento de sesiones de usuario distintas en las últimas 24 horas.",
         "mau": "Recuento de usuarios distintos con al menos una sesión en los últimos 30 días."
       },
-      "segment": {
-        "all": "Todos",
-        "b2c": "B2C",
-        "b2cDisabledHint": "Borra la selección de hospital para ver los usuarios B2C",
-        "hospital": "Hospital",
-        "label": "Segmento",
-        "qrExportUnavailableB2c": "Los registros por QR se atribuyen a hospitales, por lo que no hay nada que exportar para el segmento B2C"
-      },
       "independent": {
         "colDate": "Fecha de registro",
         "colName": "Nombre",
@@ -913,7 +915,8 @@
         "signups": "registros",
         "subtitle": "Usuarios no vinculados a ningún hospital (sin QR ni afiliación hospitalaria).",
         "title": "Registros independientes / sin afiliación"
-      }
+      },
+      "qrExportUnavailableB2c": "Los registros por QR se atribuyen a hospitales, por lo que no hay nada que exportar para registros directos"
     },
     "kpi": {
       "estimated": "Estimado",
@@ -994,6 +997,9 @@
       "saving": "Guardando…",
       "saveConfig": "Guardar Configuración",
       "saved": "¡Guardado!"
+    },
+    "scopeNotice": {
+      "segmentNotApplied": "Mostrando todos los usuarios. Esta vista aún no filtra por segmento; solo Métricas lo hace."
     }
   }
 }

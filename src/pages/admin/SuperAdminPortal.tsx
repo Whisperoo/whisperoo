@@ -4,8 +4,8 @@ import { LANDING_URL } from '@/config/urls';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
-import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut, CalendarCheck, Shield, Tags } from 'lucide-react';
-import HospitalSelector from './HospitalSelector';
+import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut, CalendarCheck, Shield, Tags, Info } from 'lucide-react';
+import HospitalSelector, { type AdminSegment } from './HospitalSelector';
 import MetricsDash from './MetricsDash';
 import AIInteractionsPanel from './AIInteractionsPanel';
 import TenantConfigEditor from './TenantConfigEditor';
@@ -28,6 +28,9 @@ const SuperAdminPortal: React.FC = () => {
   // Shell State
   const [activeTab, setActiveTab] = useState<Tab>('metrics');
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+  // Audience segment, chosen from the same control as the hospital. Only the
+  // Metrics tab understands it today -- see the notice below.
+  const [selectedSegment, setSelectedSegment] = useState<AdminSegment>('all');
 
   // Auth guard — wait for profile to load before making the authorization decision.
   // Checking before profile loads would redirect super_admins to /dashboard.
@@ -116,7 +119,11 @@ const SuperAdminPortal: React.FC = () => {
             <div className="w-full sm:w-64">
               <HospitalSelector
                 selectedTenantId={selectedTenantId}
-                onTenantChange={setSelectedTenantId}
+                selectedSegment={selectedSegment}
+                onScopeChange={(tenantId, segment) => {
+                  setSelectedTenantId(tenantId);
+                  setSelectedSegment(segment);
+                }}
               />
             </div>
 
@@ -156,7 +163,20 @@ const SuperAdminPortal: React.FC = () => {
 
       {/* ── Main Content Area ── */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'metrics'  && <MetricsDash tenantId={selectedTenantId} />}
+        {/* Every other tab still filters by hospital only. Rather than let a chosen
+            segment appear to apply where it does not, say so plainly -- silently
+            showing all users under a "Direct signups" scope is the same class of
+            mismatch the segment filter was built to remove. */}
+        {activeTab !== 'metrics' && selectedSegment !== 'all' && (
+          <div className="mb-6 flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+            <p className="text-sm text-amber-900">
+              {t('admin.scopeNotice.segmentNotApplied')}
+            </p>
+          </div>
+        )}
+
+        {activeTab === 'metrics'  && <MetricsDash tenantId={selectedTenantId} segment={selectedSegment} />}
         {activeTab === 'ai'       && <AIInteractionsPanel tenantId={selectedTenantId} />}
         {activeTab === 'content'  && <ContentCurationPanel tenantId={selectedTenantId} />}
         {activeTab === 'experts'  && <ExpertCurationPanel tenantId={selectedTenantId} />}

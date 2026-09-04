@@ -1185,3 +1185,48 @@ Still a real debt — the file no longer describes the schema.
 
 To unblock: either widen the PAT to cover type generation, or install Docker (which would
 also restore `db dump`, `db diff` and `supabase start`).
+
+---
+
+## 2026-09-01 — Merged the segment control into the scope selector
+
+Client-side idea, and the right one: two dropdowns made a contradiction expressible
+(one hospital AND "B2C", which the RPCs resolve by ignoring the hospital). One list
+removes it by construction — the impossible pairing simply has no entry.
+
+`HospitalSelector` is now a single **scope** selector:
+
+| Entry | tenant | segment | Meaning |
+|---|---|---|---|
+| Platform Overall | null | `all` | everyone |
+| All Hospitals | null | `hospital` | affiliated only |
+| Direct Signups | null | `b2c` | unaffiliated only |
+| *(each hospital)* | id | `all` | that hospital |
+
+Picking a hospital forces segment `'all'` in the same action: narrowing to one tenant
+already excludes unaffiliated users, so `'hospital'` would be redundant and `'b2c'`
+would contradict the choice.
+
+Note this also fixes a long-standing misreading. The old "All Hospitals" never meant
+"hospital users only" — it passed `p_tenant_id = NULL`, matching every row, so
+affiliated and direct signups were mixed. That label now belongs to a scope that
+genuinely means hospital patients only, and "Platform Overall" carries the old meaning.
+
+**Cross-tab honesty.** `selectedTenantId` feeds eight panels; only Metrics understands
+segments. Rather than let a chosen segment appear to apply where it does not, the other
+tabs show an amber notice — *"Showing all users. This view does not filter by audience
+segment yet."* Silently showing everything under a "Direct Signups" scope would be the
+same class of mismatch the segment filter was built to remove.
+
+`MetricsDash` now takes `segment` as a prop; its own dropdown, local state and the
+b2c/tenant reset effect are all gone (the pairing is now unrepresentable).
+`admin.metrics.segment.*` keys removed; `admin.hospital.scope.*` and
+`admin.scopeNotice.*` added in en/es/vi. `qrExportUnavailableB2c` re-homed to
+`admin.metrics.` and its wording updated to "direct signups".
+
+**Two mistakes worth recording:** removing the old control's JSX took one `</div>` too
+many, leaving the Refresh button nested inside the date-field wrapper. `tsc --noEmit`
+passed anyway — **eslint caught it and TypeScript did not**, so a clean tsc is not
+sufficient evidence that JSX is balanced. Separately, deleting the `segment` i18n block
+orphaned `qrExportUnavailableB2c`, which was still referenced; caught by sweeping every
+`admin.metrics.*` key in the component against the en locale rather than assuming.

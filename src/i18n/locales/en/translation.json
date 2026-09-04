@@ -848,7 +848,17 @@
     },
     "hospital": {
       "allHospitals": "All Hospitals",
-      "aggregateView": "Aggregate View"
+      "aggregateView": "Aggregate View",
+      "scope": {
+        "directLabel": "Direct Signups",
+        "directSub": "No hospital affiliation",
+        "hospitalsHeading": "Hospitals",
+        "hospitalsLabel": "All Hospitals",
+        "hospitalsSub": "Hospital patients only",
+        "platformLabel": "Platform Overall",
+        "platformSub": "Everyone",
+        "singleHospitalSub": "Single hospital"
+      }
     },
     "metrics": {
       "loadingDashboard": "Loading dashboard data...",
@@ -896,14 +906,6 @@
         "dau": "Count of distinct user sessions recorded in the past 24 hours. A session is counted when a user loads any authenticated page.",
         "mau": "Count of distinct users with at least one session in the past 30 days. Delta compares current 30-day window vs the previous 30-day window."
       },
-      "segment": {
-        "all": "All",
-        "b2c": "B2C",
-        "b2cDisabledHint": "Clear the hospital selection to view B2C users",
-        "hospital": "Hospital",
-        "label": "Segment",
-        "qrExportUnavailableB2c": "QR signups are hospital-attributed, so there is nothing to export for the B2C segment"
-      },
       "independent": {
         "colDate": "Signup Date",
         "colName": "First Name",
@@ -916,7 +918,8 @@
         "signups": "signups",
         "subtitle": "Users not linked to any hospital (no QR or hospital affiliation).",
         "title": "Independent / Unaffiliated Signups"
-      }
+      },
+      "qrExportUnavailableB2c": "QR signups are hospital-attributed, so there is nothing to export for direct signups"
     },
     "kpi": {
       "estimated": "Estimated",
@@ -997,6 +1000,9 @@
       "saving": "Saving…",
       "saveConfig": "Save Configuration",
       "saved": "Saved!"
+    },
+    "scopeNotice": {
+      "segmentNotApplied": "Showing all users. This view does not filter by audience segment yet — only Metrics does."
     }
   }
 }

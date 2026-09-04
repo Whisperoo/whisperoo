@@ -845,7 +845,17 @@
     },
     "hospital": {
       "allHospitals": "Tất cả Bệnh viện",
-      "aggregateView": "Chế độ xem tổng hợp"
+      "aggregateView": "Chế độ xem tổng hợp",
+      "scope": {
+        "directLabel": "Đăng ký trực tiếp",
+        "directSub": "Không liên kết bệnh viện",
+        "hospitalsHeading": "Bệnh viện",
+        "hospitalsLabel": "Tất cả bệnh viện",
+        "hospitalsSub": "Chỉ bệnh nhân bệnh viện",
+        "platformLabel": "Toàn nền tảng",
+        "platformSub": "Tất cả mọi người",
+        "singleHospitalSub": "Một bệnh viện"
+      }
     },
     "metrics": {
       "loadingDashboard": "Đang tải dữ liệu bảng điều khiển...",
@@ -893,14 +903,6 @@
         "dau": "Số phiên người dùng riêng biệt trong 24 giờ qua.",
         "mau": "Số người dùng riêng biệt có ít nhất một phiên trong 30 ngày qua."
       },
-      "segment": {
-        "all": "Tất cả",
-        "b2c": "B2C",
-        "b2cDisabledHint": "Xóa lựa chọn bệnh viện để xem người dùng B2C",
-        "hospital": "Bệnh viện",
-        "label": "Phân khúc",
-        "qrExportUnavailableB2c": "Lượt đăng ký bằng mã QR được quy cho bệnh viện, nên không có gì để xuất cho phân khúc B2C"
-      },
       "independent": {
         "colDate": "Ngày đăng ký",
         "colName": "Tên",
@@ -913,7 +915,8 @@
         "signups": "lượt đăng ký",
         "subtitle": "Người dùng không liên kết với bệnh viện nào (không qua mã QR hay bệnh viện).",
         "title": "Đăng ký độc lập / không liên kết"
-      }
+      },
+      "qrExportUnavailableB2c": "Lượt đăng ký bằng mã QR được quy cho bệnh viện, nên không có gì để xuất cho đăng ký trực tiếp"
     },
     "kpi": {
       "estimated": "Ước tính",
@@ -994,6 +997,9 @@
       "saving": "Đang lưu…",
       "saveConfig": "Lưu Cấu hình",
       "saved": "Đã lưu!"
+    },
+    "scopeNotice": {
+      "segmentNotApplied": "Đang hiển thị tất cả người dùng. Mục này chưa lọc theo phân khúc — chỉ Số liệu mới có."
     }
   }
 }

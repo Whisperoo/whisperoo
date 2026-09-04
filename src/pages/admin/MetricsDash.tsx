@@ -10,6 +10,11 @@ import ConcernThemesChart from './ConcernThemesChart';
 
 interface MetricsDashProps {
   tenantId: string | null;
+  /**
+   * Audience segment, chosen in the portal's scope selector alongside the
+   * hospital. Passed as p_segment to all four dashboard RPCs.
+   */
+  segment: DashboardSegment;
 }
 
 /**
@@ -98,7 +103,7 @@ interface DashboardData {
   };
 }
 
-const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
+const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId, segment }) => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,18 +119,11 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
     const d = new Date();
     return d.toISOString().split('T')[0];
   });
-  // All / Hospital / B2C. Sent as p_segment to every dashboard RPC.
-  const [segment, setSegment] = useState<DashboardSegment>('all');
   const { t } = useTranslation();
 
-  // 'b2c' means "profiles with no tenant", and fn_profile_in_segment ignores
-  // p_tenant_id for it. Combining it with a selected hospital would therefore
-  // silently report ALL unaffiliated users rather than that hospital's — a
-  // contradiction. The option is disabled below whenever a hospital is selected;
-  // this resets it if a hospital is picked while B2C is already active.
-  useEffect(() => {
-    if (tenantId && segment === 'b2c') setSegment('all');
-  }, [tenantId, segment]);
+  // No guard is needed against "a hospital AND b2c" any more: the scope selector
+  // in SuperAdminPortal cannot express that pairing, because choosing a hospital
+  // sets the segment to 'all' in the same action.
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -392,40 +390,8 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
               className="text-sm border border-gray-200 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             />
           </div>
-          <div className="flex flex-col">
-            <label
-              htmlFor="metrics-segment"
-              className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-1"
-            >
-              {t('admin.metrics.segment.label')}
-            </label>
-            <select
-              id="metrics-segment"
-              value={segment}
-              onChange={(e) => setSegment(e.target.value as DashboardSegment)}
-              className="text-sm border border-gray-200 rounded-md px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            >
-              <option value="all">{t('admin.metrics.segment.all')}</option>
-              <option value="hospital">{t('admin.metrics.segment.hospital')}</option>
-              {/* Disabled while a specific hospital is selected: 'b2c' ignores
-                  p_tenant_id server-side, so the pairing is contradictory. */}
-              <option value="b2c" disabled={!!tenantId}>
-                {t('admin.metrics.segment.b2c')}
-              </option>
-            </select>
-            {tenantId && (
-              <span className="text-[10px] text-gray-400 mt-1 max-w-[12rem] leading-tight">
-                {t('admin.metrics.segment.b2cDisabledHint')}
-              </span>
-            )}
-          </div>
-          {/* <button 
-            onClick={fetchData}
-            className="mt-5 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-100 transition-colors"
-          >
-            Apply
-          </button> */}
         </div>
+
         <button
           onClick={fetchData}
           className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors"
@@ -766,7 +732,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId }) => {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title={
                   segment === 'b2c'
-                    ? t('admin.metrics.segment.qrExportUnavailableB2c')
+                    ? t('admin.metrics.qrExportUnavailableB2c')
                     : 'Export current filter as CSV (First Name, Phone, Hospital, QR Label, Department, Source, Date)'
                 }
               >
