@@ -1445,3 +1445,40 @@ credential. The strict pattern (`pk_live_` followed by 20+ key characters) finds
 across the 3.2 MB bundle, and no `sk_` secret appears either. **When grepping a bundle for
 leaked keys, match the key shape, not the prefix** — the prefix appears in any code that
 validates keys.
+
+---
+
+## 2026-09-10 — 🔴 Staging redirected to production, and how the audit missed it
+
+**Symptom (found by the user, not by me):** `https://staging.whisperoo.app` bounced
+straight to `whisperoo.app`.
+
+**Cause:** `VITE_LANDING_URL` was in `.env.staging` but was never plumbed into the Fly
+build. Vite reads `.env.staging` directly in dev, so local behaved correctly, but a
+Docker build only sees values passed explicitly as `--build-arg` — and neither
+`Dockerfile.fly` (no `ARG`) nor `scripts/fly-deploy-staging.ps1` (no flag) carried it.
+`LANDING_URL` therefore fell back to `https://whisperoo.app`, and `Splash.tsx` sends every
+logged-out visitor there.
+
+Fixed in both places; future staging deploys carry it automatically. Production is
+untouched — its script passes no such arg, so the ENV is empty and the fallback to the
+marketing site is the correct behaviour there.
+
+**Verified after redeploy:** `LANDING_URL="/auth/create"` in the bundle, and
+**0 occurrences** of `https://whisperoo.app` (was 1). Site still HTTP 200.
+
+### The real lesson: the bundle audit was the wrong shape
+
+The audit I ran an hour earlier **printed the evidence and I ignored it** — it reported
+`https://whisperoo.app` present in the staging bundle, and I read past it because I was
+scanning for leaked credentials and this was not one. Its presence was itself proof that
+a staging build had baked in a production URL.
+
+Two misreads on the same scan in one session: a **false positive** on `pk_live_` (matched
+Stripe's own `startsWith("pk_live_")` mode check) and this **false negative**.
+
+The fix is to change what the check asserts. A deployment audit should verify that the
+bundle contains **what it should** — the staging Supabase ref, a `pk_test_` key, the
+staging landing URL — and not merely scan for a list of things it should not. Absence
+checks only catch what you thought to look for; presence checks catch the thing you
+forgot to configure.

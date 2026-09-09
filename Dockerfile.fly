@@ -21,6 +21,10 @@ ARG VITE_STRIPE_PUBLISHABLE_KEY
 ARG VITE_CLOUDFLARE_ACCOUNT_ID
 ARG VITE_CLOUDFLARE_R2_BUCKET_NAME
 ARG VITE_CLOUDFLARE_R2_PUBLIC_URL
+# Where logged-out visitors at `/` are sent. Unset in production builds, where it
+# correctly falls back to the marketing site; staging passes its own value so its
+# front door does not hand visitors to production.
+ARG VITE_LANDING_URL
 
 # Expose them as environment variables so Vite picks them up
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
@@ -29,6 +33,7 @@ ENV VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
 ENV VITE_CLOUDFLARE_ACCOUNT_ID=$VITE_CLOUDFLARE_ACCOUNT_ID
 ENV VITE_CLOUDFLARE_R2_BUCKET_NAME=$VITE_CLOUDFLARE_R2_BUCKET_NAME
 ENV VITE_CLOUDFLARE_R2_PUBLIC_URL=$VITE_CLOUDFLARE_R2_PUBLIC_URL
+ENV VITE_LANDING_URL=$VITE_LANDING_URL
 
 # Install dependencies
 COPY package*.json ./
