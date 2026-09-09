@@ -1417,3 +1417,31 @@ HTTP 200 after scaling down.
 
 Cert for `staging.whisperoo.app` is created but **Not verified** — waiting on DNS, which
 needs the client's GoDaddy access.
+
+### DNS + certificate ✅ — staging environment COMPLETE
+
+Client added the GoDaddy records; both resolve to the allocated IPs. Certificate went
+`Not verified` → **Issued** on the 4th poll (~2 min after propagation).
+
+| Check | Result |
+|---|---|
+| `https://staging.whisperoo.app` | **HTTP 200**, `ssl_verify_result=0` |
+| `http://` → HTTPS | **301** redirect (`force_https` working) |
+| Certificate | `CN=staging.whisperoo.app`, Let's Encrypt, valid to 2026-12-08 |
+| Bundle contains staging Supabase ref | ✅ |
+| Bundle contains **prod** ref | ✅ none — no cross-wiring |
+| Bundle contains a live Stripe key | ✅ none |
+| Bundle contains any `sk_` secret | ✅ none |
+
+Auth URL configuration confirmed by the user in the dashboard: Site URL
+`https://staging.whisperoo.app`, redirect URLs for both that domain and
+`whisperoo-staging.fly.dev`.
+
+**Correction to a scare I raised.** I first reported the deployed bundle "contains
+pk_live_ ❌". That was wrong, and the check was sloppy: a bare substring grep. The single
+occurrence is Stripe's own mode detection —
+`const lr = er.startsWith("pk_live_"), cr = er.startsWith("pk_test_")` — not a
+credential. The strict pattern (`pk_live_` followed by 20+ key characters) finds nothing
+across the 3.2 MB bundle, and no `sk_` secret appears either. **When grepping a bundle for
+leaked keys, match the key shape, not the prefix** — the prefix appears in any code that
+validates keys.
