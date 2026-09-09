@@ -1065,3 +1065,91 @@ hospital-level `admin` can therefore request any other tenant's aggregates, or a
 by passing a different `p_tenant_id`. The function is SECURITY DEFINER so table RLS does not
 apply. This predates the segment work — the old inline predicate had the same property.
 Logged for separate triage.
+
+---
+
+# Fix: paid Stripe purchases never marked `completed`
+
+A customer can be charged and then denied access to what they bought.
+
+## Step 1 — Confirmed on staging ✅ (done, no approval needed)
+
+| Evidence | Result |
+|---|---|
+| Stripe `pi_3UDoPWGoPqMhq4zM0IJHWeTs` | **succeeded**, $140 |
+| `purchases` row for that PI | **`pending`** |
+| `verify-purchase`'s gate run verbatim (`payment_intent_id=... AND status='completed'`) | **0 rows → download refused** |
+
+The buyer paid, the UI said success, and the file is unreachable.
+
+## Facts gathered for the fix
+
+- `purchases_status_check` allows: `pending`, `completed`, `failed`, `refunded`.
+- **No index on `payment_intent_id`** — the webhook will look up by it, and there is
+  nothing enforcing one row per PaymentIntent (idempotency risk on Stripe retries).
+- `supabase/config.toml` has no `[functions]` block, so every function currently
+  deploys with `verify_jwt = true`.
+
+## Plan
+
+### Part A — Stripe webhook (the authoritative fix)
+
+- [ ] New Edge Function `supabase/functions/stripe-webhook/`:
+      verify the signature with `STRIPE_WEBHOOK_SECRET` using
+      `constructEventAsync` (the sync variant does not work on Deno's WebCrypto),
+      then handle `payment_intent.succeeded` → `completed`,
+      `payment_intent.payment_failed` → `failed`,
+      `charge.refunded` → `refunded`.
+- [ ] **`config.toml` must set `verify_jwt = false` for this function only.** Stripe
+      cannot present a Supabase JWT; with the default `true` every webhook is rejected
+      before the handler runs. Security comes from the signature, not the JWT.
+      Adding a `[functions]` block means pinning `verify_jwt = true` for the other 13
+      explicitly, so this does not silently open them up.
+- [ ] Migration: index on `purchases(payment_intent_id)`; guard updates so an already
+      `completed` row is never rewritten (Stripe retries the same event).
+- [ ] Never downgrade a `completed` row. Events can arrive out of order.
+
+### Part B — Stop lying to the user
+
+- [ ] `StripeCheckout.tsx:158-162` — the `if (confirmed)` and `else` bodies are
+      identical, so a 60s timeout reports success. Make the unconfirmed path say the
+      payment is still processing rather than claiming success.
+- [ ] Keep the poller as a fast path once the webhook exists; it will then be
+      satisfied by a real status change instead of waiting forever.
+
+### Part C — Production exposure (needs explicit approval)
+
+- [ ] Of prod's **74 pending** purchases, count how many have a `succeeded`
+      PaymentIntent. Those are customers charged with nothing delivered.
+- [ ] **Requires the LIVE Stripe key. Read-only, no writes, and not to be run without
+      the user saying so.**
+- [ ] Then propose a backfill migration for the affected rows.
+
+### Part D — Deployment
+
+- [ ] Deploy `stripe-webhook` to staging; add the endpoint in Stripe's **test** dashboard;
+      set `STRIPE_WEBHOOK_SECRET` as a staging Edge Function secret.
+- [ ] Re-run the checkout and confirm the row flips to `completed` and the download works.
+- [ ] Production needs its own endpoint + its own signing secret — same code, different
+      secret. Not part of this change.
+
+## Needed from the user
+
+1. Approval to proceed with Parts A, B and D.
+2. Separate yes/no on Part C (read-only calls with the live Stripe key).
+3. After deploy: create the webhook endpoint in Stripe test mode and hand over the
+   signing secret (`whsec_...`) for `.env.staging`.
+
+### Decision (2026-09-09)
+
+Handled in a **separate session**, not here, to avoid two agents editing
+`create-payment`, `StripeCheckout.tsx` and `config.toml` at once.
+
+Approved by the user: **A** (webhook), **C** (read-only live-Stripe quantification of
+the 74 pending prod purchases), **D** (deploy + verify on staging).
+
+**B was not named in the approval.** It is the one-line fix to `handlePaymentSuccess`,
+whose `if`/`else` bodies are identical so a confirmation timeout is reported as success.
+Once A lands the poller will usually be satisfied by a real status change, but the branch
+still misreports whenever the webhook is slow or the tab is closed early. Worth confirming
+whether the omission was deliberate.
