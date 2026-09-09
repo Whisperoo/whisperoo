@@ -1230,3 +1230,54 @@ passed anyway — **eslint caught it and TypeScript did not**, so a clean tsc is
 sufficient evidence that JSX is balanced. Separately, deleting the `segment` i18n block
 orphaned `qrExportUnavailableB2c`, which was still referenced; caught by sweeping every
 `admin.metrics.*` key in the component against the en locale rather than assuming.
+
+---
+
+## 2026-09-09 — Stripe + R2 wired on staging
+
+Client delivered Stripe test keys; user created the staging R2 bucket and token.
+
+**Verified before use:** `STRIPE_SECRET_KEY` begins `sk_test_` (108 chars) and
+`VITE_STRIPE_PUBLISHABLE_KEY` begins `pk_test_`. A live secret key would have been
+the one genuinely dangerous value here — the deploy script guards the publishable
+key but nothing guards the secret one, so it was checked explicitly.
+
+**Six edge-function secrets set** via `--env-file` (values never on a command line;
+temp file deleted immediately), mapping local names to what the functions actually read:
+
+| `.env.staging` | Supabase secret |
+|---|---|
+| `STRIPE_SECRET_KEY` | `STRIPE_SECRET_KEY` |
+| `VITE_CLOUDFLARE_ACCOUNT_ID` | `CLOUDFLARE_ACCOUNT_ID` |
+| `R2_ACCESS_KEY_ID` | `CLOUDFLARE_R2_ACCESS_KEY_ID` |
+| `R2_SECRET_ACCESS_KEY` | `CLOUDFLARE_R2_SECRET_ACCESS_KEY` |
+| `VITE_CLOUDFLARE_R2_BUCKET_NAME` | `CLOUDFLARE_R2_BUCKET_NAME` |
+| *(derived)* | `CLOUDFLARE_R2_ENDPOINT` = `https://<account-id>.r2.cloudflarestorage.com` |
+
+`r2-storage`, `create-payment` and `verify-purchase` redeployed to pick them up.
+
+**Credential type note:** R2's token screen offers both a "Token value" (bearer token
+for `api.cloudflare.com`) and an Access Key ID / Secret Access Key pair. Only the S3
+pair is used — `r2-storage` builds an `S3Client` with
+`credentials: { accessKeyId, secretAccessKey }`. The token value is unused.
+
+**Verified:**
+
+| Check | Result |
+|---|---|
+| `GET <public-url>/<missing-key>` | **404** — bucket exists and is publicly served |
+| `<account-id>.r2.cloudflarestorage.com` DNS | resolves |
+| Secrets present on staging | all 6, confirmed by `secrets list` |
+
+Full R2 round-trip needs a signed-in user's JWT (the function derives `userId` from it
+and authorises by key prefix), so the real upload test belongs in QA rather than being
+forced here.
+
+**Gotcha worth recording:** `secrets list | grep -oE '"name":"[A-Z_]+"'` silently omits
+every name containing a digit, so the four `CLOUDFLARE_R2_*` secrets appeared missing
+when they were fine. Use `[A-Z0-9_]+`.
+
+Runbook updated: Stripe and R2 flipped to Ready, step 1 rewritten for the merged
+top-left scope selector, the contradiction step rewritten (the pairing is now
+unrepresentable rather than disabled), and two new steps added for uploads and
+test-mode checkout.
