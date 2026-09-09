@@ -1281,3 +1281,43 @@ Runbook updated: Stripe and R2 flipped to Ready, step 1 rewritten for the merged
 top-left scope selector, the contradiction step rewritten (the pairing is now
 unrepresentable rather than disabled), and two new steps added for uploads and
 test-mode checkout.
+
+---
+
+## 2026-09-09 — Expert profile data model (Part 6, ahead of Figma)
+
+`20260909000001_expert_profile_media_and_testimonials.sql`. Data model only — the UI
+waits on the Figma file, per the client's own SOW.
+
+**Added:** `expert_testimonials` (expert_id FK CASCADE, author_name, author_context,
+quote + quote_es/quote_vi, testimonial_date, display_order, published, timestamps) and
+five columns on `profiles`: `expert_video_url`, `expert_gallery_urls text[]`,
+`expert_extended_bio` + `_es`/`_vi`.
+
+**Three deliberate deviations from the sketch in the plan:**
+
+1. **`expert_` prefix throughout, and `expert_testimonials` not `testimonials`.** Every
+   existing expert field on profiles uses that prefix; an unqualified `testimonials`
+   reads as though it could hold testimonials about anything. Renaming later costs far
+   more than choosing now.
+2. **`_es`/`_vi` columns added.** SOW 5.4 requires expert profile content in the user's
+   language and `expert_bio` already has them. Adding them later means a second
+   migration plus a backfill of live content.
+3. **`published` defaults FALSE.** These are real people's words about healthcare; an
+   admin slip should not publish one. Fails closed.
+
+**Not done, deliberately:** no UI, and no auto-translate trigger on quotes. The trigger
+pattern exists (products, profiles, checklists) but wiring it before any data or UI
+exists would be speculative. The columns are ready when wanted.
+
+**RLS verified on staging, not assumed** — inside a rolled-back transaction:
+
+| Check | Result |
+|---|---|
+| Normal user sees published testimonial | ✅ visible |
+| Normal user sees unpublished testimonial | ✅ **hidden** |
+| Normal user attempts INSERT | ✅ **denied** (no grant, refused before RLS is even consulted) |
+| Deleting the expert | ✅ cascades — testimonials go from 1 to 0 |
+
+Readers are also gated on the expert being visible (`expert_profile_visibility`), so
+unpublishing an expert does not leave their testimonials reachable.
