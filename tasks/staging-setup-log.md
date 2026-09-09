@@ -1377,3 +1377,43 @@ missing — the absence was the defect, not proof of irrelevance.
 
 Filed as a separate task. Not fixed here: it needs a new Edge Function, a webhook
 endpoint and secret in Stripe, and a decision on backfilling historical rows.
+
+---
+
+## 2026-09-09 — Part 3: Fly staging app
+
+`flyctl apps create whisperoo-staging --org engineering-whisperoo-app` — created in the
+**same org as production** (`whisperoo-app` lives there), so access and billing stay
+together rather than landing in a personal org.
+
+**Deploy safety rails fired correctly:** the script confirmed `.env.staging` points at
+the staging Supabase ref and that the Stripe publishable key is not `pk_live_` before
+touching Fly.
+
+**First attempt failed, and it was my error, not the deploy's.** I invoked the script
+with `2>&1`, which makes PowerShell wrap every line a native executable writes to stderr
+in an ErrorRecord. flyctl reports normal progress (`==> Verifying app config`) on stderr,
+so the script's `$ErrorActionPreference = "Stop"` aborted on the first progress line.
+Re-run without the redirect and it proceeded. Worth remembering: **never pipe `2>&1` on
+a native command inside PowerShell** — the environment notes say exactly this, and I did
+it anyway.
+
+### Deploy result
+
+Deployed successfully. **https://whisperoo-staging.fly.dev/ returns HTTP 200** with a
+passing health check, so the app boots correctly before DNS is involved at all.
+
+**IPs had to be allocated separately.** The cert was created but `flyctl` reported
+"Your app has no public IP addresses", so no DNS record could point anywhere:
+
+| Type | Value |
+|---|---|
+| IPv4 | `66.241.125.77` (**shared** — free; a dedicated v4 is billed) |
+| IPv6 | `2a09:8280:1::188:a84b:0` |
+
+**Scaled 2 → 1 machine.** Fly creates a second machine for HA on new apps regardless of
+`min_machines_running = 0`, doubling staging cost for no benefit. Confirmed still serving
+HTTP 200 after scaling down.
+
+Cert for `staging.whisperoo.app` is created but **Not verified** — waiting on DNS, which
+needs the client's GoDaddy access.
