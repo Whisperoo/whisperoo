@@ -1321,3 +1321,59 @@ exists would be speculative. The columns are ready when wanted.
 
 Readers are also gated on the expert being visible (`expert_profile_visibility`), so
 unpublishing an expert does not leave their testimonials reachable.
+
+---
+
+## 2026-09-09 — Stripe checkout working, and a serious pre-existing bug it exposed
+
+### The publishable key was wrong by one character
+
+Checkout failed with `401 Unauthorized` on `/v1/elements/sessions`. Diagnosed by
+reproducing the call server-side rather than guessing; Stripe answered plainly:
+`Invalid API Key provided: pk_test_***MdMC`.
+
+Ruled out along the way: mismatched accounts (both keys share fragment `51SXTd4GoP`),
+a bad secret key (it had already created three test PaymentIntents, `livemode=false`),
+and malformed storage (107 chars, clean, no whitespace).
+
+A character-by-character diff against the dashboard value found it — **index 78: stored
+`0` (digit zero) where the dashboard has `O` (letter O)**. Invisible by eye in a
+107-character string. The corrected key was validated against Stripe's real
+`elements/sessions` endpoint *before* being written. Vite auto-restarted on the
+`.env.staging` change. Checkout then succeeded.
+
+### 🔴 Uploads and payments both work — but a paid purchase never completes
+
+Confirmed end to end after the fix:
+
+| Source | State |
+|---|---|
+| Stripe `pi_3UDoPWGoPqMhq4zM0IJHWeTs` | **succeeded**, $140 |
+| `public.purchases` row for that PI | **still `pending`** |
+
+Root cause chain, all pre-existing and unrelated to this session's work:
+
+1. `create-payment` inserts `status='pending'` for card payments; it only writes
+   `'completed'` on the free-product path.
+2. **No Stripe webhook handler exists** — `grep -rl "webhook|constructEvent|STRIPE_WEBHOOK"`
+   over `supabase/functions/` returns nothing. Nothing server-side ever observes
+   `payment_intent.succeeded`.
+3. `useStripePayment.ts:169` `waitForPaymentConfirmation` polls the row for 60s
+   (30 × 2s) waiting for a `completed` status that can never arrive.
+4. `StripeCheckout.tsx:158-162` calls `onSuccess(purchaseId)` in **both** branches —
+   the `if (confirmed)` and `else` bodies are identical — so the UI reports success
+   regardless of the timeout.
+5. `verify-purchase:61` gates the download on `status = 'completed'`, so the buyer is
+   refused the file they just paid for.
+
+**Production shows the same shape: 197 completed, 74 pending, 4 failed.** Some fraction
+of those 74 may be real customers who were charged and received nothing. Not quantified —
+that needs read-only calls with the LIVE Stripe key, which requires the user's say-so.
+
+**Correction to an earlier entry.** The 2026-08-27 note said `STRIPE_WEBHOOK_SECRET`
+was not needed because no function reads it. The observation was correct; the conclusion
+was too comfortable. Nothing reads it precisely *because* the webhook that should is
+missing — the absence was the defect, not proof of irrelevance.
+
+Filed as a separate task. Not fixed here: it needs a new Edge Function, a webhook
+endpoint and secret in Stripe, and a decision on backfilling historical rows.
