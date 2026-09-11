@@ -1482,3 +1482,30 @@ bundle contains **what it should** — the staging Supabase ref, a `pk_test_` ke
 staging landing URL — and not merely scan for a list of things it should not. Absence
 checks only catch what you thought to look for; presence checks catch the thing you
 forgot to configure.
+
+---
+
+## 2026-09-12 — Stripe webhook shipped; production exposure quantified
+
+**Built and verified on staging** (see tasks/todo.md for the checklist). The proof that
+mattered: Stripe *itself* fired `payment_intent.succeeded` after I confirmed an abandoned
+test intent with `pm_card_visa`; the purchases row flipped `pending → completed` within
+3 seconds; Stripe reported `pending_webhooks = 0`; `verify-purchase`'s gate now returns
+the row. Not a simulated event — the real delivery path.
+
+**Production exposure — smaller than the "74 pending" number suggested.** Checked every
+pending purchase against live Stripe, read-only:
+
+| Stripe says | Rows | Meaning |
+|---|---|---|
+| `requires_payment_method` | 56 | abandoned at checkout, never paid |
+| `resource_missing` | 12 | live Stripe has never heard of the intent — test keys used against the prod DB at some point, or another account |
+| *(no payment_intent_id)* | 5 | $0.00 rows from 2026-01-22, product since deleted |
+| **`succeeded`** | **1** | **charged $1.00 on 2026-01-06, never completed** |
+
+One customer, one dollar, eight months ago. Fix is migration `20260912000002`, scoped to
+that single PaymentIntent. The 12 "unknown" intents are worth a thought: someone ran
+test-mode Stripe against the production database at some point in January.
+
+**Live key handling:** used only for `GET /v1/payment_intents/{id}`, one call per row,
+nothing written. Value read from `.env` by name, never printed.

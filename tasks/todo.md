@@ -1153,3 +1153,32 @@ whose `if`/`else` bodies are identical so a confirmation timeout is reported as 
 Once A lands the poller will usually be satisfied by a real status change, but the branch
 still misreports whenever the webhook is slow or the tab is closed early. Worth confirming
 whether the omission was deliberate.
+
+### Executed here (2026-09-12) — Parts A, D, C done
+
+- [x] **A** `stripe-webhook` function: signature-verified via `constructEventAsync`,
+      handles succeeded / payment_failed / refunded, status-guarded transitions, never
+      downgrades `completed`, 200 on no-ops so Stripe stops retrying, 500 only on DB error.
+- [x] **A** `config.toml`: `verify_jwt = false` for `stripe-webhook` only (confirmed
+      `verify_jwt=False` on the deployed function). Note: the plan's idea of "pinning the
+      other 13 to true" was unnecessary — unlisted functions keep the platform default.
+- [x] **A** Migration `20260912000001`: plain (not unique) partial index on
+      `purchases(payment_intent_id)`.
+- [x] **D** Deployed to staging. **Verified end to end:** confirmed an abandoned test
+      PaymentIntent with `pm_card_visa` so Stripe itself fired the event → purchases row
+      `pending → completed` within 3s → Stripe `pending_webhooks = 0` → verify-purchase's
+      download gate finds the row.
+- [x] **C** Quantified production (live key, read-only GETs only). Of 74 pending:
+      56 never paid, 12 unknown to live Stripe, 5 orphaned $0 rows, **1 charged ($1.00,
+      2026-01-06, external buyer, product since deleted)**.
+- [x] **C** Backfill written as migration `20260912000002`, scoped to that one
+      PaymentIntent, guarded on status. No-op on staging (PI doesn't exist there); will
+      fix the row when pushed to prod. Not applied to prod.
+
+### Still open
+
+- [ ] **B** — `handlePaymentSuccess` reports success in both branches. **Not approved.**
+      Now that the webhook exists this mostly self-corrects (the poller sees a real
+      status change), but a slow webhook or an early tab-close still misreports.
+- [ ] Production: needs its own Stripe endpoint (live mode) + its own `whsec_` secret +
+      the function deployed to prod. Part of the prod push, not done here.
