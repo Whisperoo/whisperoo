@@ -332,3 +332,15 @@ backend = "postgres"
 # Configures Postgres-Wasm Extensions project to be used as a local registry for pgvector and
 # other experimental extensions. Docker version must be set to postgres/postgres:15-3.1.9-3.
 # postgres_wasm_extensions = false
+# ---------------------------------------------------------------------------
+# Edge Function overrides
+#
+# Every function keeps the platform default of verify_jwt = true unless listed
+# here. Only stripe-webhook is exempt: Stripe calls it server-to-server and
+# cannot present a Supabase JWT, so with the default it would be rejected before
+# the handler ran. Its security boundary is the Stripe signature, verified
+# against STRIPE_WEBHOOK_SECRET inside the function. Do not add other functions
+# to this block without the same justification.
+# ---------------------------------------------------------------------------
+[functions.stripe-webhook]
+verify_jwt = false
