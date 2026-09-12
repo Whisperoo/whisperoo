@@ -233,15 +233,46 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId, segment }) => {
   // Exports from already-fetched rows rather than re-calling the RPC: the fetch
   // above returns full rows, so a second round trip would only risk showing a
   // different set than the table on screen.
-  const handleExportIndependentSignups = useCallback(() => {
-    const list = data?.independent_signups ?? [];
-    if (list.length === 0) {
+  /**
+   * Exports go through the audited admin-signup-export edge function, not the
+   * RPC directly. That is the only path that can add the email address (the
+   * only copy lives in auth.users, unreachable from the browser), and every
+   * call writes a phi_access_log row before returning anything.
+   */
+  const fetchAuditedExport = useCallback(async (
+    kind: 'qr' | 'independent',
+  ): Promise<Array<Record<string, string | null>>> => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) throw new Error('Not signed in');
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-signup-export`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        export: kind,
+        p_tenant_id: kind === 'qr' ? (tenantId ?? null) : undefined,
+        p_start_date: startDate || null,
+        p_end_date: endDate || null,
+      }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload?.error || `Export failed (${res.status})`);
+    return payload.rows ?? [];
+  }, [tenantId, startDate, endDate]);
+
+  const handleExportIndependentSignups = useCallback(async () => {
+    if ((data?.independent_signups ?? []).length === 0) {
       alert(t('admin.metrics.independent.nothingToExport'));
       return;
     }
     setExportingIndependent(true);
     try {
-      const headers = ['First Name', 'Phone', 'Acquisition Source', 'Signup Date'];
+      const list = await fetchAuditedExport('independent');
+      const headers = ['First Name', 'Email', 'Phone', 'Acquisition Source', 'Signup Date'];
       const escape = (v: string | null | undefined) => {
         const s = v == null ? '' : String(v);
         // Wrap in quotes and double any embedded quotes — RFC 4180 CSV escaping.
@@ -251,9 +282,10 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId, segment }) => {
         headers.map(escape).join(','),
         ...list.map((r) => [
           r.first_name,
+          r.email,
           r.phone,
           r.acquisition_source,
-          new Date(r.created_at).toISOString(),
+          new Date(r.created_at as string).toISOString(),
         ].map(escape).join(',')),
       ];
       // Prefix BOM so Excel opens UTF-8 characters (Vietnamese/Spanish names) correctly.
@@ -267,43 +299,29 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId, segment }) => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Export failed';
+      alert(`Export failed: ${msg}`);
     } finally {
       setExportingIndependent(false);
     }
-  }, [data?.independent_signups, startDate, endDate, t]);
+  }, [data?.independent_signups, fetchAuditedExport, startDate, endDate, t]);
 
   const handleExportQrSignups = useCallback(async () => {
     setExporting(true);
     try {
-      const { data: rows, error: exportErr } = await supabase.rpc(
-        // NOTE: deliberately NOT given p_segment. This export is QR-attributed by
-        // definition, so 'hospital' and 'all' return the same rows and 'b2c' would be
-        // an empty set. Rather than add a no-op argument, the export button is disabled
-        // for the B2C segment (see the QR section below).
-        'fn_admin_qr_signup_export',
-        {
-          p_tenant_id: tenantId ?? null,
-          p_start_date: startDate || null,
-          p_end_date: endDate || null,
-        }
-      );
-      if (exportErr) throw exportErr;
-      const list = (rows as Array<{
-        first_name: string | null;
-        phone: string | null;
-        tenant_name: string | null;
-        qr_label: string | null;
-        department: string | null;
-        acquisition_source: string | null;
-        created_at: string;
-      }>) || [];
+      // NOTE: deliberately NOT given p_segment. This export is QR-attributed by
+      // definition, so 'hospital' and 'all' return the same rows and 'b2c' would be
+      // an empty set. Rather than add a no-op argument, the export button is disabled
+      // for the B2C segment (see the QR section below).
+      const list = await fetchAuditedExport('qr');
 
       if (list.length === 0) {
         alert('No signups match the current filters. Nothing to export.');
         return;
       }
 
-      const headers = ['First Name', 'Phone', 'Hospital', 'QR Label', 'Department', 'Acquisition Source', 'Signup Date'];
+      const headers = ['First Name', 'Email', 'Phone', 'Hospital', 'QR Label', 'Department', 'Acquisition Source', 'Signup Date'];
       const escape = (v: string | null | undefined) => {
         const s = v == null ? '' : String(v);
         // Wrap in quotes and double any embedded quotes — RFC 4180 CSV escaping.
@@ -313,12 +331,13 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId, segment }) => {
         headers.map(escape).join(','),
         ...list.map((r) => [
           r.first_name,
+          r.email,
           r.phone,
           r.tenant_name,
           r.qr_label,
           r.department,
           r.acquisition_source,
-          new Date(r.created_at).toISOString(),
+          new Date(r.created_at as string).toISOString(),
         ].map(escape).join(',')),
       ];
       // Prefix BOM so Excel opens UTF-8 characters (Vietnamese/Spanish names) correctly.
@@ -339,7 +358,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId, segment }) => {
     } finally {
       setExporting(false);
     }
-  }, [tenantId, startDate, endDate]);
+  }, [fetchAuditedExport, startDate, endDate]);
 
   if (loading) {
     return (

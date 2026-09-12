@@ -1324,10 +1324,14 @@ first, deploy second, roll back in reverse.
       paginated (50/page, server-capped at 200), search on name/hospital, date range.
       **No email or phone in the grid** (HIPAA 6.1) — those stay export-only. Verified
       on staging: 16/8/8 per segment, matching Metrics exactly; normal user refused.
-- [ ] **CSV export fix — email + phone** — phone is present in the QR and Independent
-      exports; **email is not**, because `profiles.email` was dropped in the HIPAA
-      migration. Needs the audited edge function planned earlier: service-role read of
-      `auth.users`, access logged (who/when/what). Confirm with client which export(s).
+- [x] **CSV export fix — email + phone** — done 2026-09-12. Both QR and Independent
+      exports now include Email (phone was already there). Path: `admin-signup-export`
+      edge function → verifies staff admin → runs the export RPC *as the caller* (its
+      guards still apply) → writes a `phi_access_log` row (who/when/which
+      export/filters/row count) **before returning anything** → resolves emails via
+      `fn_service_emails_for_users`, executable by `service_role` only (revoked from
+      `authenticated`/`anon`, proven on staging). Emails never touch a client-reachable
+      path. Migration `20260912000006` adds `user_id` to both export RPCs.
 
 ## Workstream 2 — Expert profile rework
 
