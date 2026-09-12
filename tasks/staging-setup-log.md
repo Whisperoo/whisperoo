@@ -1509,3 +1509,24 @@ test-mode Stripe against the production database at some point in January.
 
 **Live key handling:** used only for `GET /v1/payment_intents/{id}`, one call per row,
 nothing written. Value read from `.env` by name, never printed.
+
+---
+
+## 2026-09-12 — Sprint 2 admin work deployed to staging
+
+Frontend redeployed via the guarded script. Backend confirmed current first: all 15
+edge functions `ACTIVE` on staging (a line-ending artefact briefly made `r2-storage`
+look missing — it is not), migrations `upToDate`.
+
+**Bundle verified with presence AND absence checks** — the audit shape adopted after
+the landing-URL miss:
+
+| Present ✅ | Absent ✅ |
+|---|---|
+| staging Supabase ref | prod Supabase ref |
+| `pk_test_` key | `pk_live_` key |
+| staging landing URL | any `sk_` secret |
+| Users tab, consent route, audited export, Part B screen, signup `emailRedirectTo` | prod landing URL |
+
+12/12. HTTP 200 on `staging.whisperoo.app`. Runbook extended with four QA steps for
+the Sprint 2 work and relabelled from "Phase 2" to "Sprint 2".
