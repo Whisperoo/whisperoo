@@ -1184,3 +1184,120 @@ whether the omission was deliberate.
       "Payment Error" would be as false as "Success".
 - [ ] Production: needs its own Stripe endpoint (live mode) + its own `whsec_` secret +
       the function deployed to prod. Part of the prod push, not done here.
+
+---
+
+# Production push plan — Phase 2
+
+Everything below has been applied and verified on staging, which is a schema-exact
+replica of production. **Nothing in this plan has been run against production.**
+
+## The single fact that shapes this plan
+
+`supabase db push` applies every local migration file whose version is absent from the
+target's `supabase_migrations.schema_migrations`. Production's tracker records **89**
+versions; the repo has **139** files. A naive push would therefore attempt **50**
+migrations — of which **43 have already been applied** through the SQL Editor (their
+effects are present, the tracker simply never recorded them). Re-running those means
+duplicate seed rows, failed `CREATE`s, and re-executed backfills against live data.
+
+**So the tracker must be repaired before anything is pushed.** Marking a migration
+"applied" writes a tracker row only; it runs no SQL.
+
+### Verified 2026-09-12 (read-only against prod) — the 43 are genuinely applied
+
+| Evidence | Count |
+|---|---|
+| marker object (table / function / column / view / policy) present in prod | 31 |
+| verified by hand: `profiles_account_type_check` widened, `phi_access_log` FKs dropped, `product_files` allows video/audio, `find_similar_experts` uses `expert_embeddings` | 4 |
+| pure data backfills with no schema marker — must NOT be re-run, so "applied" is the only safe status | 8 |
+
+Full list in the scratchpad `marker_results.txt`; regenerate with the marker script if
+in doubt.
+
+### The 7 genuinely new migrations, in order
+
+| Version | What | Risk |
+|---|---|---|
+| `20260822000001` | `p_segment` on `fn_get_admin_dashboard` + `fn_profile_in_segment` | drops/recreates one function; **frontend must not ship before this** |
+| `20260827000001` | `p_segment` on the other 3 dashboard RPCs | same |
+| `20260831000001` | anonymous analytics no longer counted as B2C | function replace |
+| `20260831000002` | `profiles.hospital_affiliation` + setter RPC | additive |
+| `20260909000001` | `expert_testimonials` + expert media columns | additive |
+| `20260912000001` | index on `purchases(payment_intent_id)` | additive |
+| `20260912000002` | backfill **one** paid-but-pending purchase (`pi_3Smc5p…`) | one-row UPDATE, status-guarded |
+
+Plus `20250819000001` (`account_type`, `IF NOT EXISTS`) — a no-op on prod that just
+records the missing tracker row. Push it.
+
+## Sequence
+
+### 0. Preconditions (no prod changes yet)
+- [ ] Client sign-off on a window. The dashboard is unavailable for the seconds between
+      migration and frontend deploy; nothing else is affected.
+- [ ] Merge `phase2/admin-portal-gaps` → `main` (or agree to deploy from the branch).
+- [ ] **Re-link the CLI to prod:** `supabase link --project-ref wznevejkaefokgibkknt`.
+      This working copy has been linked to STAGING for weeks. Every command below assumes
+      prod; confirm with `cat supabase/.temp/project-ref` before each destructive step.
+- [ ] Take a prod backup: Dashboard → Database → Backups, or `pg_dump` (we have the
+      binary and the prod password). Schema **and** data this time.
+
+### 1. Repair the tracker (writes tracker rows only, runs no SQL)
+- [ ] `supabase migration repair --status applied <the 43 versions> --linked`
+- [ ] `supabase migration list --linked` → must show exactly **8** pending:
+      `20250819000001` + the 7 above. **If it shows anything else, stop.**
+
+### 2. Dry run
+- [ ] `supabase db push --dry-run --linked` → lists exactly those 8. Stop if not.
+
+### 3. Push migrations
+- [ ] `supabase db push --include-all --linked` (`--include-all` because
+      `20250819000001` is out of order).
+- [ ] Verify with psql: all four dashboard RPCs show `p_segment`; `expert_testimonials`
+      exists; `hospital_affiliation` column exists; `idx_purchases_payment_intent_id`
+      exists; purchase `pi_3Smc5p…` is `completed`.
+
+### 4. Edge Functions
+- [ ] Deploy all: `supabase functions deploy --project-ref wznevejkaefokgibkknt`
+      (`chat_ai_rag_fixed` has the `detected_category` change; `stripe-webhook` is new).
+- [ ] Confirm `stripe-webhook` shows `verify_jwt=False`.
+- [ ] **Stripe LIVE endpoint** (client, in the Whisperoo account, Live mode):
+      URL `https://wznevejkaefokgibkknt.supabase.co/functions/v1/stripe-webhook`,
+      events `payment_intent.succeeded`, `payment_intent.payment_failed`,
+      `charge.refunded`. Different secret from staging.
+- [ ] Set `STRIPE_WEBHOOK_SECRET` on prod via `--env-file`. **Prod's other secrets are
+      untouched** — do not re-set `STRIPE_SECRET_KEY` or the R2 values.
+
+### 5. Frontend
+- [ ] `scripts/fly-deploy.ps1` — the **production** script, reading `.env`.
+      Do NOT pass `VITE_LANDING_URL`; the fallback to the marketing site is correct.
+- [ ] Bundle check, asserting **presence**: contains `wznevejkaefokgibkknt`, contains
+      `pk_live_` **as a key** (`pk_live_[A-Za-z0-9]{20,}`), contains `LANDING_URL="https://whisperoo.app"`.
+      Absence checks alone missed a real bug on staging.
+
+### 6. Smoke (read-only where possible)
+- [ ] Super Admin → Metrics loads; scope selector present; Platform/All Hospitals/Direct
+      change the numbers.
+- [ ] Independent Signups section renders.
+- [ ] Onboarding "No, I'm independent" writes `hospital_affiliation`.
+- [ ] Stripe → Webhooks → live endpoint: send a test event, expect 200.
+- [ ] Do NOT run a real live checkout to test. The webhook path is verified on staging;
+      a live test would charge a real card.
+
+### 7. Afterwards
+- [ ] `supabase gen types` against prod (needs Docker or a wider PAT — still blocked).
+- [ ] Re-link the CLI back to staging so day-to-day commands stay safe.
+- [ ] Record in `tasks/staging-setup-log.md`.
+
+## Rollback
+
+| Layer | How |
+|---|---|
+| Frontend | `flyctl releases rollback -a whisperoo-app` — instant, independent of DB |
+| Functions | redeploy from the previous commit |
+| Migrations | each file carries rollback notes; run in reverse. `20260822000001` restores the 3-arg RPCs — **roll the frontend back first** or the dashboard breaks in the other direction |
+| Tracker repair | nothing to undo — it wrote rows, changed no schema |
+
+The frontend and the two segment migrations are coupled in **both** directions: old
+frontend + new RPC works (defaults to `'all'`); new frontend + old RPC breaks. Migrate
+first, deploy second, roll back in reverse.
