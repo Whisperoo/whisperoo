@@ -1177,8 +1177,10 @@ whether the omission was deliberate.
 
 ### Still open
 
-- [ ] **B** — `handlePaymentSuccess` reports success in both branches. **Not approved.**
-      Now that the webhook exists this mostly self-corrects (the poller sees a real
-      status change), but a slow webhook or an early tab-close still misreports.
+- [x] **B** — approved 2026-09-12 and done. The timeout branch no longer calls
+      `onSuccess`; it sets an `awaitingConfirmation` state that renders a third screen:
+      "Payment received — finalising your access", with a link to My Purchases. Neither
+      `onSuccess` nor `onError` is right for this case — the card *was* charged, so
+      "Payment Error" would be as false as "Success".
 - [ ] Production: needs its own Stripe endpoint (live mode) + its own `whsec_` secret +
       the function deployed to prod. Part of the prod push, not done here.

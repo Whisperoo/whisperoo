@@ -41,6 +41,10 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
   const [purchaseId, setPurchaseId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  // Card was charged but the purchase row has not flipped to 'completed' within
+  // the polling window. Neither success nor error: the money moved, access is
+  // still on its way. Gets its own screen rather than being reported as either.
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [promoInput, setPromoInput] = useState(discountCode || "");
   const [appliedDiscountCode, setAppliedDiscountCode] = useState<string | undefined>(discountCode);
@@ -157,9 +161,15 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
 
     if (confirmed) {
       onSuccess(purchaseId);
-    } else {
-      onSuccess(purchaseId);
+      return;
     }
+
+    // Stripe confirmed the charge client-side, but the stripe-webhook has not yet
+    // marked the row completed (slow delivery, or Stripe retrying). Previously
+    // this branch also called onSuccess, so a timeout was shown as success while
+    // verify-purchase would still refuse the download. Say what is actually true.
+    console.warn("Payment confirmed by Stripe but purchase not yet completed", { purchaseId });
+    setAwaitingConfirmation(true);
   };
 
   const handlePaymentError = (errorMessage: string) => {
@@ -219,6 +229,28 @@ export const StripeCheckout: React.FC<StripeCheckoutProps> = ({
         <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 mb-4" />
         <h3 className="text-lg font-semibold mb-2">Confirming Payment</h3>
         <p className="text-gray-600">Please don't close this window...</p>
+      </div>
+    );
+  }
+
+  if (awaitingConfirmation) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Loader2 className="w-8 h-8 text-amber-600 animate-spin" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">Payment received — finalising your access</h3>
+        <p className="text-gray-600 mb-6 max-w-sm mx-auto">
+          Your payment went through. We're just confirming it on our side, which usually
+          takes a few seconds. Your purchase will appear in My Purchases shortly — you
+          won't be charged again.
+        </p>
+        <a
+          href="/my-purchases"
+          className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Go to My Purchases
+        </a>
       </div>
     );
   }
