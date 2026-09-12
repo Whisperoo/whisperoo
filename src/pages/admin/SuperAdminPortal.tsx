@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut, CalendarCheck, Shield, Tags, Info } from 'lucide-react';
 import HospitalSelector, { type AdminSegment } from './HospitalSelector';
 import MetricsDash from './MetricsDash';
+import UsersPanel from './UsersPanel';
 import AIInteractionsPanel from './AIInteractionsPanel';
 import TenantConfigEditor from './TenantConfigEditor';
 import ContentCurationPanel from './ContentCurationPanel';
@@ -16,7 +17,10 @@ import ConsultationBookingsPanel from './ConsultationBookingsPanel';
 import PhiAccessLogPanel from './PhiAccessLogPanel';
 import ChatTopicCategoriesPanel from './ChatTopicCategoriesPanel';
 
-type Tab = 'metrics' | 'ai' | 'content' | 'experts' | 'bookings' | 'discounts' | 'phi' | 'topics' | 'config';
+/** Tabs whose data honours the audience segment. All others show a notice when a segment is active. */
+const SEGMENT_AWARE_TABS: ReadonlySet<string> = new Set(['metrics', 'users']);
+
+type Tab = 'metrics' | 'users' | 'ai' | 'content' | 'experts' | 'bookings' | 'discounts' | 'phi' | 'topics' | 'config';
 
 const SuperAdminPortal: React.FC = () => {
   const { user, profile, loading, signOut } = useAuth();
@@ -132,6 +136,7 @@ const SuperAdminPortal: React.FC = () => {
               <div className="inline-flex items-center gap-1 bg-gray-50 p-1.5 rounded-xl min-w-max">
                 {([
                   { id: 'metrics',  icon: BarChart3,      label: t('admin.portal.tabs.metrics')  },
+                  { id: 'users',    icon: Users,          label: t('admin.portal.tabs.users', 'Users') },
                   { id: 'ai',       icon: MessageSquare,  label: t('admin.portal.tabs.aiLogs')  },
                   { id: 'content',  icon: PackageSearch,  label: t('admin.portal.tabs.content')  },
                   { id: 'experts',  icon: Users,          label: t('admin.portal.tabs.experts')  },
@@ -167,7 +172,7 @@ const SuperAdminPortal: React.FC = () => {
             segment appear to apply where it does not, say so plainly -- silently
             showing all users under a "Direct signups" scope is the same class of
             mismatch the segment filter was built to remove. */}
-        {activeTab !== 'metrics' && selectedSegment !== 'all' && (
+        {!SEGMENT_AWARE_TABS.has(activeTab) && selectedSegment !== 'all' && (
           <div className="mb-6 flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
             <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
             <p className="text-sm text-amber-900">
@@ -177,6 +182,7 @@ const SuperAdminPortal: React.FC = () => {
         )}
 
         {activeTab === 'metrics'  && <MetricsDash tenantId={selectedTenantId} segment={selectedSegment} />}
+        {activeTab === 'users'    && <UsersPanel tenantId={selectedTenantId} segment={selectedSegment} />}
         {activeTab === 'ai'       && <AIInteractionsPanel tenantId={selectedTenantId} />}
         {activeTab === 'content'  && <ContentCurationPanel tenantId={selectedTenantId} />}
         {activeTab === 'experts'  && <ExpertCurationPanel tenantId={selectedTenantId} />}

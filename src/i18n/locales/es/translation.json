@@ -840,7 +840,8 @@
         "aiLogs": "Registros IA",
         "content": "Contenido",
         "experts": "Expertos",
-        "config": "Configuración"
+        "config": "Configuración",
+        "users": "Usuarios"
       }
     },
     "hospital": {

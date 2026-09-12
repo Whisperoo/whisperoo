@@ -843,7 +843,8 @@
         "aiLogs": "AI Logs",
         "content": "Content",
         "experts": "Experts",
-        "config": "Config"
+        "config": "Config",
+        "users": "Users"
       }
     },
     "hospital": {

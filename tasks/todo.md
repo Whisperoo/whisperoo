@@ -1317,10 +1317,13 @@ first, deploy second, roll back in reverse.
 
 - [x] Segment definition — `tenant_id IS NULL`. Correct; sponsorship not in use.
 - [x] Dashboard segment filter — shipped as the unified scope selector, all four RPCs.
-- [ ] **User list segment filter** — no user list view exists. Needs a new **Users** tab in
-      `SuperAdminPortal` (metrics/ai/content/experts/bookings/discounts/phi/topics/config
-      today), driven by the same scope selector. Scope: HIPAA-safe columns only (no
-      email/phone in the grid — see 6.1), segment + hospital filter, date range.
+- [x] **User list segment filter** — done 2026-09-12. New **Users** tab
+      (`UsersPanel.tsx`) driven by the portal's scope selector, backed by
+      `fn_admin_list_users` (`20260912000004`): staff-admin guarded, same
+      `fn_profile_in_segment` helper as the dashboard so the two can never disagree,
+      paginated (50/page, server-capped at 200), search on name/hospital, date range.
+      **No email or phone in the grid** (HIPAA 6.1) — those stay export-only. Verified
+      on staging: 16/8/8 per segment, matching Metrics exactly; normal user refused.
 - [ ] **CSV export fix — email + phone** — phone is present in the QR and Independent
       exports; **email is not**, because `profiles.email` was dropped in the HIPAA
       migration. Needs the audited edge function planned earlier: service-role read of
