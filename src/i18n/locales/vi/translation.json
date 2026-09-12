@@ -595,6 +595,14 @@
       "saveErrorDesc": "Không thể lưu lựa chọn của bạn. Vui lòng thử lại.",
       "saving": "Đang lưu...",
       "next": "Tiếp theo"
+    },
+    "consent": {
+      "emailTitle": "Cập nhật qua email",
+      "optional": "Bạn có thể thay đổi bất cứ lúc nào trong Cài đặt. Không lựa chọn nào là bắt buộc để dùng Whisperoo.",
+      "smsTitle": "Tin nhắn SMS",
+      "subtitle": "Chọn cách bạn muốn nhận thông tin từ chúng tôi. Cả hai đều không bắt buộc.",
+      "title": "Giữ liên lạc nhé?",
+      "unavailable": "Tùy chọn này hiện không khả dụng."
     }
   },
   "products": {

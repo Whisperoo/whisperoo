@@ -34,6 +34,7 @@ import UpdatePassword from "./pages/auth/UpdatePassword";
 import VerifyOTP from "./pages/auth/VerifyOTP";
 import MfaEnrollPage from "./pages/auth/MfaEnrollPage";
 import MfaChallengePage from "./pages/auth/MfaChallengePage";
+import OnboardingConsent from "./pages/onboarding/OnboardingConsent";
 import OnboardingComplete from "./pages/onboarding/OnboardingComplete";
 import OnboardingKids from "./pages/onboarding/OnboardingKids";
 import OnboardingKidsAges from "./pages/onboarding/OnboardingKidsAges";
@@ -133,7 +134,15 @@ const App = () => {
                 />
                 <Route
                   path="/onboarding/personal-context"
-                  element={<Navigate to="/onboarding/complete" replace />}
+                  element={<Navigate to="/onboarding/consent" replace />}
+                />
+                <Route
+                  path="/onboarding/consent"
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <OnboardingConsent />
+                    </ProtectedRoute>
+                  }
                 />
                 <Route
                   path="/onboarding/complete"

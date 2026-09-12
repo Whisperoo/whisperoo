@@ -52,7 +52,7 @@ const OnboardingKidsAges: React.FC = () => {
     const validKids = kidsData.filter(kid => kid.name.trim() !== '' && kid.birthdate.trim() !== '');
     if (validKids.length === kidsCount) {
       await saveKidsData(validKids);
-      navigate('/onboarding/complete');
+      navigate('/onboarding/consent');
     }
   };
 
@@ -61,7 +61,7 @@ const OnboardingKidsAges: React.FC = () => {
   };
 
   const handleSkip = () => {
-    navigate('/onboarding/complete');
+    navigate('/onboarding/consent');
   };
 
   const allKidsCompleted = kidsData.every(kid => kid.name.trim() !== '' && kid.birthdate.trim() !== '');

@@ -26,11 +26,11 @@ const OnboardingTopics: React.FC = () => {
       question={t('onboarding.topics.question')}
       subtitle={t('onboarding.topics.subtitle')}
       options={topicOptions}
-      nextRoute="/onboarding/complete"
-      skipRoute="/onboarding/complete"
+      nextRoute="/onboarding/consent"
+      skipRoute="/onboarding/consent"
       backRoute="/onboarding/kids-count"
     />
   );
 };
 
-export default OnboardingTopics;
+export default OnboardingTopics;

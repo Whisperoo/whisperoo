@@ -103,7 +103,7 @@ const OnboardingKids: React.FC = () => {
   };
 
   const handleSkip = () => {
-    navigate('/onboarding/complete');
+    navigate('/onboarding/consent');
   };
 
   return (

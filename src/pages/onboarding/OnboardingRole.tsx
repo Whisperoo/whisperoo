@@ -59,7 +59,7 @@ const OnboardingRole: React.FC = () => {
   };
 
   const handleSkip = () => {
-    navigate('/onboarding/complete');
+    navigate('/onboarding/consent');
   };
 
   const canProceed = (role && role !== 'other') || (role === 'other' && customRole.trim());

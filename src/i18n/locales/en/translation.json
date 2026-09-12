@@ -538,6 +538,14 @@
       "saveErrorDesc": "Failed to save your selections. Please try again.",
       "saving": "Saving...",
       "next": "Next"
+    },
+    "consent": {
+      "emailTitle": "Email updates",
+      "optional": "You can change these any time in Settings. Neither is required to use Whisperoo.",
+      "smsTitle": "Text messages",
+      "subtitle": "Choose how you would like to hear from us. Both are optional.",
+      "title": "Stay in touch?",
+      "unavailable": "This option is not available right now."
     }
   },
   "products": {

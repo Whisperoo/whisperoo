@@ -20,10 +20,10 @@ const OnboardingParentingStyles: React.FC = () => {
       subtitle={t('onboarding.parentingStyles.subtitle')}
       options={parentingStyleOptions}
       nextRoute="/onboarding/topics"
-      skipRoute="/onboarding/complete"
+      skipRoute="/onboarding/consent"
       backRoute="/onboarding/kids-count"
     />
   );
 };
 
-export default OnboardingParentingStyles;
+export default OnboardingParentingStyles;

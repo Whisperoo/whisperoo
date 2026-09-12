@@ -79,7 +79,7 @@ const OnboardingKidsCount: React.FC = () => {
   };
 
   const handleSkip = () => {
-    navigate('/onboarding/complete');
+    navigate('/onboarding/consent');
   };
 
   const incrementCount = () => {

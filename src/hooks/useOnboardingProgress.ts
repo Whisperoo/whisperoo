@@ -13,6 +13,7 @@ const BASE_ROUTES = [
   '/onboarding/kids',
   '/onboarding/kids-count',
   '/onboarding/topics',
+  '/onboarding/consent',
 ] as const;
 
 const HOSPITAL_ROUTE = '/onboarding/hospital-check';

@@ -595,6 +595,14 @@
       "saveErrorDesc": "No se pudieron guardar tus selecciones. Por favor intenta de nuevo.",
       "saving": "Guardando...",
       "next": "Siguiente"
+    },
+    "consent": {
+      "emailTitle": "Novedades por correo",
+      "optional": "Puedes cambiar esto en cualquier momento en Configuración. Ninguna opción es necesaria para usar Whisperoo.",
+      "smsTitle": "Mensajes de texto",
+      "subtitle": "Elige cómo quieres que te contactemos. Ambas opciones son opcionales.",
+      "title": "¿Seguimos en contacto?",
+      "unavailable": "Esta opción no está disponible en este momento."
     }
   },
   "products": {

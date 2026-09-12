@@ -1356,8 +1356,13 @@ frequency, "message and data rates may apply", STOP-to-opt-out, terms + privacy 
       version/channel/locale, one `is_current` per channel+locale enforced by a partial
       unique index. Two PLACEHOLDER drafts seeded so the UI can be built; legal's
       wording lands as new versions, never edits.
-- [ ] Onboarding consent UI — two checkboxes, both unchecked, not bundled into terms;
-      SMS not a condition of use. **Can start now**; copy slots in later.
+- [x] Onboarding consent UI — done 2026-09-12. New `/onboarding/consent` step, the
+      last before `/complete`; all 8 branch entry points rerouted through it. Two
+      independent checkboxes, both unchecked, Continue works with neither ticked. Copy
+      is fetched from `consent_versions` by the user's language (fallback en), so
+      legal's wording is data, not a translation key. Only a CHECKED box is recorded —
+      leaving one unchecked writes nothing, since "never opted in" ≠ "opted out".
+      Consent write failures never block completion. Labels in en/es/vi.
 - [ ] SendGrid: transactional + sequenced email, triggered off user state. *Needs key.*
 - [ ] Twilio: SMS send. *Needs SID/token/number.*
 - [ ] Inbound STOP/HELP/START webhook → edge function → opt-out written immediately,
