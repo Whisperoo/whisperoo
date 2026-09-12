@@ -1347,10 +1347,15 @@ Nothing started. **Blocked on the client for:** SendGrid API key, Twilio SID / a
 token / sending number, and the consent copy from legal (sender identity, purpose,
 frequency, "message and data rates may apply", STOP-to-opt-out, terms + privacy links).
 
-- [ ] Consent schema on `profiles`: `email_opt_in`, `email_opt_in_at`, `email_opt_in_ip`,
-      `email_consent_version`, same four for SMS. **Can start now** — no credentials needed.
-- [ ] Consent-copy versioning table (store the exact language shown, by version id).
-      **Can start now.**
+- [x] Consent schema — done 2026-09-12 (`20260912000005`). Eight columns on
+      `profiles` (four per channel) **plus** `*_opt_out_at` per channel, kept separate
+      from the opt-in fields so revocation never erases the consent record (TCPA).
+      `fn_record_messaging_consent` writes it, scoped to `auth.uid()`, IP taken from
+      request headers server-side rather than trusted from the client.
+- [x] Consent-copy versioning — `consent_versions` table, verbatim body per
+      version/channel/locale, one `is_current` per channel+locale enforced by a partial
+      unique index. Two PLACEHOLDER drafts seeded so the UI can be built; legal's
+      wording lands as new versions, never edits.
 - [ ] Onboarding consent UI — two checkboxes, both unchecked, not bundled into terms;
       SMS not a condition of use. **Can start now**; copy slots in later.
 - [ ] SendGrid: transactional + sequenced email, triggered off user state. *Needs key.*

@@ -132,15 +132,18 @@ const SuperAdminPortal: React.FC = () => {
             </div>
 
             {/* Right: Tabs */}
-            <div className="w-full overflow-x-auto">
-              <div className="inline-flex items-center gap-1 bg-gray-50 p-1.5 rounded-xl min-w-max">
+            {/* Wrap rather than scroll: ten tabs never fit on one line at common
+                widths, and a horizontally scrolling pill bar hides the tabs that
+                matter most (the ones past the fold) behind a scrollbar. */}
+            <div className="w-full">
+              <div className="flex flex-wrap items-center gap-1 bg-gray-50 p-1.5 rounded-xl">
                 {([
                   { id: 'metrics',  icon: BarChart3,      label: t('admin.portal.tabs.metrics')  },
                   { id: 'users',    icon: Users,          label: t('admin.portal.tabs.users', 'Users') },
                   { id: 'ai',       icon: MessageSquare,  label: t('admin.portal.tabs.aiLogs')  },
                   { id: 'content',  icon: PackageSearch,  label: t('admin.portal.tabs.content')  },
                   { id: 'experts',  icon: Users,          label: t('admin.portal.tabs.experts')  },
-                  { id: 'bookings', icon: CalendarCheck,   label: 'Appointment Requests' },
+                  { id: 'bookings', icon: CalendarCheck,   label: 'Appointments' },
                   { id: 'discounts', icon: PackageSearch, label: 'Discounts' },
                   { id: 'phi',      icon: Shield,         label: 'PHI Access Log' },
                   { id: 'topics',   icon: Tags,           label: 'Chat Topics' },
