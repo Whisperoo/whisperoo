@@ -887,7 +887,7 @@ Phase 3 (wrong-match flagging) — independent of 1/2, but most valuable once Ph
 
 ---
 
-# Phase 2 — Hospital Pilot: Staging Environment + Admin Portal Gaps
+# Sprint 2 (QUO-2026-004) — Staging Environment + Admin Portal Gaps
 
 Scope: from `Whisperoo_Phase2_Quotation.pdf` + client conversation (2026-08-20). Client confirmed priority order: **staging environment first**, feature work after. Confirmed decisions below came from an explicit Q&A round with the client — not assumptions.
 
@@ -997,7 +997,7 @@ Verification: `tsc --noEmit` clean; `npm run build` succeeds; `eslint` on the ch
 
 ---
 
-# Phase 2 — MetricsDash All/Hospital/B2C segment selector
+# Sprint 2 (QUO-2026-004) — MetricsDash All/Hospital/B2C segment selector
 
 Prerequisite now satisfied: `20260822000001_admin_dashboard_segment_filter.sql` is
 applied and verified on staging (27 helper call sites, 0 stale predicates, helper truth
@@ -1187,7 +1187,7 @@ whether the omission was deliberate.
 
 ---
 
-# Production push plan — Phase 2
+# Production push plan — Sprint 2 (QUO-2026-004) — PREMATURE, see scope tracker below
 
 Everything below has been applied and verified on staging, which is a schema-exact
 replica of production. **Nothing in this plan has been run against production.**
@@ -1301,3 +1301,69 @@ records the missing tracker row. Push it.
 The frontend and the two segment migrations are coupled in **both** directions: old
 frontend + new RPC works (defaults to `'all'`); new frontend + old RPC breaks. Migrate
 first, deploy second, roll back in reverse.
+
+---
+
+# Sprint 2 (QUO-2026-004) — scope tracker against the quotation
+
+> Naming: this engagement is **Sprint 2**. "Phase 2" was borrowed from the quotation's
+> title and collided with four other "Phase 2"s in this file; those headings are now
+> relabelled. Do not reuse "Phase N" for sprint-level work.
+>
+> Confirmed with the user 2026-09-12: no user list exists yet; the B2C definition is
+> `tenant_id IS NULL` only — no sponsorship flag is in use, so the shipped filter is correct.
+
+## Workstream 1 — Admin Dashboard: B2C segment
+
+- [x] Segment definition — `tenant_id IS NULL`. Correct; sponsorship not in use.
+- [x] Dashboard segment filter — shipped as the unified scope selector, all four RPCs.
+- [ ] **User list segment filter** — no user list view exists. Needs a new **Users** tab in
+      `SuperAdminPortal` (metrics/ai/content/experts/bookings/discounts/phi/topics/config
+      today), driven by the same scope selector. Scope: HIPAA-safe columns only (no
+      email/phone in the grid — see 6.1), segment + hospital filter, date range.
+- [ ] **CSV export fix — email + phone** — phone is present in the QR and Independent
+      exports; **email is not**, because `profiles.email` was dropped in the HIPAA
+      migration. Needs the audited edge function planned earlier: service-role read of
+      `auth.users`, access logged (who/when/what). Confirm with client which export(s).
+
+## Workstream 2 — Expert profile rework
+
+- [x] `expert_testimonials` table — `20260909000001`.
+- [x] Expert record extensions — video, gallery, extended bio (+ es/vi).
+- [ ] **Admin support: testimonials CRUD** — create / edit / reorder / publish /
+      unpublish in `AdminExpertForm.tsx`. **In scope now** — only the public screen
+      rebuild waits on Figma. Wrongly deferred earlier; correcting.
+- [ ] Public expert screen rebuild — **out of this sprint**, gated on Figma per the quote.
+
+## Workstream 3 — Messaging infrastructure + onboarding consent
+
+Nothing started. **Blocked on the client for:** SendGrid API key, Twilio SID / auth
+token / sending number, and the consent copy from legal (sender identity, purpose,
+frequency, "message and data rates may apply", STOP-to-opt-out, terms + privacy links).
+
+- [ ] Consent schema on `profiles`: `email_opt_in`, `email_opt_in_at`, `email_opt_in_ip`,
+      `email_consent_version`, same four for SMS. **Can start now** — no credentials needed.
+- [ ] Consent-copy versioning table (store the exact language shown, by version id).
+      **Can start now.**
+- [ ] Onboarding consent UI — two checkboxes, both unchecked, not bundled into terms;
+      SMS not a condition of use. **Can start now**; copy slots in later.
+- [ ] SendGrid: transactional + sequenced email, triggered off user state. *Needs key.*
+- [ ] Twilio: SMS send. *Needs SID/token/number.*
+- [ ] Inbound STOP/HELP/START webhook → edge function → opt-out written immediately,
+      suppressed across all sequences. *Needs Twilio.*
+
+## Not in the quote, done anyway (context for the client)
+
+- Staging environment — client-requested prerequisite (2026-08-20), not in the quote.
+- Stripe webhook + purchase-completion fix — genuine defect found during staging QA;
+  one real customer affected.
+- Migration-file repairs, `account_type` drift migration, onboarding affiliation flag.
+
+## Proposed order (awaiting approval)
+
+1. Testimonials admin CRUD — in scope, no dependencies, corrects my miss.
+2. Users tab with segment filter — no dependencies.
+3. Consent schema + consent UI — no credentials needed; unblocks 3 later.
+4. CSV email export — needs client confirmation of which export.
+5. SendGrid / Twilio / STOP handling — the moment credentials arrive.
+6. Production push — **only once 1–4 are on staging**, so the client gets Sprint 2, not half.
