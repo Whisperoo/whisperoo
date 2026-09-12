@@ -1330,9 +1330,12 @@ first, deploy second, roll back in reverse.
 
 - [x] `expert_testimonials` table — `20260909000001`.
 - [x] Expert record extensions — video, gallery, extended bio (+ es/vi).
-- [ ] **Admin support: testimonials CRUD** — create / edit / reorder / publish /
-      unpublish in `AdminExpertForm.tsx`. **In scope now** — only the public screen
-      rebuild waits on Figma. Wrongly deferred earlier; correcting.
+- [x] **Admin support: testimonials CRUD** — done 2026-09-12. New
+      `AdminExpertTestimonials.tsx`, mounted in `AdminExpertForm` for existing experts.
+      Create / edit / reorder (up/down) / publish-unpublish / delete, es+vi quote fields.
+      Each action writes immediately; new rows start unpublished. Needed a grants
+      migration (`20260912000003`) — the original table grant was SELECT-only, which
+      blocked admins too. RLS verified: admin insert+update OK, normal user refused.
 - [ ] Public expert screen rebuild — **out of this sprint**, gated on Figma per the quote.
 
 ## Workstream 3 — Messaging infrastructure + onboarding consent
