@@ -149,6 +149,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             first_name: firstName,
             phone_number: phoneNumber,
           },
+          // Send the confirmation link back to wherever the user signed up from.
+          // Without this Supabase uses the project's Site URL, so signing up on
+          // localhost or a preview URL confirms into a different environment.
+          // The origin must be in the project's redirect allow-list. Same
+          // pattern as the password-reset flow in Login.tsx.
+          emailRedirectTo: `${window.location.origin}/`,
         },
       })
 
