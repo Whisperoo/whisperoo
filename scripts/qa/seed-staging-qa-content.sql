@@ -299,7 +299,7 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.messages (id, session_id, role, content, metadata, is_flagged_for_review, created_at)
 SELECT ('facade00-0000-4000-8000-' || lpad((800000000000 + row_number() OVER ())::text, 12, '0'))::uuid,
        m.session, m.role, m.content,
-       jsonb_build_object('detected_category', m.category, 'qa_seed', true),
+       jsonb_build_object('category', m.category, 'qa_seed', true),
        m.flagged, now() - (m.days || ' days')::interval
 FROM (VALUES
   ('facade00-0000-4000-8000-0000000000f1'::uuid,'user','Is it normal to feed every hour at night?','Breastfeeding',false,2),
