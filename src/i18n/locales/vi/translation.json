@@ -1009,6 +1009,17 @@
     },
     "scopeNotice": {
       "segmentNotApplied": "Đang hiển thị tất cả người dùng. Mục này chưa lọc theo phân khúc — chỉ Số liệu mới có."
+    },
+    "funnel": {
+      "booked": "Đặt lịch tư vấn",
+      "empty": "Không có đăng ký trong kỳ này.",
+      "onboarded": "Hoàn tất thiết lập",
+      "savedOrBought": "Đã lưu hoặc mua",
+      "signedUp": "Đã đăng ký",
+      "startedChat": "Bắt đầu trò chuyện",
+      "subtitle": "Trong số tất cả người đăng ký trong kỳ này. Mỗi thanh là tỷ lệ trên tổng đăng ký, không phải trên thanh phía trên — các giai đoạn không theo thứ tự nghiêm ngặt.",
+      "title": "Người dùng làm gì sau khi đăng ký",
+      "viewedContent": "Xem nội dung"
     }
   }
 }

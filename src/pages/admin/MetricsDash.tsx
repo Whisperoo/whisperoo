@@ -7,6 +7,7 @@ import EnrollmentTrendChart from './EnrollmentTrendChart';
 import EscalationTrendChart from './EscalationTrendChart';
 import FeatureUsagePie from './FeatureUsagePie';
 import ConcernThemesChart from './ConcernThemesChart';
+import EngagementFunnel from './EngagementFunnel';
 
 interface MetricsDashProps {
   tenantId: string | null;
@@ -419,6 +420,9 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId, segment }) => {
           {t('admin.metrics.refresh')}
         </button>
       </div>
+
+      {/* ── Signup → engagement funnel (client request, 2026-09-14) ── */}
+      <EngagementFunnel tenantId={tenantId} segment={segment} startDate={startDate} endDate={endDate} />
 
       {/* ── KPI Row 1: Enrollment / Survey / Escalation ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

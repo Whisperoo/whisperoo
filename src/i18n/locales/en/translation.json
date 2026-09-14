@@ -1012,6 +1012,17 @@
     },
     "scopeNotice": {
       "segmentNotApplied": "Showing all users. This view does not filter by audience segment yet — only Metrics does."
+    },
+    "funnel": {
+      "booked": "Booked a consultation",
+      "empty": "No signups in this period.",
+      "onboarded": "Finished onboarding",
+      "savedOrBought": "Saved or bought",
+      "signedUp": "Signed up",
+      "startedChat": "Started a chat",
+      "subtitle": "Of everyone who signed up in this period. Each bar is a share of signups, not of the bar above — stages are not a strict sequence.",
+      "title": "What signups go on to do",
+      "viewedContent": "Viewed content"
     }
   }
 }

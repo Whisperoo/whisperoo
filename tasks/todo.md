@@ -1402,23 +1402,24 @@ was a hardcoded `'[]'` since May (`c7ed48d`).
   heartbeat, which is the one genuine gap.
 
 ## Part 1 — Activity on the Users tab
-- [ ] `fn_admin_user_activity_summary(p_user_ids uuid[])` → per user: last_active_at,
+- [x] `fn_admin_user_activity_summary(p_user_ids uuid[])` → per user: last_active_at,
       chat_sessions, messages_sent, resources_viewed, resources_downloaded, purchases,
       bookings, checklist_items_done. Staff-admin guarded. Batch by ids so the Users tab
       makes one call per page.
-- [ ] Users tab: "Last active" + activity count columns; click a row → drawer with the
+- [x] Users tab: "Last active" + activity count columns; click a row → drawer with the
       per-type breakdown and a dated timeline of activity *events* (type + date only).
-- [ ] `fn_admin_user_timeline(p_user_id)` for the drawer — same HIPAA rule.
-- [ ] Last-seen heartbeat: `user_activity_log(user_id, event, created_at)` written on
+- [x] `fn_admin_user_timeline(p_user_id)` for the drawer — same HIPAA rule.
+- [x] Last-seen heartbeat: `user_activity_log(user_id, event, created_at)` written on
       app load (one row per session start, no payload). Lightweight RPC + one call from
       `AuthContext` after session resolves. Without this, "logged in but did nothing"
       is invisible.
 
 ## Part 2 — Funnel on Metrics
-- [ ] `fn_get_admin_funnel(p_tenant_id, p_segment, p_start_date, p_end_date)` →
+- [x] `fn_get_admin_funnel(p_tenant_id, p_segment, p_start_date, p_end_date)` →
       signed_up → onboarded → started_chat → viewed_content → saved_or_bought →
       booked_consultation. Counts + % of signed up.
-- [ ] Funnel card on Metrics, driven by the scope selector.
+- [x] Funnel card on Metrics, driven by the scope selector. Labelled as % of signups,
+      not of the previous stage — the stages are independent, not a strict sequence.
 
 ## Order
 1 → heartbeat first (it starts accumulating data the moment it ships), then summary RPC,

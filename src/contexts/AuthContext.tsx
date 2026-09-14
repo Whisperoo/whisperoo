@@ -92,6 +92,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('Setting up auth listener...')
 
     // Get initial session with better error handling
+    // Presence heartbeat: one app_open per session start, deduplicated
+    // server-side to 30 minutes. Fire-and-forget -- presence is best-effort and
+    // must never affect auth or loading state. Powers "last active" in admin.
+    const recordPresence = () => {
+      supabase.rpc('fn_record_activity', { p_event: 'app_open' }).then(({ error }) => {
+        if (error) console.warn('Presence heartbeat failed:', error.message)
+      })
+    }
+
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       console.log('Initial session:', !!session)
       if (error) {
@@ -100,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
+        recordPresence()
         fetchProfile(session.user.id).finally(() => {
           setLoading(false)
         })
@@ -120,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null)
 
       if (session?.user) {
+        if (event === 'SIGNED_IN') recordPresence()
         // Small delay to ensure database trigger has completed
         setTimeout(() => {
           fetchProfile(session.user.id)

@@ -1009,6 +1009,17 @@
     },
     "scopeNotice": {
       "segmentNotApplied": "Mostrando todos los usuarios. Esta vista aún no filtra por segmento; solo Métricas lo hace."
+    },
+    "funnel": {
+      "booked": "Reservaron una consulta",
+      "empty": "No hay registros en este período.",
+      "onboarded": "Completaron el onboarding",
+      "savedOrBought": "Guardaron o compraron",
+      "signedUp": "Registrados",
+      "startedChat": "Iniciaron un chat",
+      "subtitle": "De todos los que se registraron en este período. Cada barra es un porcentaje de los registros, no de la barra anterior: las etapas no son una secuencia estricta.",
+      "title": "Qué hacen los usuarios tras registrarse",
+      "viewedContent": "Vieron contenido"
     }
   }
 }
