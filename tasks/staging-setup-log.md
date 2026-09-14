@@ -1530,3 +1530,26 @@ the landing-URL miss:
 
 12/12. HTTP 200 on `staging.whisperoo.app`. Runbook extended with four QA steps for
 the Sprint 2 work and relabelled from "Phase 2" to "Sprint 2".
+
+---
+
+## 2026-09-14 — AI Topics fix + user activity deployed to staging; prod deliberately held
+
+**Decision:** nothing goes to production until the client has QA'd the complete
+package on staging and signed off. Then everything ships together in one planned
+window — 14 migrations, 15 functions, one frontend deploy — rather than piecemeal.
+
+**Why "just the latest work" cannot go to prod alone, checked not assumed:** the funnel
+and activity functions call `fn_profile_in_segment`, which does not exist on prod; the
+AI Topics fix replaces the whole segment-aware `fn_get_admin_dashboard` body; and the
+frontend is one bundle 39 commits ahead of production. The segment migration is a hard
+dependency of everything since.
+
+**Deployed and verified** (bundle `index-CNMvTGsM.js`, 11/11 presence + absence checks):
+funnel, activity summary, timeline and heartbeat RPCs present; staging ref, test key
+and landing URL present; no prod ref, no live key, no secret, no prod landing URL.
+
+**Fly session had expired** ("no access token available") — the deploy script's safety
+checks passed and it failed only on auth. User re-ran `flyctl auth login`; redeploy clean.
+Worth remembering: Fly sessions lapse between weeks, and the symptom looks like a deploy
+failure rather than an auth one.
