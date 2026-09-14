@@ -1387,3 +1387,39 @@ frequency, "message and data rates may apply", STOP-to-opt-out, terms + privacy 
 4. CSV email export — needs client confirmation of which export.
 5. SendGrid / Twilio / STOP handling — the moment credentials arrive.
 6. Production push — **only once 1–4 are on staging**, so the client gets Sprint 2, not half.
+
+---
+
+# User activity visibility (client-requested, approved 2026-09-14; ships with prod push)
+
+The client agreed to the two-part proposal. Also fixed alongside: the AI Topics box
+was a hardcoded `'[]'` since May (`c7ed48d`).
+
+## Design constraints
+- HIPAA 6.1: activity **types and counts only** — never chat content, never per-message text.
+- Segment-aware everywhere via `fn_profile_in_segment`, same as Metrics and Users.
+- Aggregation only over tables that exist; no new instrumentation except the "last seen"
+  heartbeat, which is the one genuine gap.
+
+## Part 1 — Activity on the Users tab
+- [ ] `fn_admin_user_activity_summary(p_user_ids uuid[])` → per user: last_active_at,
+      chat_sessions, messages_sent, resources_viewed, resources_downloaded, purchases,
+      bookings, checklist_items_done. Staff-admin guarded. Batch by ids so the Users tab
+      makes one call per page.
+- [ ] Users tab: "Last active" + activity count columns; click a row → drawer with the
+      per-type breakdown and a dated timeline of activity *events* (type + date only).
+- [ ] `fn_admin_user_timeline(p_user_id)` for the drawer — same HIPAA rule.
+- [ ] Last-seen heartbeat: `user_activity_log(user_id, event, created_at)` written on
+      app load (one row per session start, no payload). Lightweight RPC + one call from
+      `AuthContext` after session resolves. Without this, "logged in but did nothing"
+      is invisible.
+
+## Part 2 — Funnel on Metrics
+- [ ] `fn_get_admin_funnel(p_tenant_id, p_segment, p_start_date, p_end_date)` →
+      signed_up → onboarded → started_chat → viewed_content → saved_or_bought →
+      booked_consultation. Counts + % of signed up.
+- [ ] Funnel card on Metrics, driven by the scope selector.
+
+## Order
+1 → heartbeat first (it starts accumulating data the moment it ships), then summary RPC,
+then Users tab columns + drawer, then funnel. Each verified on staging with seed data.
