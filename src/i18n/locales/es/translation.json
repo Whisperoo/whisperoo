@@ -194,6 +194,20 @@
       "warningDesc": "Tu sesión expirará en 5 minutos por inactividad. Por favor interactúa con la página para mantenerte conectado.",
       "expiredTitle": "Sesión Expirada",
       "expiredDesc": "Por tu seguridad, tu sesión ha sido cerrada debido a inactividad."
+    },
+    "checkEmail": {
+      "alreadyVerified": "¿Ya verificaste? Inicia sesión",
+      "instruction": "Haz clic en el enlace de ese correo para verificar tu dirección y luego configuraremos tu cuenta.",
+      "resendButton": "Reenviar correo",
+      "resendFailed": "No se pudo reenviar el correo. Inténtalo de nuevo en un momento.",
+      "resentButton": "Correo reenviado",
+      "resentDesc": "Un nuevo correo de confirmación va en camino a {{email}}.",
+      "resentTitle": "Enviado",
+      "sentTo": "Enviamos un enlace de confirmación a",
+      "tipExpiry": "El enlace caduca a las 24 horas.",
+      "tipSpam": "¿No lo ves? Revisa la carpeta de spam o promociones.",
+      "title": "Revisa tu correo",
+      "yourInbox": "tu bandeja de entrada"
     }
   },
   "chat": {

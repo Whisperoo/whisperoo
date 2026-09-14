@@ -12,7 +12,7 @@ interface AuthContextType {
   profile: Profile | null
   session: Session | null
   loading: boolean
-  signUp: (email: string, password: string, firstName: string, phoneNumber?: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null, language?: string | null) => Promise<{ user: User | null; error: AuthError | null }>
+  signUp: (email: string, password: string, firstName: string, phoneNumber?: string, tenantId?: string | null, source?: string | null, department?: string | null, qrToken?: string | null, language?: string | null) => Promise<{ user: User | null; session: Session | null; error: AuthError | null }>
   signIn: (email: string, password: string) => Promise<{ user: User | null; error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>
@@ -171,7 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Signup error:', error)
-        return { user: null, error }
+        return { user: null, session: null, error }
       }
 
       console.log('Signup successful:', data.user?.id)
@@ -250,10 +250,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       
-      return { user: data.user, error: null }
+      return { user: data.user, session: data.session, error: null }
     } catch (error) {
       console.error('Signup exception:', error)
-      return { user: null, error: error as AuthError }
+      return { user: null, session: null, error: error as AuthError }
     }
   }
 
@@ -268,14 +268,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Signin error:', error)
-        return { user: null, error }
+        return { user: null, session: null, error }
       }
 
       console.log('Signin successful:', data.user?.id)
-      return { user: data.user, error: null }
+      return { user: data.user, session: data.session, error: null }
     } catch (error) {
       console.error('Signin exception:', error)
-      return { user: null, error: error as AuthError }
+      return { user: null, session: null, error: error as AuthError }
     }
   }
 

@@ -183,7 +183,7 @@ const CreateAccount: React.FC = () => {
       const effectiveQrToken = resolvedQrToken;
       const acquisitionSource = querySource || (effectiveQrToken ? 'qr_hospital' : tenantSlug ? 'hospital_direct' : 'organic');
       const acquisitionDept = queryDept || null;
-      const { user, error } = await signUp(
+      const { user, session, error } = await signUp(
         formData.email,
         formData.password,
         formData.firstName,
@@ -202,6 +202,17 @@ const CreateAccount: React.FC = () => {
           description: error.message,
           variant: "destructive",
         });
+        return;
+      }
+
+      if (user && !session) {
+        // Email confirmation is required on this project: Supabase created the
+        // user but issued no session, so no profile can load and onboarding
+        // cannot start until the link in the email is clicked. Waiting here
+        // would spin forever. Send them to the check-your-email screen instead.
+        console.log('Account created, email confirmation required:', user.id);
+        setIsLoading(false);
+        navigate(`/auth/check-email?email=${encodeURIComponent(formData.email)}`);
         return;
       }
 

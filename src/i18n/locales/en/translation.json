@@ -194,6 +194,20 @@
       "warningDesc": "Your session will expire in 5 minutes due to inactivity. Please interact with the page to stay logged in.",
       "expiredTitle": "Session Expired",
       "expiredDesc": "For your security, you have been logged out due to inactivity."
+    },
+    "checkEmail": {
+      "alreadyVerified": "Already verified? Sign in",
+      "instruction": "Click the link in that email to verify your address, then we'll set up your account.",
+      "resendButton": "Resend email",
+      "resendFailed": "Could not resend the email. Please try again in a moment.",
+      "resentButton": "Email sent again",
+      "resentDesc": "A new confirmation email is on its way to {{email}}.",
+      "resentTitle": "Sent",
+      "sentTo": "We sent a confirmation link to",
+      "tipExpiry": "The link expires after 24 hours.",
+      "tipSpam": "Not there? Check your spam or promotions folder.",
+      "title": "Check your email",
+      "yourInbox": "your inbox"
     }
   },
   "chat": {

@@ -194,6 +194,20 @@
       "warningDesc": "Phiên của bạn sẽ hết hạn trong 5 phút nữa do không hoạt động. Vui lòng tương tác với trang để duy trì đăng nhập.",
       "expiredTitle": "Phiên đã hết hạn",
       "expiredDesc": "Vì sự an toàn của bạn, bạn đã bị đăng xuất do không hoạt động."
+    },
+    "checkEmail": {
+      "alreadyVerified": "Đã xác minh? Đăng nhập",
+      "instruction": "Nhấp vào liên kết trong email đó để xác minh địa chỉ, sau đó chúng tôi sẽ thiết lập tài khoản cho bạn.",
+      "resendButton": "Gửi lại email",
+      "resendFailed": "Không thể gửi lại email. Vui lòng thử lại sau giây lát.",
+      "resentButton": "Đã gửi lại",
+      "resentDesc": "Email xác nhận mới đang được gửi đến {{email}}.",
+      "resentTitle": "Đã gửi",
+      "sentTo": "Chúng tôi đã gửi liên kết xác nhận đến",
+      "tipExpiry": "Liên kết hết hạn sau 24 giờ.",
+      "tipSpam": "Không thấy? Hãy kiểm tra thư mục spam hoặc quảng cáo.",
+      "title": "Kiểm tra email của bạn",
+      "yourInbox": "hộp thư của bạn"
     }
   },
   "chat": {
