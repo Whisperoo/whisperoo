@@ -1553,3 +1553,32 @@ and landing URL present; no prod ref, no live key, no secret, no prod landing UR
 checks passed and it failed only on auth. User re-ran `flyctl auth login`; redeploy clean.
 Worth remembering: Fly sessions lapse between weeks, and the symptom looks like a deploy
 failure rather than an auth one.
+
+---
+
+## 2026-09-14 — "Check your email" screen; client QA message sent
+
+**Bug:** after signup on staging, "Account created" toast then nothing. Cause: staging
+requires email confirmation (`mailer_autoconfirm = false`, Supabase's default for new
+projects), so `signUp` returns a user but no session, and `CreateAccount` waited for a
+session-backed profile that could never arrive.
+
+**Finding worth more than the bug: production has `mailer_autoconfirm = true`** — no
+email verification at all. That is why this never surfaced on prod. The environments
+diverge on a security-relevant auth setting by accident of project age.
+
+**Fix (`363cd7b`):** `signUp` now returns the session; `CreateAccount` branches — session
+→ onboarding as before, no session → new `/auth/check-email` screen (address, resend,
+sign-in link). The confirmation link lands on `/`, where Splash routes into onboarding.
+Both settings now work, so enabling verification on prod is a dashboard toggle, not a
+code change. Raised with the user as a decision for the client.
+
+Deployed to staging, bundle verified 7/7, user confirmed the full signup → verify →
+onboarding → consent path works.
+
+**Client QA message sent.** Staging link, the eight things to look at, and the two items
+still waiting on them: Figma sign-off (expert profile visuals not started; data model
+is) and SendGrid/Twilio credentials + final consent wording (consent screen records
+choices; nothing is sent).
+
+**State:** production untouched. Full package ships together after client sign-off.
