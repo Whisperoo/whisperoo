@@ -1582,3 +1582,20 @@ is) and SendGrid/Twilio credentials + final consent wording (consent screen reco
 choices; nothing is sent).
 
 **State:** production untouched. Full package ships together after client sign-off.
+
+---
+
+## 2026-09-17 — Client QA account promoted to super_admin (STAGING)
+
+Client's account `neha@whisperoo.app` (auth id `b19f06ac-aebd-43e6-80e4-bec0f7bb1bb1`,
+email confirmed, onboarded) was promoted so they can review the admin portal:
+
+```sql
+UPDATE public.profiles SET account_type = 'super_admin'
+ WHERE id = 'b19f06ac-aebd-43e6-80e4-bec0f7bb1bb1';  -- 1 row
+```
+
+Same mechanism as the QA account (`SuperAdminPortal` gates on
+`profiles.account_type = 'super_admin'`). Data change only, via psql on staging.
+**Production untouched.** If the client wants the same on prod, it is a one-row
+update there after the push — noted as a prod-day step.
