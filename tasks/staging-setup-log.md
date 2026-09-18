@@ -1637,3 +1637,25 @@ Incident note: while sourcing `.env.staging` in a shell, an unquoted value on li
 (`STRIPE_SECRET_KEY`, staging **test** key) was partly echoed into tool output. Roll the
 test key in Stripe and re-set it on staging functions. Env files are no longer sourced;
 single variables are read with grep.
+
+### 2026-09-18 (cont.) — admin-signup-export on prod; audit bug found and fixed
+
+- First prod export failed: "Failed to record access". Cause: `phi_access_log.patient_user_id`
+  is NOT NULL on both environments and the function inserted a single cohort row with
+  `null`. Reproduced on staging in a rolled-back txn; staging had **zero** signup_export
+  audit rows, i.e. the earlier "CSV export verified" on staging was wrong — the table was
+  never checked. Correction recorded here.
+- Fix `18ae03c`: one `phi_access_log` row per exported user (an export of N emails is N
+  accesses); empty export logs nothing. No schema change.
+- Staging: deployed via CLI (token allows writes on staging), independent export → 9 rows
+  + header, 9 audit rows, 9 distinct patients. (QR export on staging is legitimately empty:
+  seed has 0 QR-attributed signups.)
+- Prod: function deployed by the user through the dashboard editor (CLI deploy is 403 on
+  prod — org role). Now v2. QR export for St. Joseph → 41 rows; 41 audit rows / 41 distinct
+  patients = exactly the QR-attributed onboarded count on prod. Verified read-only.
+- User confirmed the three UI checks on prod: funnel + topics for St. Joseph, Users tab,
+  Config tab unchanged.
+- Not deployed on prod: `stripe-webhook` (a Jan-2026 `stripe-webhook` + `stripe-webhook-prod`
+  and `STRIPE_WEBHOOK_SECRET*` secrets already exist there — origin unknown, provenance
+  is a reverted commit `8adedaa`). Left untouched pending the client's answer on the live
+  endpoint. Remaining CLI privilege gap on prod: functions deploy + management API.
