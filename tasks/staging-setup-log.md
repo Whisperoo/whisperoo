@@ -1599,3 +1599,41 @@ Same mechanism as the QA account (`SuperAdminPortal` gates on
 `profiles.account_type = 'super_admin'`). Data change only, via psql on staging.
 **Production untouched.** If the client wants the same on prod, it is a one-row
 update there after the push — noted as a prod-day step.
+
+---
+
+## 2026-09-18 — PRODUCTION PUSH (client request: funnel, user activity, AI Topics for St. Joseph meeting)
+
+Decision: whole `phase2/admin-portal-gaps` branch shipped, consent onboarding step OFF on
+prod via `VITE_CONSENT_STEP` (unset → `""` in the bundle). Config tab / St. Joseph signups
+list untouched by the branch (verified: no diff on `TenantConfigEditor.tsx`, no migration
+touches `fn_admin_get_tenant_signups`).
+
+Blocker met: the Supabase management token is refused on `GET /v1/projects/*` (and on
+functions deploy) even after re-login — "some permissions exceed your current role".
+`supabase link/migration repair/db push` therefore unusable. Phases 0–2 were done over
+psql, replicating the CLI's own behaviour (each file + its tracker INSERT in one
+transaction); the pattern was proven on staging first (commit together / roll back
+together). Scripts: `scripts/prod-push/`.
+
+| Phase | Result |
+|---|---|
+| 0 backup | `~/whisperoo-backups/prod-public-20260918-162522.sql` (2.4 MB, public schema + data); tracker 89; pending 56 |
+| 1 tracker repair | 42 rows inserted in one txn (list identical to the set verified 2026-09-12); tracker 131; pending exactly the 14 |
+| 2 migrations | 14 applied by the user (typed PUSH); verify: tracker=145, new_rpcs=6, segment_rpcs=4, new_tables=3, profile_cols=3, idx=1, backfilled=completed, themes_restored=true — re-run independently, identical |
+| 3 functions | **NOT deployed** — 403 on deploy (token lacks Edge Functions write). Only 2 functions are new on the branch: `admin-signup-export` (Metrics CSV exports need it → exports fail until deployed) and `stripe-webhook` (no live endpoint yet, no effect). Prod chat already writes `metadata.category` (10/10 recent msgs), so AI Topics needs no function |
+| 4 frontend | `whisperoo-app` deployed, bundle `index-B6OK-N9Q.js`; audit 9/9 (prod ref, pk_live_, landing URL, funnel + timeline RPCs present; staging ref, pk_test_, secret keys, staging R2 absent); `VITE_CONSENT_STEP:""` confirmed in bundle; 1 machine started, checks passing |
+
+Read-only snapshot for St. Joseph (`scripts/qa/prod-readonly-hospital-snapshot.sql`):
+signed_up 60 → onboarded 50 → started_chat 2 → viewed_content 12 → saved_or_bought 9 →
+booked 1; topics: Pediatric Dentistry 6, General Parenting 3, Baby Feeding 2, Nervous
+System Regulation 1. Dashboard values depend on the date range selected.
+
+Open: deploy `admin-signup-export` (+ `stripe-webhook`) once the token has Edge Functions
+write, or via the dashboard editor; client to create the live Stripe endpoint; staging
+needs a redeploy to pick up the consent flag (its bundle predates it, still shows the step).
+
+Incident note: while sourcing `.env.staging` in a shell, an unquoted value on line 14
+(`STRIPE_SECRET_KEY`, staging **test** key) was partly echoed into tool output. Roll the
+test key in Stripe and re-set it on staging functions. Env files are no longer sourced;
+single variables are read with grep.
