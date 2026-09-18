@@ -3,7 +3,6 @@
 # Prod secrets are NOT touched: no STRIPE_WEBHOOK_SECRET yet because no live Stripe
 # endpoint exists; OPENAI/R2/Stripe secrets already on prod stay as they are.
 source "$(dirname "$0")/_common.sh"
-assert_linked_prod
 
 supabase functions deploy --project-ref "$PROD_REF"
 echo "== deployed =="

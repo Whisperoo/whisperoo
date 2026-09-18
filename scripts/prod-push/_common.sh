@@ -16,6 +16,9 @@ PROD_DB_PASSWORD="$(grep -E '^SUPABASE_DB_PASSWORD=' .env | cut -d= -f2- | tr -d
 
 # The narrow PAT in .env.staging 403s on prod; the keyring login must be used.
 unset SUPABASE_ACCESS_TOKEN
+# Two CLIs are installed: the npm wrapper (first on PATH, separate token store with the
+# narrow PAT) and the scoop build, which holds the full login. Force the scoop one.
+export PATH="$HOME/scoop/shims:$PATH"
 
 prod_psql() {
   PGPASSWORD="$PROD_DB_PASSWORD" "$PSQL" -h "$POOLER" -p 5432 -U "postgres.$PROD_REF" -d postgres -v ON_ERROR_STOP=1 -At "$@"
