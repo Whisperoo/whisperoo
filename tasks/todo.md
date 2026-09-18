@@ -1215,20 +1215,35 @@ duplicate seed rows, failed `CREATE`s, and re-executed backfills against live da
 Full list in the scratchpad `marker_results.txt`; regenerate with the marker script if
 in doubt.
 
-### The 7 genuinely new migrations, in order
+### The 14 genuinely new migrations, in order (refreshed 2026-09-18)
 
 | Version | What | Risk |
 |---|---|---|
-| `20260822000001` | `p_segment` on `fn_get_admin_dashboard` + `fn_profile_in_segment` | drops/recreates one function; **frontend must not ship before this** |
+| `20250819000001` | `profiles.account_type` (`IF NOT EXISTS`) | no-op on prod; records the tracker row |
+| `20260822000001` | `p_segment` on `fn_get_admin_dashboard` + `fn_profile_in_segment` | function replace; **frontend must not ship before this** |
 | `20260827000001` | `p_segment` on the other 3 dashboard RPCs | same |
 | `20260831000001` | anonymous analytics no longer counted as B2C | function replace |
 | `20260831000002` | `profiles.hospital_affiliation` + setter RPC | additive |
 | `20260909000001` | `expert_testimonials` + expert media columns | additive |
 | `20260912000001` | index on `purchases(payment_intent_id)` | additive |
 | `20260912000002` | backfill **one** paid-but-pending purchase (`pi_3Smc5p…`) | one-row UPDATE, status-guarded |
+| `20260912000003` | write grants on `expert_testimonials` | grants only |
+| `20260912000004` | `fn_admin_list_users` | new function |
+| `20260912000005` | consent schema + 2 placeholder `consent_versions` rows | additive; UI is **flag-off** on prod |
+| `20260912000006` | export RPCs gain `user_id`; `fn_service_emails_for_users` | function replace |
+| `20260914000001` | restore `concern_themes` aggregation (AI Topics) | function replace |
+| `20260914000002` | `user_activity_log` + funnel/activity RPCs | additive; log fills from deploy onward |
 
-Plus `20250819000001` (`account_type`, `IF NOT EXISTS`) — a no-op on prod that just
-records the missing tracker row. Push it.
+Tracker maths: 89 tracked + 42 repaired + 14 pushed = 145 = every file in `supabase/migrations/`.
+
+**Decision 2026-09-18:** client wants the funnel, Users-tab activity, and AI Topics on
+prod today (St. Joseph meeting). Whole branch ships, with the consent onboarding step
+**off** via `VITE_CONSENT_STEP` (unset on prod). `TenantConfigEditor` / Config tab is
+untouched by the branch — the St. Joseph signups list does not change.
+
+**Runbook:** `scripts/prod-push/00…05`. Each phase stops on a mismatch; run in order.
+Prod purchases already never complete (74 pending), so shipping without the live Stripe
+webhook is not a regression — but the client should create the live endpoint promptly.
 
 ## Sequence
 
@@ -1244,11 +1259,11 @@ records the missing tracker row. Push it.
 
 ### 1. Repair the tracker (writes tracker rows only, runs no SQL)
 - [ ] `supabase migration repair --status applied <the 43 versions> --linked`
-- [ ] `supabase migration list --linked` → must show exactly **8** pending:
-      `20250819000001` + the 7 above. **If it shows anything else, stop.**
+- [ ] `supabase migration list --linked` → must show exactly **14** pending
+      (the table above). **If it shows anything else, stop.**
 
 ### 2. Dry run
-- [ ] `supabase db push --dry-run --linked` → lists exactly those 8. Stop if not.
+- [ ] `supabase db push --dry-run --include-all` → lists exactly those 14. Stop if not.
 
 ### 3. Push migrations
 - [ ] `supabase db push --include-all --linked` (`--include-all` because
@@ -1265,7 +1280,7 @@ records the missing tracker row. Push it.
       URL `https://wznevejkaefokgibkknt.supabase.co/functions/v1/stripe-webhook`,
       events `payment_intent.succeeded`, `payment_intent.payment_failed`,
       `charge.refunded`. Different secret from staging.
-- [ ] Set `STRIPE_WEBHOOK_SECRET` on prod via `--env-file`. **Prod's other secrets are
+- [ ] (deferred — no live endpoint yet) Set `STRIPE_WEBHOOK_SECRET` on prod via `--env-file`. **Prod's other secrets are
       untouched** — do not re-set `STRIPE_SECRET_KEY` or the R2 values.
 
 ### 5. Frontend
