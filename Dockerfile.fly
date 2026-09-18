@@ -25,6 +25,9 @@ ARG VITE_CLOUDFLARE_R2_PUBLIC_URL
 # correctly falls back to the marketing site; staging passes its own value so its
 # front door does not hand visitors to production.
 ARG VITE_LANDING_URL
+# Messaging-consent onboarding step. Unset (off) in production until the legal
+# copy and SendGrid/Twilio land; staging passes true so the client can review it.
+ARG VITE_CONSENT_STEP
 
 # Expose them as environment variables so Vite picks them up
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
@@ -34,6 +37,7 @@ ENV VITE_CLOUDFLARE_ACCOUNT_ID=$VITE_CLOUDFLARE_ACCOUNT_ID
 ENV VITE_CLOUDFLARE_R2_BUCKET_NAME=$VITE_CLOUDFLARE_R2_BUCKET_NAME
 ENV VITE_CLOUDFLARE_R2_PUBLIC_URL=$VITE_CLOUDFLARE_R2_PUBLIC_URL
 ENV VITE_LANDING_URL=$VITE_LANDING_URL
+ENV VITE_CONSENT_STEP=$VITE_CONSENT_STEP
 
 # Install dependencies
 COPY package*.json ./

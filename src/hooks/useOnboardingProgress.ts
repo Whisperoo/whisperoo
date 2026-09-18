@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { CONSENT_STEP_ENABLED } from '@/config/features';
 
 /**
  * Canonical onboarding route order. `hospital-check` is conditional —
@@ -58,9 +59,12 @@ export function useOnboardingProgress(): { step: number; total: number } {
   // the tenant query resolves.
   const includeHospital = hasActiveTenants === true && !profile?.tenant_id;
 
+  const base = CONSENT_STEP_ENABLED
+    ? [...BASE_ROUTES]
+    : BASE_ROUTES.filter((r) => r !== '/onboarding/consent');
   const flow = includeHospital
-    ? [BASE_ROUTES[0], HOSPITAL_ROUTE, ...BASE_ROUTES.slice(1)]
-    : [...BASE_ROUTES];
+    ? [base[0], HOSPITAL_ROUTE, ...base.slice(1)]
+    : base;
 
   const total = flow.length;
   const idx = flow.findIndex((r) => pathname.startsWith(r));

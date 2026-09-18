@@ -79,7 +79,8 @@ flyctl deploy `
     --build-arg "VITE_CLOUDFLARE_ACCOUNT_ID=$($envVars['VITE_CLOUDFLARE_ACCOUNT_ID'])" `
     --build-arg "VITE_CLOUDFLARE_R2_BUCKET_NAME=$($envVars['VITE_CLOUDFLARE_R2_BUCKET_NAME'])" `
     --build-arg "VITE_CLOUDFLARE_R2_PUBLIC_URL=$($envVars['VITE_CLOUDFLARE_R2_PUBLIC_URL'])" `
-    --build-arg "VITE_LANDING_URL=$($envVars['VITE_LANDING_URL'])"
+    --build-arg "VITE_LANDING_URL=$($envVars['VITE_LANDING_URL'])" `
+    --build-arg "VITE_CONSENT_STEP=$($envVars['VITE_CONSENT_STEP'])"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "fly deploy failed."

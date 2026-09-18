@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import OnboardingLayout from '../../components/layouts/OnboardingLayout';
 import { Button } from '../../components/ui/button';
 import { ArrowRight, Mail, MessageSquare, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
+import { CONSENT_STEP_ENABLED } from '@/config/features';
 
 /**
  * Messaging consent — the last onboarding step before completion.
@@ -67,6 +68,10 @@ const OnboardingConsent: React.FC = () => {
   }, [i18n.language]);
 
   const finish = () => navigate('/onboarding/complete');
+
+  // Flag off (production until legal copy + SendGrid/Twilio land): every entry
+  // point still routes here, so forward to completion instead of rendering.
+  if (!CONSENT_STEP_ENABLED) return <Navigate to="/onboarding/complete" replace />;
 
   const handleContinue = async () => {
     setSaving(true);
