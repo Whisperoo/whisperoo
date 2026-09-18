@@ -1659,3 +1659,17 @@ single variables are read with grep.
   and `STRIPE_WEBHOOK_SECRET*` secrets already exist there — origin unknown, provenance
   is a reverted commit `8adedaa`). Left untouched pending the client's answer on the live
   endpoint. Remaining CLI privilege gap on prod: functions deploy + management API.
+
+### 2026-09-18 (cont.) — tab-resume reload fix; staging caught up
+
+- Client-reported: dashboard refreshes by itself when tabbing back. Cause:
+  `SessionTimeoutTracker` (pre-existing, `d451a9a` 2026-05-07) did `window.location.reload()`
+  after `refreshSession()` when the tab was hidden > 5 min, and again on the 15-min idle
+  timer. Fix `ce1832c`: keep the silent refresh, drop both reloads, sign out only if the
+  refresh fails. Note: the 15-min "HIPAA" idle timer has never signed anyone out on
+  success — unchanged; raised with the user as a policy decision.
+- Prod frontend redeployed: bundle `index-Dhc7-CXi.js`, audit 9/9, `VITE_CONSENT_STEP:""`,
+  0 reload calls attached to refreshSession.
+- Staging redeployed twice (first run predated the fix): bundle `index-C8tw7eV-.js`,
+  `VITE_CONSENT_STEP:"true"`, same reload check 0. Staging now shows the consent step
+  via the flag rather than by lacking it.
