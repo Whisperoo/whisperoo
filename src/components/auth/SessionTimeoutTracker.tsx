@@ -18,18 +18,11 @@ export function useSessionTimeout() {
     // Only track activity if user is logged in
     if (!user) return;
 
-    const handleTimeout = async () => {
-      // Avoid redirect loops if already on auth
-      if (location.pathname.startsWith('/auth')) return;
-
-      // Self-heal first: refresh token/session and reload app state.
-      const { error } = await supabase.auth.refreshSession();
-      if (!error) {
-        window.location.reload();
-        return;
-      }
-
-      // If refresh failed, sign out safely.
+    // Refresh the token in place. A full page reload here used to be the way to
+    // avoid stale-token request failures, but it also discarded whatever the user
+    // had on screen (admin scope, date range, open drawer). The refreshed session
+    // propagates through onAuthStateChange, so nothing needs to be reloaded.
+    const expireSession = async () => {
       await signOut();
       toast({
         title: 'Session Expired',
@@ -37,6 +30,14 @@ export function useSessionTimeout() {
         variant: 'destructive',
       });
       navigate('/auth/login');
+    };
+
+    const handleTimeout = async () => {
+      // Avoid redirect loops if already on auth
+      if (location.pathname.startsWith('/auth')) return;
+
+      const { error } = await supabase.auth.refreshSession();
+      if (error) await expireSession();
     };
 
     const resetTimer = () => {
@@ -66,13 +67,11 @@ export function useSessionTimeout() {
         return;
       }
 
-      // If tab resumes after long idle, refresh and reload to avoid stale-state error storms.
+      // Tab resumed after a long idle: refresh the token in place (no reload).
       const hiddenFor = hiddenAtRef.current ? Date.now() - hiddenAtRef.current : 0;
-      if (hiddenFor > 5 * 60 * 1000) {
+      if (hiddenFor > 5 * 60 * 1000 && !location.pathname.startsWith('/auth')) {
         const { error } = await supabase.auth.refreshSession();
-        if (!error) {
-          window.location.reload();
-        }
+        if (error) await expireSession();
       }
     };
 
