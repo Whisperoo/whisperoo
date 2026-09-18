@@ -100,30 +100,38 @@ Deno.serve(async (req) => {
   const list = (rows as Array<Record<string, unknown> & { user_id: string }>) ?? []
 
   // 4. Audit first. No log, no data.
-  const { error: logErr } = await asService.from('phi_access_log').insert({
-    accessor_user_id: caller.id,
-    accessor_role: role,
-    patient_user_id: null,
-    resource_type: 'signup_export',
-    resource_id: body.export,
-    action: 'export',
-    reason_code: 'admin_export',
-    reason_text: JSON.stringify({
-      export: body.export,
-      tenant_id: body.p_tenant_id ?? null,
-      start_date: body.p_start_date ?? null,
-      end_date: body.p_end_date ?? null,
-      row_count: list.length,
-      includes_email: true,
-    }),
+  // phi_access_log is per patient (patient_user_id NOT NULL): an export that reveals
+  // N people's emails is N accesses, so write one row per exported user. An empty
+  // export reveals nothing and logs nothing.
+  const ids = list.map((r) => r.user_id).filter(Boolean)
+  const filters = JSON.stringify({
+    export: body.export,
+    tenant_id: body.p_tenant_id ?? null,
+    start_date: body.p_start_date ?? null,
+    end_date: body.p_end_date ?? null,
+    row_count: list.length,
+    includes_email: true,
   })
-  if (logErr) {
-    console.error('admin-signup-export: audit log failed', logErr)
-    return json(500, { error: 'Failed to record access' })
+  if (ids.length > 0) {
+    const { error: logErr } = await asService.from('phi_access_log').insert(
+      ids.map((patientId) => ({
+        accessor_user_id: caller.id,
+        accessor_role: role,
+        patient_user_id: patientId,
+        resource_type: 'signup_export',
+        resource_id: body.export,
+        action: 'export',
+        reason_code: 'admin_export',
+        reason_text: filters,
+      })),
+    )
+    if (logErr) {
+      console.error('admin-signup-export: audit log failed', logErr)
+      return json(500, { error: 'Failed to record access' })
+    }
   }
 
   // 3. Emails, service-role only.
-  const ids = list.map((r) => r.user_id).filter(Boolean)
   let emailById = new Map<string, string>()
   if (ids.length > 0) {
     const { data: emails, error: emailErr } = await asService.rpc('fn_service_emails_for_users', { p_user_ids: ids })
