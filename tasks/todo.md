@@ -1439,3 +1439,84 @@ was a hardcoded `'[]'` since May (`c7ed48d`).
 ## Order
 1 → heartbeat first (it starts accumulating data the moment it ships), then summary RPC,
 then Users tab columns + drawer, then funnel. Each verified on staging with seed data.
+
+---
+
+# Sprint 2 pivot (2026-10-03): "Get Support" intake replaces the expert profile redesign
+
+Source: client's Claude Design prototype (unpacked from the shared artifact; copy and
+flow below are taken verbatim from its code). The Figma expert-profile rebuild is
+**dropped**; the only profile change is an intro video with an off switch.
+
+## A. Get Support card (Dashboard, top)
+
+Flow, exactly as the prototype:
+1. **Ask** — "What can we help you with?" / "Tell us in your own words. Our team will find
+   the right support for you." Textarea (placeholder "e.g. I'm struggling with milk
+   production"), 4 suggestion chips, **Get Support** (disabled until text).
+2. **Intro** — quotes the user's text; **AI empathy line** (OpenAI, 1–2 sentences, no
+   advice); then static: "Okay, our team is taking care of this for you and will find you
+   resources. While we have you, answering a few quick questions can help us find
+   solutions that fit you best. They're completely optional." → **Answer a Few Questions**
+   ("Optional · Takes about 1 minute").
+3. **Questions** (progress bar, "Question N of M", Back) — branching:
+   - Support type: expert / videos & guides / mix
+   - Insurance (skipped if "videos & guides"): yes / out of pocket / not sure
+   - Provider (only if insurance = yes): BCBS / Aetna / Cigna / UHC / Medicaid / Other
+   - Notes (free text, Submit / Skip)
+4. **Done** — "Your Request" + "Sent to our team" badge + summary rows +
+   "Ask About Something Else".
+5. **Status card** below — "In progress · Usually 12–24 hours", "We're on it, {name}",
+   Featured Experts (4) + Resources for You (3) ranked by detected topic, Chat Genie note.
+
+Note: the request is saved at step 2 (Get Support), not at the end — the questions are
+optional, so a user who leaves after step 2 still has a request the team can act on.
+
+- [ ] Migration: `support_requests` (user, tenant, text, topic, answers jsonb, empathy
+      text, status new/in_progress/matched/closed, flagged, timestamps) + RLS (owner
+      read/insert own; staff admins read/update) + admin list RPC (segment-aware)
+- [ ] Edge function `support-intake`: auth → escalation keywords + OpenAI moderation
+      (reused from chat_ai_rag_fixed) → topic category (reused classifier) → short empathy
+      reply via OpenAI with a strict prompt + length cap, in the user's language → insert
+      request → return {id, topic, empathy}. On a safety hit: deterministic crisis text,
+      no generated reply, request flagged.
+- [ ] `GetSupportCard.tsx` + `SupportStatusCard.tsx` on Dashboard; ranking from real
+      experts/products by topic
+- [ ] Super Admin → **Support Requests** tab (queue, status changes, PHI-logged view)
+- [ ] i18n en/es/vi for all static copy
+- [ ] Staging seed + QA steps
+
+## B. Expert intro video
+
+- [ ] Migration: `profiles.expert_video_enabled boolean default true` (column
+      `expert_video_url` already exists, 20260909000001)
+- [ ] Admin expert form: video URL/upload + "Show intro video" switch
+- [ ] ExpertDetails: "Meet {first name}" / "An introduction to your expert:" player,
+      rendered only when enabled AND a URL exists
+
+## Decisions (user, 2026-10-03)
+- Fulfilment: **admin queue + in-app match.** Team marks a request matched and attaches
+  experts/resources; those replace the "In progress" card on the parent's dashboard.
+  Email/SMS alerts later (SendGrid/Twilio still blocked).
+- Safety: **fixed crisis message + flag.** No generated reply on a safety hit; request
+  marked urgent and sorted first in the admin queue.
+- Placement: **top of the dashboard**, everything else moves below.
+- Video: **upload to R2**, our own player (play button + duration) as in the screenshot.
+- Assumed (SOW 5.x): static copy in en/es/vi; the empathy reply in the user's language.
+
+### Client answers (2026-10-07) — supersede the 2026-10-03 decisions where they differ
+- **No admin matching.** Experts are sourced off-platform. Drop experts/resources pickers,
+  `matched` state, `matched_*_ids`, team note. Admin queue stays read + mark done, plus
+  "show contact (logged)".
+- **Team alert:** email to a team inbox on each new request (address + SendGrid pending).
+- **Parent confirmation on submit:** email now; SMS only for parents who opted in (needs
+  consent screen live + legal copy + Twilio). Text: "Hi [first name]. Whisperoo Team here -
+  we just wanted to let you know, we're working on your request."
+- **Crisis handling:** fixed safety message + urgent flag — confirmed.
+- **AI reply, placement, language, video toggle:** confirmed as proposed.
+- **Status card copy** replaced (client's text): "We've got you 💛 / Your request has been
+  sent to our team. We'll get back to you as soon as we can, typically within 24–48 hours,
+  excluding weekends and holidays. / We'll do our best to respond sooner." Keep
+  auto-ranked Featured Experts / Resources for You below it.
+- Build status: paused; nothing deployed. Staging has the earlier support_requests
+  migration (needs a follow-up migration to drop the matching columns/RPC arguments).

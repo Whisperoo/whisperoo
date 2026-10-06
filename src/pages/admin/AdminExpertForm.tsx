@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { regenerateExpertEmbedding } from '@/services/expertEmbeddings';
 import { CANONICAL_TOPICS, hasCanonicalTopic } from '@/utils/canonicalTopics';
 import AdminExpertTestimonials from './AdminExpertTestimonials';
+import AdminExpertIntroVideo from './AdminExpertIntroVideo';
 
 const COMMON_SPECIALTIES = CANONICAL_TOPICS;
 
@@ -727,6 +728,12 @@ const AdminExpertForm: React.FC<AdminExpertFormProps> = ({ expertId, onClose, on
                 Saves independently of the form's Save button: each testimonial
                 action writes immediately, so an admin can curate without also
                 re-submitting the whole profile. */}
+            {!isNew && (
+              <div className="pt-4 border-t border-gray-100">
+                <AdminExpertIntroVideo expertId={expertId as string} />
+              </div>
+            )}
+
             {!isNew && (
               <div className="pt-4 border-t border-gray-100">
                 <AdminExpertTestimonials expertId={expertId} />

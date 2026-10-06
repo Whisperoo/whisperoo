@@ -291,6 +291,11 @@
       "hormones": "Hormones",
       "sleepTraining": "Sleep Training",
       "sleepConsultant": "Sleep Consultant"
+    },
+    "introVideo": {
+      "title": "Meet {{name}}",
+      "subtitle": "An introduction to your expert:",
+      "play": "Play introduction video"
     }
   },
   "profile": {
@@ -1037,6 +1042,88 @@
       "subtitle": "Of everyone who signed up in this period. Each bar is a share of signups, not of the bar above — stages are not a strict sequence.",
       "title": "What signups go on to do",
       "viewedContent": "Viewed content"
+    }
+  },
+  "support": {
+    "ask": {
+      "title": "What can we help you with?",
+      "subtitle": "Tell us in your own words. Our team will find the right support for you.",
+      "placeholder": "e.g. I'm struggling with milk production",
+      "button": "Get Support"
+    },
+    "suggestions": {
+      "milk": "I'm struggling with milk production",
+      "sleep": "My baby isn't sleeping",
+      "pelvic": "Pelvic floor recovery",
+      "overwhelmed": "I'm feeling overwhelmed"
+    },
+    "intro": {
+      "team": "Okay, our team is taking care of this for you and will find you resources. While we have you, answering a few quick questions can help us find solutions that fit you best. They're completely optional.",
+      "button": "Answer a Few Questions",
+      "optional": "Optional · Takes about 1 minute"
+    },
+    "q": {
+      "counter": "Question {{n}} of {{total}}",
+      "support_type": "While we have you, help us figure out what kind of resources would be a good fit. Do you want to go directly to an expert who can help?",
+      "insurance": "Are you looking to use insurance?",
+      "provider": "Which insurance provider do you have?",
+      "notes": "Anything else I should know?",
+      "notesPlaceholder": "Share anything that might help our team",
+      "submit": "Submit",
+      "skip": "Skip"
+    },
+    "options": {
+      "support_type": {
+        "expert": "Yes, connect me with an expert",
+        "content": "Start with videos & guides",
+        "mix": "A mix of both"
+      },
+      "insurance": {
+        "yes": "Yes, I'd like to use insurance",
+        "self_pay": "No, I'll pay out of pocket",
+        "unsure": "I'm not sure yet"
+      },
+      "provider": {
+        "bcbs": "Blue Cross Blue Shield",
+        "aetna": "Aetna",
+        "cigna": "Cigna",
+        "uhc": "UnitedHealthcare",
+        "medicaid": "Medicaid",
+        "other": "Other"
+      }
+    },
+    "done": {
+      "title": "Your Request",
+      "sent": "Sent to our team",
+      "lookingFor": "Looking for help with",
+      "labels": {
+        "support_type": "Support type",
+        "insurance": "Insurance",
+        "provider": "Provider",
+        "notes": "Notes"
+      },
+      "again": "Ask About Something Else"
+    },
+    "status": {
+      "title": "We've got you",
+      "body": "Your request has been sent to our team. We'll get back to you as soon as we can, typically within 24–48 hours, excluding weekends and holidays.",
+      "sooner": "We'll do our best to respond sooner.",
+      "featuredExperts": "Featured Experts",
+      "resources": "Resources for You",
+      "genie": "We're happy to keep talking with you through our AI Chat Genie anytime. Our team is working in the background to customize recommendations for you.",
+      "kind": {
+        "consultation": "1:1 Call",
+        "video": "Video",
+        "videoSeries": "Video Series",
+        "pdf": "PDF",
+        "course": "Course",
+        "audio": "Audio",
+        "resource": "Resource"
+      }
+    },
+    "errors": {
+      "create": "We could not send your request. Please try again.",
+      "answers": "We could not save your answers. Please try again."
     }
   }
 }

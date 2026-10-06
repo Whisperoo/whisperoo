@@ -288,6 +288,11 @@
       "pelvicFloorCoaching": "Huấn luyện Sàn chậu",
       "nervousSystemRegulation": "Điều hòa Hệ Thần kinh",
       "hormones": "Nội tiết tố"
+    },
+    "introVideo": {
+      "title": "Gặp gỡ {{name}}",
+      "subtitle": "Giới thiệu về chuyên gia của bạn:",
+      "play": "Phát video giới thiệu"
     }
   },
   "profile": {
@@ -1034,6 +1039,88 @@
       "subtitle": "Trong số tất cả người đăng ký trong kỳ này. Mỗi thanh là tỷ lệ trên tổng đăng ký, không phải trên thanh phía trên — các giai đoạn không theo thứ tự nghiêm ngặt.",
       "title": "Người dùng làm gì sau khi đăng ký",
       "viewedContent": "Xem nội dung"
+    }
+  },
+  "support": {
+    "ask": {
+      "title": "Chúng tôi có thể giúp gì cho bạn?",
+      "subtitle": "Hãy kể cho chúng tôi bằng lời của bạn. Đội ngũ của chúng tôi sẽ tìm sự hỗ trợ phù hợp cho bạn.",
+      "placeholder": "ví dụ: Tôi đang gặp khó khăn với việc tiết sữa",
+      "button": "Nhận hỗ trợ"
+    },
+    "suggestions": {
+      "milk": "Tôi đang gặp khó khăn với việc tiết sữa",
+      "sleep": "Em bé của tôi không chịu ngủ",
+      "pelvic": "Phục hồi sàn chậu",
+      "overwhelmed": "Tôi cảm thấy quá tải"
+    },
+    "intro": {
+      "team": "Được rồi, đội ngũ của chúng tôi đang lo việc này cho bạn và sẽ tìm tài nguyên cho bạn. Trong lúc này, trả lời vài câu hỏi nhanh sẽ giúp chúng tôi tìm giải pháp phù hợp nhất với bạn. Hoàn toàn không bắt buộc.",
+      "button": "Trả lời vài câu hỏi",
+      "optional": "Không bắt buộc · Mất khoảng 1 phút"
+    },
+    "q": {
+      "counter": "Câu hỏi {{n}} / {{total}}",
+      "support_type": "Trong lúc này, hãy giúp chúng tôi biết loại tài nguyên nào phù hợp với bạn. Bạn có muốn được kết nối trực tiếp với một chuyên gia không?",
+      "insurance": "Bạn có muốn sử dụng bảo hiểm không?",
+      "provider": "Bạn dùng công ty bảo hiểm nào?",
+      "notes": "Còn điều gì khác tôi nên biết không?",
+      "notesPlaceholder": "Chia sẻ bất cứ điều gì có thể giúp đội ngũ của chúng tôi",
+      "submit": "Gửi",
+      "skip": "Bỏ qua"
+    },
+    "options": {
+      "support_type": {
+        "expert": "Có, kết nối tôi với chuyên gia",
+        "content": "Bắt đầu với video và hướng dẫn",
+        "mix": "Kết hợp cả hai"
+      },
+      "insurance": {
+        "yes": "Có, tôi muốn dùng bảo hiểm",
+        "self_pay": "Không, tôi sẽ tự chi trả",
+        "unsure": "Tôi chưa chắc"
+      },
+      "provider": {
+        "bcbs": "Blue Cross Blue Shield",
+        "aetna": "Aetna",
+        "cigna": "Cigna",
+        "uhc": "UnitedHealthcare",
+        "medicaid": "Medicaid",
+        "other": "Khác"
+      }
+    },
+    "done": {
+      "title": "Yêu cầu của bạn",
+      "sent": "Đã gửi đến đội ngũ",
+      "lookingFor": "Cần hỗ trợ về",
+      "labels": {
+        "support_type": "Loại hỗ trợ",
+        "insurance": "Bảo hiểm",
+        "provider": "Công ty bảo hiểm",
+        "notes": "Ghi chú"
+      },
+      "again": "Hỏi về vấn đề khác"
+    },
+    "status": {
+      "title": "Chúng tôi luôn bên bạn",
+      "body": "Yêu cầu của bạn đã được gửi đến đội ngũ của chúng tôi. Chúng tôi sẽ phản hồi sớm nhất có thể, thường trong vòng 24–48 giờ, không tính cuối tuần và ngày lễ.",
+      "sooner": "Chúng tôi sẽ cố gắng phản hồi sớm hơn.",
+      "featuredExperts": "Chuyên gia nổi bật",
+      "resources": "Tài nguyên dành cho bạn",
+      "genie": "Bạn có thể tiếp tục trò chuyện với chúng tôi qua AI Chat Genie bất cứ lúc nào. Đội ngũ của chúng tôi đang làm việc để cá nhân hóa các đề xuất cho bạn.",
+      "kind": {
+        "consultation": "Cuộc gọi 1:1",
+        "video": "Video",
+        "videoSeries": "Chuỗi video",
+        "pdf": "PDF",
+        "course": "Khóa học",
+        "audio": "Âm thanh",
+        "resource": "Tài nguyên"
+      }
+    },
+    "errors": {
+      "create": "Chúng tôi không thể gửi yêu cầu của bạn. Vui lòng thử lại.",
+      "answers": "Chúng tôi không thể lưu câu trả lời của bạn. Vui lòng thử lại."
     }
   }
 }

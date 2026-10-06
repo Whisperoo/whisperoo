@@ -13,6 +13,7 @@ import { useTenant } from '@/contexts/TenantContext';
 import { useTranslation } from 'react-i18next';
 import { getLocalizedBio } from '@/services/translationService';
 import { useToast } from '@/hooks/use-toast';
+import ExpertIntroVideo from '@/components/expert/ExpertIntroVideo';
 
 interface ExpertProfile {
   id: string;
@@ -31,6 +32,8 @@ interface ExpertProfile {
   tenant_id?: string | null;
   inquiry_confirmation_message?: string | null;
   inquiry_prebook_message?: string | null;
+  expert_video_url?: string | null;
+  expert_video_enabled?: boolean | null;
 }
 
 const ExpertDetails: React.FC = () => {
@@ -100,7 +103,7 @@ const ExpertDetails: React.FC = () => {
       // Note: expertId is profiles.id where account_type = 'expert'
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_total_reviews, expert_availability_status, expert_verified, tenant_id, inquiry_confirmation_message, inquiry_prebook_message')
+        .select('id, first_name, expert_bio, expert_bio_es, expert_bio_vi, expert_specialties, expert_experience_years, expert_credentials, profile_image_url, expert_consultation_rate, expert_total_reviews, expert_availability_status, expert_verified, tenant_id, inquiry_confirmation_message, inquiry_prebook_message, expert_video_url, expert_video_enabled')
         .eq('id', expertId)
         .eq('account_type', 'expert')
         .eq('expert_verified', true)
@@ -564,6 +567,11 @@ const ExpertDetails: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Intro video — only when the admin has uploaded one AND left it switched on */}
+        {expert.expert_video_url && expert.expert_video_enabled !== false && (
+          <ExpertIntroVideo src={expert.expert_video_url} firstName={expert.first_name} />
+        )}
 
         {/* SOW 3.3: Hospital Partner Direct Contact Section */}
         {isHospitalUser && expert && tenant && config && (

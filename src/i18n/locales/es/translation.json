@@ -288,6 +288,11 @@
       "pelvicFloorCoaching": "Entrenamiento del Suelo Pélvico",
       "nervousSystemRegulation": "Regulación del Sistema Nervioso",
       "hormones": "Hormonas"
+    },
+    "introVideo": {
+      "title": "Conoce a {{name}}",
+      "subtitle": "Una presentación de tu experto:",
+      "play": "Reproducir video de presentación"
     }
   },
   "profile": {
@@ -1034,6 +1039,88 @@
       "subtitle": "De todos los que se registraron en este período. Cada barra es un porcentaje de los registros, no de la barra anterior: las etapas no son una secuencia estricta.",
       "title": "Qué hacen los usuarios tras registrarse",
       "viewedContent": "Vieron contenido"
+    }
+  },
+  "support": {
+    "ask": {
+      "title": "¿En qué podemos ayudarte?",
+      "subtitle": "Cuéntanos con tus propias palabras. Nuestro equipo encontrará el apoyo adecuado para ti.",
+      "placeholder": "p. ej., tengo problemas con la producción de leche",
+      "button": "Obtener apoyo"
+    },
+    "suggestions": {
+      "milk": "Tengo problemas con la producción de leche",
+      "sleep": "Mi bebé no duerme",
+      "pelvic": "Recuperación del suelo pélvico",
+      "overwhelmed": "Me siento abrumada"
+    },
+    "intro": {
+      "team": "Muy bien, nuestro equipo se está encargando de esto y te encontrará recursos. Mientras tanto, responder unas preguntas rápidas nos ayuda a encontrar las soluciones que mejor se adapten a ti. Son completamente opcionales.",
+      "button": "Responder algunas preguntas",
+      "optional": "Opcional · Toma aproximadamente 1 minuto"
+    },
+    "q": {
+      "counter": "Pregunta {{n}} de {{total}}",
+      "support_type": "Mientras tanto, ayúdanos a saber qué tipo de recursos serían adecuados. ¿Quieres ir directamente con un experto que pueda ayudarte?",
+      "insurance": "¿Quieres usar tu seguro médico?",
+      "provider": "¿Qué compañía de seguro médico tienes?",
+      "notes": "¿Hay algo más que deba saber?",
+      "notesPlaceholder": "Comparte cualquier cosa que pueda ayudar a nuestro equipo",
+      "submit": "Enviar",
+      "skip": "Omitir"
+    },
+    "options": {
+      "support_type": {
+        "expert": "Sí, ponme en contacto con un experto",
+        "content": "Empezar con videos y guías",
+        "mix": "Una combinación de ambos"
+      },
+      "insurance": {
+        "yes": "Sí, quiero usar mi seguro",
+        "self_pay": "No, pagaré de mi bolsillo",
+        "unsure": "Todavía no estoy segura"
+      },
+      "provider": {
+        "bcbs": "Blue Cross Blue Shield",
+        "aetna": "Aetna",
+        "cigna": "Cigna",
+        "uhc": "UnitedHealthcare",
+        "medicaid": "Medicaid",
+        "other": "Otro"
+      }
+    },
+    "done": {
+      "title": "Tu solicitud",
+      "sent": "Enviada a nuestro equipo",
+      "lookingFor": "Buscas ayuda con",
+      "labels": {
+        "support_type": "Tipo de apoyo",
+        "insurance": "Seguro",
+        "provider": "Compañía",
+        "notes": "Notas"
+      },
+      "again": "Preguntar sobre otra cosa"
+    },
+    "status": {
+      "title": "Aquí estamos para ti",
+      "body": "Tu solicitud fue enviada a nuestro equipo. Te responderemos lo antes posible, normalmente en un plazo de 24 a 48 horas, sin contar fines de semana ni días festivos.",
+      "sooner": "Haremos lo posible por responder antes.",
+      "featuredExperts": "Expertos destacados",
+      "resources": "Recursos para ti",
+      "genie": "Puedes seguir hablando con nosotros cuando quieras a través de nuestro AI Chat Genie. Nuestro equipo está trabajando en segundo plano para personalizar recomendaciones para ti.",
+      "kind": {
+        "consultation": "Llamada 1:1",
+        "video": "Video",
+        "videoSeries": "Serie de videos",
+        "pdf": "PDF",
+        "course": "Curso",
+        "audio": "Audio",
+        "resource": "Recurso"
+      }
+    },
+    "errors": {
+      "create": "No pudimos enviar tu solicitud. Inténtalo de nuevo.",
+      "answers": "No pudimos guardar tus respuestas. Inténtalo de nuevo."
     }
   }
 }

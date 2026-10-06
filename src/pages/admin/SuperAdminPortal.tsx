@@ -4,10 +4,11 @@ import { LANDING_URL } from '@/config/urls';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
-import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut, CalendarCheck, Shield, Tags, Info } from 'lucide-react';
+import { Activity, CalendarDays, BarChart3, MessageSquare, PackageSearch, Users, Settings2, LogOut, CalendarCheck, Shield, Tags, Info, LifeBuoy } from 'lucide-react';
 import HospitalSelector, { type AdminSegment } from './HospitalSelector';
 import MetricsDash from './MetricsDash';
 import UsersPanel from './UsersPanel';
+import SupportRequestsPanel from './SupportRequestsPanel';
 import AIInteractionsPanel from './AIInteractionsPanel';
 import TenantConfigEditor from './TenantConfigEditor';
 import ContentCurationPanel from './ContentCurationPanel';
@@ -18,9 +19,9 @@ import PhiAccessLogPanel from './PhiAccessLogPanel';
 import ChatTopicCategoriesPanel from './ChatTopicCategoriesPanel';
 
 /** Tabs whose data honours the audience segment. All others show a notice when a segment is active. */
-const SEGMENT_AWARE_TABS: ReadonlySet<string> = new Set(['metrics', 'users']);
+const SEGMENT_AWARE_TABS: ReadonlySet<string> = new Set(['metrics', 'users', 'support']);
 
-type Tab = 'metrics' | 'users' | 'ai' | 'content' | 'experts' | 'bookings' | 'discounts' | 'phi' | 'topics' | 'config';
+type Tab = 'metrics' | 'users' | 'support' | 'ai' | 'content' | 'experts' | 'bookings' | 'discounts' | 'phi' | 'topics' | 'config';
 
 const SuperAdminPortal: React.FC = () => {
   const { user, profile, loading, signOut } = useAuth();
@@ -140,6 +141,7 @@ const SuperAdminPortal: React.FC = () => {
                 {([
                   { id: 'metrics',  icon: BarChart3,      label: t('admin.portal.tabs.metrics')  },
                   { id: 'users',    icon: Users,          label: t('admin.portal.tabs.users', 'Users') },
+                  { id: 'support',  icon: LifeBuoy,       label: t('admin.portal.tabs.support', 'Support Requests') },
                   { id: 'ai',       icon: MessageSquare,  label: t('admin.portal.tabs.aiLogs')  },
                   { id: 'content',  icon: PackageSearch,  label: t('admin.portal.tabs.content')  },
                   { id: 'experts',  icon: Users,          label: t('admin.portal.tabs.experts')  },
@@ -186,6 +188,7 @@ const SuperAdminPortal: React.FC = () => {
 
         {activeTab === 'metrics'  && <MetricsDash tenantId={selectedTenantId} segment={selectedSegment} />}
         {activeTab === 'users'    && <UsersPanel tenantId={selectedTenantId} segment={selectedSegment} />}
+        {activeTab === 'support'  && <SupportRequestsPanel tenantId={selectedTenantId} segment={selectedSegment} />}
         {activeTab === 'ai'       && <AIInteractionsPanel tenantId={selectedTenantId} />}
         {activeTab === 'content'  && <ContentCurationPanel tenantId={selectedTenantId} />}
         {activeTab === 'experts'  && <ExpertCurationPanel tenantId={selectedTenantId} />}
