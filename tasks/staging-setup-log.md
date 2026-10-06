@@ -1673,3 +1673,21 @@ single variables are read with grep.
 - Staging redeployed twice (first run predated the fix): bundle `index-C8tw7eV-.js`,
   `VITE_CONSENT_STEP:"true"`, same reload check 0. Staging now shows the consent step
   via the flag rather than by lacking it.
+
+---
+
+## 2026-10-03 → 10-07 — Get Support intake (branch `feature/get-support-intake`) — STAGING ONLY
+
+- `specialty_categories`: staging had **0** rows (schema-only baseline). Copied prod's 10
+  active rows (prod read via `pg_dump --data-only`, staging insert `ON CONFLICT DO NOTHING`).
+  Topic detection and suggestion ranking depend on them.
+- `20261003000001_support_requests` applied 2026-10-03 (matching model), then **replaced**
+  2026-10-07 after the client dropped in-app matching: old functions + empty table dropped,
+  tracker row removed, rewritten migration applied with its tracker row, one transaction.
+  Never applied to prod, so prod will get only the final version.
+- `20261003000002_expert_video_toggle` applied (`profiles.expert_video_enabled`).
+- Smoke test (rolled back): parent sees own rows only; parent refused queue, status change,
+  and direct UPDATE/INSERT; admin queue urgent-first; invalid status refused; contact reveal
+  writes 1 `phi_access_log` row; status card drops a request once marked done.
+- `support-intake` **not deployed**: CLI deploy returns 401 since 2026-10-03 (worked
+  2026-09-18), though `orgs list` still succeeds. Production untouched.
