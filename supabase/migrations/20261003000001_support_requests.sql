@@ -64,9 +64,12 @@ CREATE POLICY support_requests_select_staff ON public.support_requests
   FOR SELECT TO authenticated
   USING (public.fn_caller_is_staff_admin());
 
-REVOKE ALL ON public.support_requests FROM anon;
-REVOKE INSERT, UPDATE, DELETE ON public.support_requests FROM authenticated;
+-- Explicit, not inherited: prod's default privileges grant ALL to anon/authenticated/
+-- service_role on new tables, staging's do not. Spell out the end state so both match:
+-- parents read (RLS narrows to their own rows), the edge function writes.
+REVOKE ALL ON public.support_requests FROM anon, authenticated;
 GRANT SELECT ON public.support_requests TO authenticated;
+GRANT ALL ON public.support_requests TO service_role;
 
 
 -- -----------------------------------------------------------------------------

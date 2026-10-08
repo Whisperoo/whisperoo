@@ -1703,3 +1703,20 @@ single variables are read with grep.
   consent flag on. Absent: prod ref, pk_live_ key, removed matching RPCs.
 - Awaiting user QA. Messages will log "not configured" until SendGrid/Twilio keys and
   `SUPPORT_TEAM_EMAIL` / `SUPPORT_FROM_EMAIL` are set.
+
+### 2026-10-08 — "We could not send your request": missing service_role grant (staging)
+
+- Cause: the August baseline stripped the 24 `ALTER DEFAULT PRIVILEGES` lines, so tables
+  created on staging since then get no automatic grants. `support_requests` had no
+  `service_role` grant → the edge function's insert was denied. Prod is unaffected (its
+  defaults grant ALL to anon/authenticated/service_role on new tables).
+- Fixed: migration `20261003000001` now states its grants explicitly (REVOKE ALL from
+  anon/authenticated; SELECT to authenticated; ALL to service_role) — correct on both
+  environments. Applied on staging; tracker statements updated to the final file.
+- Restored staging's default privileges for role `postgres` in `public` to match prod
+  (tables, sequences, functions). `supabase_admin` defaults not restorable as `postgres`;
+  irrelevant since our DDL runs as `postgres`.
+- Grant diff prod vs staging for API roles: only remaining differences are the three
+  Sprint 2 tables, where prod has Supabase's broad defaults (RLS still governs access).
+- Separate: staging `OPENAI_API_KEY` rejected by OpenAI (401, revoked/rotated). Prod uses a
+  different key (digest differs) and had no chat fallbacks on 10-05/06.
