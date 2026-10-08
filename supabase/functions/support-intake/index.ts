@@ -46,7 +46,7 @@ const MAX_NOTE = 1000
 const MAX_REQUESTS_PER_DAY = 10
 const MAX_REPLY_CHARS = 360
 
-// Mirrors chat_ai_rag_fixed ESCALATION_KEYWORDS.
+// Starts from chat_ai_rag_fixed ESCALATION_KEYWORDS, plus EMERGENCY_PHRASES below.
 const ESCALATION_KEYWORDS = [
   'suicide', 'bleeding', 'emergency', 'fever over', 'self-harm', 'harm', 'kill',
   'choking', 'seizure', 'not breathing', 'unconscious', 'blue lips', 'high fever',
@@ -54,6 +54,19 @@ const ESCALATION_KEYWORDS = [
   'want to die', 'kill myself', 'end my life', 'hurting myself', 'cutting', 'depression',
   'depressed', 'hopeless', 'worthless', 'abuse', 'domestic violence', 'hitting', 'shaking baby',
   'unsafe', 'neglect', '911', 'call 911', 'ambulance', 'hospital now',
+]
+
+// Added 2026-10-08 after QA: "he stopped breathing for a second" was not caught —
+// the base list only had "not breathing". Breathing, colour, responsiveness and
+// seizure phrasings a parent actually writes. Over-escalation is the intended bias.
+const EMERGENCY_PHRASES = [
+  'stopped breathing', 'stop breathing', 'stops breathing', "isn't breathing", 'is not breathing',
+  "wasn't breathing", 'was not breathing', "can't breathe", 'cant breathe', 'cannot breathe',
+  'trouble breathing', 'struggling to breathe', 'hard to breathe', 'gasping', 'pauses in breathing',
+  'turning blue', 'turned blue', 'blue around', 'went blue', 'went limp', 'gone limp', 'floppy',
+  'unresponsive', "won't wake", 'wont wake', "can't wake", 'cant wake', 'passed out', 'fainted',
+  'convulsing', 'convulsion', 'fitting', 'fell on his head', 'fell on her head', 'dropped the baby',
+  'not moving', 'stopped moving', 'hurt myself', 'hurt my baby', 'hurt the baby', 'end it all',
 ]
 
 const CRISIS_TEXT: Record<string, string> = {
@@ -79,9 +92,20 @@ function lang(code: string | null | undefined): 'en' | 'es' | 'vi' {
 }
 
 function keywordHits(text: string): string[] {
-  const t = text.toLowerCase()
-  return ESCALATION_KEYWORDS.filter((k) => t.includes(k))
+  // Normalise curly apostrophes so "can’t breathe" matches "can't breathe".
+  const t = text.toLowerCase().replace(/[‘’]/g, "'")
+  // Match at the START of a word only: "pharmacy" no longer trips "harm" and "skills"
+  // no longer trips "kill", while "killing" and "self-harm" still match. A trailing
+  // boundary is deliberately NOT required — it would miss "killing", "depressed…".
+  return [...ESCALATION_KEYWORDS, ...EMERGENCY_PHRASES].filter((k) => KEYWORD_RE.get(k)!.test(t))
 }
+
+const KEYWORD_RE = new Map(
+  [...ESCALATION_KEYWORDS, ...EMERGENCY_PHRASES].map((k) => [
+    k,
+    new RegExp(`(^|[^a-z0-9])${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+  ]),
+)
 
 async function moderationFlags(apiKey: string, text: string): Promise<boolean> {
   if (!apiKey) return false
@@ -393,9 +417,13 @@ serve(async (req) => {
 
     const noteReason = answers.notes ? await safetyCheck(openaiKey, answers.notes) : null
     const update: Record<string, unknown> = { answers, updated_at: new Date().toISOString() }
-    if (noteReason && !existing.is_urgent) {
+    if (noteReason) {
       update.is_urgent = true
-      update.urgent_reason = `In notes — ${noteReason}`
+      update.urgent_reason = existing.is_urgent
+        ? `${existing.urgent_reason ?? 'Urgent'}; in notes — ${noteReason}`
+        : `In notes — ${noteReason}`
+      // empathy_reply records what the parent was shown; from here on that is the crisis text.
+      update.empathy_reply = CRISIS_TEXT[language]
     }
 
     const { error: upErr } = await supabase.from('support_requests').update(update).eq('id', id)

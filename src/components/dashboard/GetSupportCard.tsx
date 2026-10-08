@@ -377,9 +377,12 @@ const GetSupportCard: React.FC = () => {
               </span>
             </div>
 
-            {(crisis || (urgent && stage === null && status?.empathy_reply)) && (
+            {/* Any urgent request keeps its crisis resources on screen, whether it was
+                flagged at submit (reply holds the crisis text), by the notes (crisis), or
+                restored from the server (empathy_reply is rewritten to the crisis text). */}
+            {(crisis || urgent) && (
               <div className="mb-2">
-                <CrisisBox text={crisis ?? status?.empathy_reply ?? null} />
+                <CrisisBox text={crisis ?? (stage === null ? status?.empathy_reply ?? null : reply)} />
               </div>
             )}
 
