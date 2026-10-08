@@ -1691,3 +1691,15 @@ single variables are read with grep.
   writes 1 `phi_access_log` row; status card drops a request once marked done.
 - `support-intake` **not deployed**: CLI deploy returns 401 since 2026-10-03 (worked
   2026-09-18), though `orgs list` still succeeds. Production untouched.
+
+### 2026-10-08 — Get Support live on staging
+
+- CLI 401 root cause: `SUPABASE_ACCESS_TOKEN` in `.env` and `.env.staging`, auto-loaded by
+  the CLI over the keyring login (`--debug`: "Using access token from env var"). Deployed
+  with `SUPABASE_ACCESS_TOKEN= supabase functions deploy support-intake ...`.
+- `support-intake` ACTIVE v1 on staging; unauthenticated and anon-only calls → 401.
+- Staging frontend from `feature/get-support-intake`: bundle `index-BQJ8RglO.js`. Present:
+  staging ref, support-intake, the 3 support RPCs, client copy, expert_video_enabled,
+  consent flag on. Absent: prod ref, pk_live_ key, removed matching RPCs.
+- Awaiting user QA. Messages will log "not configured" until SendGrid/Twilio keys and
+  `SUPPORT_TEAM_EMAIL` / `SUPPORT_FROM_EMAIL` are set.
