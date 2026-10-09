@@ -148,16 +148,32 @@ serve(async (req) => {
       "head injury", "poisoning", "anaphylaxis", "allergic reaction", "swallowed", "overdose",
       "want to die", "kill myself", "end my life", "hurting myself", "cutting", "depression", 
       "depressed", "hopeless", "worthless", "abuse", "domestic violence", "hitting", "shaking baby", 
-      "unsafe", "neglect", "911", "call 911", "ambulance", "hospital now"
+      "unsafe", "neglect", "911", "call 911", "ambulance", "hospital now",
+      // Added 2026-10-08 after QA: "he stopped breathing for a second" was not caught —
+      // only "not breathing" was listed. Breathing, colour, responsiveness and seizure
+      // phrasings a parent actually writes. Kept in sync with support-intake.
+      "stopped breathing", "stop breathing", "stops breathing", "isn't breathing", "is not breathing",
+      "wasn't breathing", "was not breathing", "can't breathe", "cant breathe", "cannot breathe",
+      "trouble breathing", "struggling to breathe", "hard to breathe", "gasping", "pauses in breathing",
+      "turning blue", "turned blue", "blue around", "went blue", "went limp", "gone limp", "floppy",
+      "unresponsive", "won't wake", "wont wake", "can't wake", "cant wake", "passed out", "fainted",
+      "convulsing", "convulsion", "fitting", "fell on his head", "fell on her head", "dropped the baby",
+      "not moving", "stopped moving", "hurt myself", "hurt my baby", "hurt the baby", "end it all"
     ];
-    
+
     const MEDICAL_KEYWORDS = [
       "diagnose", "prescription", "medication", "dosage", "symptoms of", 
       "treatment", "medicine", "tylenol", "advil", "ibuprofen", "motrin", "doctor"
     ];
 
     const messageLower = message.toLowerCase();
-    const matchedEscalationKeywords = ESCALATION_KEYWORDS.filter(keyword => messageLower.includes(keyword));
+    // Match at the START of a word: "pharmacy" no longer trips "harm", "skills" no longer
+    // trips "kill", while "killing" and "self-harm" still match. Curly apostrophes are
+    // normalised so "can’t breathe" matches. Over-escalation remains the intended bias.
+    const escalationText = messageLower.replace(/[‘’]/g, "'");
+    const matchedEscalationKeywords = ESCALATION_KEYWORDS.filter(keyword =>
+      new RegExp(`(^|[^a-z0-9])${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(escalationText)
+    );
     const isEscalation = matchedEscalationKeywords.length > 0;
     
     const isMedicalQuestion = !isEscalation && MEDICAL_KEYWORDS.some(keyword => messageLower.includes(keyword));
