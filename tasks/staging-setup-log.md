@@ -1720,3 +1720,17 @@ single variables are read with grep.
   Sprint 2 tables, where prod has Supabase's broad defaults (RLS still governs access).
 - Separate: staging `OPENAI_API_KEY` rejected by OpenAI (401, revoked/rotated). Prod uses a
   different key (digest differs) and had no chat fallbacks on 10-05/06.
+
+### 2026-10-09 — PRODUCTION: chat escalation keyword fix (`chat_ai_rag_fixed` v88 → v89)
+
+User-approved. QA on Get Support showed "he stopped breathing for a second" was not
+escalated; the live chat used the same list, so the gap was in front of real parents.
+- Pre-check: prod's deployed source downloaded — identical to the parent commit, so the
+  deploy shipped only commit `c2785ef` (+41 emergency phrasings, word-start matching,
+  curly-apostrophe normalisation; list identical to support-intake).
+- Verified offline (15/15 cases) and by executing the exact patched lines in Node
+  (crises escalate; "pharmacy", milk question, empty input, regex metacharacters fine).
+- Staging deploy: one transient 500 from Supabase, succeeded on retry. Prod deploy clean.
+- Post-deploy: downloaded prod source == HEAD; unauthenticated call answered by the
+  function's own fallback (module boots). No test messages sent as a user.
+- Rollback: `git show c2785ef^:supabase/functions/chat_ai_rag_fixed/index.ts` and redeploy.
