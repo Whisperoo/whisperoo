@@ -18,7 +18,7 @@
 // secrets are set, so this works before the providers are connected; the outcome of
 // every attempt is written to support_requests.*_at / notify_log:
 //   parent email  BREVO_API_KEY + SUPPORT_FROM_EMAIL
-//   parent SMS    TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_FROM_NUMBER, and ONLY
+//   parent SMS    BREVO_API_KEY + BREVO_SMS_SENDER, and ONLY
 //                 if the parent opted in to SMS and has not opted out (TCPA)
 //   team alert    BREVO_API_KEY + SUPPORT_FROM_EMAIL + SUPPORT_TEAM_EMAIL. Carries no
 //                 request content (HIPAA): only that one exists, urgency, and a portal link
@@ -235,20 +235,48 @@ async function sendEmail(to: string, subject: string, text: string): Promise<str
   return `failed: Brevo HTTP ${res.status}${detail ? ` (${detail})` : ''}`
 }
 
-async function sendSms(to: string, body: string): Promise<string | null> {
-  const sid = Deno.env.get('TWILIO_ACCOUNT_SID')
-  const token = Deno.env.get('TWILIO_AUTH_TOKEN')
-  const from = Deno.env.get('TWILIO_FROM_NUMBER')
-  if (!sid || !token || !from) return 'skipped: Twilio not configured'
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+/**
+ * profiles.phone_number is stored US-formatted with no country code, "(555) 123-4567"
+ * (every row on staging and prod, checked 2026-10-17). Brevo wants digits with the
+ * country code. Anything that isn't a 10-digit US number (or 11 starting with 1) is
+ * rejected rather than guessed at.
+ */
+function toBrevoRecipient(phone: string): string | null {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length === 10) return `1${digits}`
+  if (digits.length === 11 && digits.startsWith('1')) return digits
+  return null
+}
+
+// Brevo transactional SMS (client moved SMS to Brevo, 2026-10-17). Uses the current
+// async endpoint — POST /v3/transactionalSMS/send; the older /transactionalSMS/sms is
+// deprecated. Same `api-key` as email. BREVO_SMS_SENDER is the Sender ID registered in
+// Brevo (for the US this registers the toll-free number); unregistered US sends are
+// suspended by Brevo. No "Reply STOP" in the body: Brevo reclassifies transactional SMS
+// containing a stop code as marketing. STOP/START/HELP replies are handled by Brevo.
+async function sendSms(phone: string, body: string, unicode: boolean): Promise<string | null> {
+  const key = Deno.env.get('BREVO_API_KEY')
+  const sender = Deno.env.get('BREVO_SMS_SENDER')
+  if (!key || !sender) return 'skipped: Brevo SMS not configured'
+  const recipient = toBrevoRecipient(phone)
+  if (!recipient) return 'skipped: phone number is not a valid US number'
+  const res = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
     method: 'POST',
-    headers: {
-      Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({ To: to, From: from, Body: body }),
+    headers: { 'api-key': key, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      sender,
+      recipient,
+      content: body,
+      type: 'transactional',
+      // US carriers expect the brand up front; Brevo prepends it.
+      organisationPrefix: 'Whisperoo',
+      // Spanish/Vietnamese accents are outside GSM-7.
+      unicodeEnabled: unicode,
+    }),
   })
-  return res.ok ? null : `failed: Twilio HTTP ${res.status}`
+  if (res.ok) return null
+  const detail = await res.json().then((b) => b?.code ?? b?.message).catch(() => null)
+  return `failed: Brevo SMS HTTP ${res.status}${detail ? ` (${detail})` : ''}`
 }
 
 /** Sends the parent confirmation and team alert; never throws. Returns the columns to store. */
@@ -285,7 +313,7 @@ async function notify(
   }
 
   if (p?.sms_opt_in === true && !p?.sms_opt_out_at && p?.phone_number) {
-    await attempt('parent-sms', 'parent_texted_at', () => sendSms(p.phone_number, text))
+    await attempt('parent-sms', 'parent_texted_at', () => sendSms(p.phone_number, text, opts.language !== 'en'))
   } else {
     log.push('parent-sms skipped: no SMS consent or no phone')
   }

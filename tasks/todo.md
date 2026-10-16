@@ -1528,3 +1528,15 @@ POST https://api.brevo.com/v3/smtp/email, `api-key` header, 201). Secrets needed
 then prod: `BREVO_API_KEY`, `SUPPORT_FROM_EMAIL` (a sender verified in Brevo on
 whisperoo.app), `SUPPORT_TEAM_EMAIL`. Domain must be authenticated in Brevo (DKIM/DMARC)
 or mail lands in spam.
+
+### 2026-10-17 — SMS: Twilio → Brevo (user decision)
+- `sendSms` now uses Brevo `POST /v3/transactionalSMS/send` (current; `/transactionalSMS/sms`
+  is deprecated), same `BREVO_API_KEY`, sender `BREVO_SMS_SENDER` (registered Sender ID /
+  toll-free number), `type: transactional`, `organisationPrefix: Whisperoo`, unicode for
+  es/vi. Phones normalised from stored "(999) 999-9999" to 1XXXXXXXXXX; invalid skipped.
+- Brevo auto-handles STOP/START/HELP (verified in Brevo help). Do NOT add "Reply STOP" to
+  transactional texts — Brevo reclassifies them as marketing.
+- [ ] TODO: Brevo unsubscribe webhook → set `profiles.sms_opt_out_at`, so our consent record
+      matches Brevo's blocklist (~half day).
+- Secrets now: BREVO_API_KEY, SUPPORT_FROM_EMAIL, SUPPORT_TEAM_EMAIL, BREVO_SMS_SENDER.
+  Twilio is out of scope.
