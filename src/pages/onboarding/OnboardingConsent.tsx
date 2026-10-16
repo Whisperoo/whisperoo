@@ -69,7 +69,7 @@ const OnboardingConsent: React.FC = () => {
 
   const finish = () => navigate('/onboarding/complete');
 
-  // Flag off (production until legal copy + SendGrid/Twilio land): every entry
+  // Flag off (production until legal copy + email/SMS providers land): every entry
   // point still routes here, so forward to completion instead of rendering.
   if (!CONSENT_STEP_ENABLED) return <Navigate to="/onboarding/complete" replace />;
 

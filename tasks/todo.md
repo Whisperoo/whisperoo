@@ -1520,3 +1520,11 @@ optional, so a user who leaves after step 2 still has a request the team can act
   auto-ranked Featured Experts / Resources for You below it.
 - Build status: paused; nothing deployed. Staging has the earlier support_requests
   migration (needs a follow-up migration to drop the matching columns/RPC arguments).
+
+### 2026-10-16 — email provider: SendGrid → Brevo
+Client is locked out of SendGrid (unauthorized; support form needs a login). Switched
+`support-intake` `sendEmail` to Brevo transactional API (verified against Brevo docs:
+POST https://api.brevo.com/v3/smtp/email, `api-key` header, 201). Secrets needed on staging
+then prod: `BREVO_API_KEY`, `SUPPORT_FROM_EMAIL` (a sender verified in Brevo on
+whisperoo.app), `SUPPORT_TEAM_EMAIL`. Domain must be authenticated in Brevo (DKIM/DMARC)
+or mail lands in spam.

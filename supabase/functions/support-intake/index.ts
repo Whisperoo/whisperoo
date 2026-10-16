@@ -17,10 +17,10 @@
 // Messages on create (client wording, 2026-10-07). Each channel runs only when its
 // secrets are set, so this works before the providers are connected; the outcome of
 // every attempt is written to support_requests.*_at / notify_log:
-//   parent email  SENDGRID_API_KEY + SUPPORT_FROM_EMAIL
+//   parent email  BREVO_API_KEY + SUPPORT_FROM_EMAIL
 //   parent SMS    TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_FROM_NUMBER, and ONLY
 //                 if the parent opted in to SMS and has not opted out (TCPA)
-//   team alert    SENDGRID_API_KEY + SUPPORT_FROM_EMAIL + SUPPORT_TEAM_EMAIL. Carries no
+//   team alert    BREVO_API_KEY + SUPPORT_FROM_EMAIL + SUPPORT_TEAM_EMAIL. Carries no
 //                 request content (HIPAA): only that one exists, urgency, and a portal link
 //
 // Kept as one self-contained file on purpose: production function deploys currently go
@@ -212,24 +212,27 @@ const confirmText = (language: 'en' | 'es' | 'vi', name: string) => ({
 const escapeHtml = (v: string) =>
   v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
+// Brevo transactional email (client switched from SendGrid, 2026-10-16 — locked out
+// of their SendGrid account). POST /v3/smtp/email, `api-key` header, 201 on success.
 async function sendEmail(to: string, subject: string, text: string): Promise<string | null> {
-  const key = Deno.env.get('SENDGRID_API_KEY')
+  const key = Deno.env.get('BREVO_API_KEY')
   const from = Deno.env.get('SUPPORT_FROM_EMAIL')
-  if (!key || !from) return 'skipped: SendGrid not configured'
-  const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+  if (!key || !from) return 'skipped: Brevo not configured'
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    headers: { 'api-key': key, 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
-      personalizations: [{ to: [{ email: to }] }],
-      from: { email: from, name: 'Whisperoo' },
+      sender: { email: from, name: 'Whisperoo' },
+      to: [{ email: to }],
       subject,
-      content: [
-        { type: 'text/plain', value: text },
-        { type: 'text/html', value: `<p>${escapeHtml(text).replace(/\n/g, '<br>')}</p>` },
-      ],
+      textContent: text,
+      htmlContent: `<html><body><p>${escapeHtml(text).replace(/\n/g, '<br>')}</p></body></html>`,
     }),
   })
-  return res.ok ? null : `failed: SendGrid HTTP ${res.status}`
+  if (res.ok) return null
+  // Brevo returns { code, message } on errors; the message never contains the key.
+  const detail = await res.json().then((b) => b?.code ?? b?.message).catch(() => null)
+  return `failed: Brevo HTTP ${res.status}${detail ? ` (${detail})` : ''}`
 }
 
 async function sendSms(to: string, body: string): Promise<string | null> {
