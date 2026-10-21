@@ -1536,7 +1536,13 @@ or mail lands in spam.
   es/vi. Phones normalised from stored "(999) 999-9999" to 1XXXXXXXXXX; invalid skipped.
 - Brevo auto-handles STOP/START/HELP (verified in Brevo help). Do NOT add "Reply STOP" to
   transactional texts — Brevo reclassifies them as marketing.
-- [ ] TODO: Brevo unsubscribe webhook → set `profiles.sms_opt_out_at`, so our consent record
-      matches Brevo's blocklist (~half day).
+- [x] Brevo STOP/START sync — done 2026-10-21: `brevo-sms-webhook` (verify_jwt off, shared
+      secret in X-Webhook-Secret) → `fn_service_apply_sms_keyword` (service_role only).
+      STOP: opt_in=false + opt_out_at, original consent kept. START: restores only parents who
+      consented in-app. Append-only `sms_consent_events` (deletes de-link, never block).
+      Staging: SQL rules 8/8, HTTP auth/payload 7/7, e2e STOP flipped a QA profile (restored).
+      **Go-live step:** register the webhook in Brevo (Transactional → Webhooks → SMS, events
+      Unsubscribe + Subscribe, URL …/functions/v1/brevo-sms-webhook, custom header
+      X-Webhook-Secret = BREVO_WEBHOOK_SECRET). Set a NEW secret for prod.
 - Secrets now: BREVO_API_KEY, SUPPORT_FROM_EMAIL, SUPPORT_TEAM_EMAIL, BREVO_SMS_SENDER.
   Twilio is out of scope.

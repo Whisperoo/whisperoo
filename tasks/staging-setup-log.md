@@ -1734,3 +1734,14 @@ escalated; the live chat used the same list, so the gap was in front of real par
 - Post-deploy: downloaded prod source == HEAD; unauthenticated call answered by the
   function's own fallback (module boots). No test messages sent as a user.
 - Rollback: `git show c2785ef^:supabase/functions/chat_ai_rag_fixed/index.ts` and redeploy.
+
+### 2026-10-21 — Brevo SMS STOP/START sync (STAGING)
+- Migration `20261021000001_brevo_sms_consent_sync` applied (+ tracker row): append-only
+  `sms_consent_events`, `fn_service_apply_sms_keyword` (service_role only).
+- `brevo-sms-webhook` deployed (verify_jwt=false per config.toml). `BREVO_WEBHOOK_SECRET`
+  generated (64 hex), stored in `.env.staging`, set as a staging secret; never printed.
+- Tests: SQL 8/8 (STOP, START restore, START-without-consent ignored, non-US ignored,
+  append-only, service-only, account deletion de-links). HTTP 7/7 (401 no/wrong secret,
+  Brevo payload shapes, batched array, Bearer form, 400 bad JSON). End-to-end STOP on a QA
+  profile flipped consent and logged (provider_ref 777); profile restored exactly. The 777
+  log row remains (append-only).

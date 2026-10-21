@@ -336,11 +336,17 @@ backend = "postgres"
 # Edge Function overrides
 #
 # Every function keeps the platform default of verify_jwt = true unless listed
-# here. Only stripe-webhook is exempt: Stripe calls it server-to-server and
+# here. Two are exempt (both server-to-server callbacks). stripe-webhook: Stripe calls it and
 # cannot present a Supabase JWT, so with the default it would be rejected before
 # the handler ran. Its security boundary is the Stripe signature, verified
 # against STRIPE_WEBHOOK_SECRET inside the function. Do not add other functions
 # to this block without the same justification.
 # ---------------------------------------------------------------------------
 [functions.stripe-webhook]
+verify_jwt = false
+
+# Brevo calls this server-to-server when a parent texts STOP/START and cannot present
+# a Supabase JWT. Its security boundary is the shared secret in the X-Webhook-Secret
+# header (BREVO_WEBHOOK_SECRET), compared in constant time; without it → 401.
+[functions.brevo-sms-webhook]
 verify_jwt = false
