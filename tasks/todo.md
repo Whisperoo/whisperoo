@@ -1546,3 +1546,32 @@ or mail lands in spam.
       X-Webhook-Secret = BREVO_WEBHOOK_SECRET). Set a NEW secret for prod.
 - Secrets now: BREVO_API_KEY, SUPPORT_FROM_EMAIL, SUPPORT_TEAM_EMAIL, BREVO_SMS_SENDER.
   Twilio is out of scope.
+
+## Review — Get Support release prep (2026-10-26)
+
+**Status:** client approved staging ("fine to go live after you have everything"). Release
+waits only on Catherine's Brevo details (API key, sender email, SMS sender).
+
+**Ready on our side**
+- `scripts/prod-push/10-get-support-release.sh` — secrets check, backup, 3 migrations gated
+  on prod's pending set + typed PUSH, verification (dry-run on staging: all pass), function
+  deploys with auth probes, frontend + bundle check. Prod read-only precheck: tracker 145,
+  exactly 3 pending, new tables absent.
+- Staging secrets: SUPPORT_TEAM_EMAIL=support@whisperoo.app, APP_URL (staging),
+  BREVO_WEBHOOK_SECRET. Missing: BREVO_API_KEY, SUPPORT_FROM_EMAIL, BREVO_SMS_SENDER.
+- `scripts/prod-push/20-consent-go-live.sql` — swaps placeholder consent copy for legal's
+  wording (new versions, old kept); guard refuses TODO/placeholder/no STOP-HELP. Tested on
+  staging (rolled back). `scripts/fly-deploy.ps1` now passes VITE_CONSENT_STEP (unset = off).
+- database.types.ts regenerated (first since August). App type-check: 0 errors (was 9).
+  Real bug fixed: due-date min/max were functions, so the window was never enforced.
+
+**Go-live order:** Brevo values in `.env.staging` → set on staging → real email/SMS test →
+register Brevo SMS webhook → prod secrets (+ NEW BREVO_WEBHOOK_SECRET) → run release script.
+
+**Open decisions for the client**
+- SMS opt-in exists only in onboarding, so every existing parent can never opt in. Needs a
+  "Text me updates" toggle in Settings (recording consent via fn_record_messaging_consent)
+  if they want SMS for current users. ~half day.
+- Final consent wording (en/es/vi) → then 20-consent-go-live.sql + VITE_CONSENT_STEP=true
+  + frontend redeploy turns SMS on. (Correction to client draft: it is a redeploy.)
+- Bilingual review of our es/vi strings.
