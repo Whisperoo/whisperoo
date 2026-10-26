@@ -82,16 +82,16 @@ const OnboardingConsent: React.FC = () => {
       // a blocked onboarding is not.
       const writes: Promise<unknown>[] = [];
       if (emailOptIn && versions.email) {
-        writes.push(
+        writes.push(Promise.resolve(
           supabase.rpc('fn_record_messaging_consent', { p_channel: 'email', p_opt_in: true, p_version: versions.email.id })
             .then(({ error }) => { if (error) console.warn('Email consent not recorded:', error); }),
-        );
+        ));
       }
       if (smsOptIn && versions.sms) {
-        writes.push(
+        writes.push(Promise.resolve(
           supabase.rpc('fn_record_messaging_consent', { p_channel: 'sms', p_opt_in: true, p_version: versions.sms.id })
             .then(({ error }) => { if (error) console.warn('SMS consent not recorded:', error); }),
-        );
+        ));
       }
       await Promise.all(writes);
     } finally {

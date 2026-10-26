@@ -40,7 +40,12 @@ const QrLanding: React.FC = () => {
           .single();
 
         if (lookupErr) throw lookupErr;
-        if (!data?.tenants?.slug) throw new Error('Invalid QR code');
+        // Many-to-one embed: an object at runtime, typed as an array by the generator.
+        const tenant = (Array.isArray(data?.tenants) ? data.tenants[0] : data?.tenants) as
+          | { id: string; slug: string }
+          | null
+          | undefined;
+        if (!tenant?.slug) throw new Error('Invalid QR code');
 
         // Best-effort scan log (fail-soft)
         await supabase.from('qr_events').insert({
@@ -57,12 +62,12 @@ const QrLanding: React.FC = () => {
         if (cancelled) return;
 
         const params = new URLSearchParams();
-        params.set('tenant', data.tenants.slug);
+        params.set('tenant', tenant.slug);
         if (data.source) params.set('source', data.source);
         if (data.department) params.set('dept', data.department);
         params.set('qr', data.token);
 
-        const destination = isComingSoonTenant(data.tenants.slug)
+        const destination = isComingSoonTenant(tenant.slug)
           ? `/coming-soon?${params.toString()}`
           : `/auth/create?${params.toString()}`;
         navigate(destination, { replace: true });

@@ -218,7 +218,7 @@ const MetricsDash: React.FC<MetricsDashProps> = ({ tenantId, segment }) => {
         kpis: {
           ...((result as DashboardData).kpis ?? {}),
           appointment_checklist_engagement_pct: apptErr ? null : (apptPct as number | null) ?? null,
-        },
+        } as DashboardData['kpis'],
         resource_utilization: resourceData || [],
         qr_metrics: qrErr ? undefined : (qrData as any),
       });

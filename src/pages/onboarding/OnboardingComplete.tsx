@@ -25,7 +25,7 @@ const OnboardingComplete: React.FC = () => {
   };
 
   return (
-    <OnboardingLayout step={5} total={5}>
+    <OnboardingLayout>
       <div className="text-center space-y-8">
         <div className="space-y-4">
           <h1 className="text-4xl font-bold text-action-primary">
