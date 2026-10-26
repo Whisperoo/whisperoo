@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -206,6 +206,36 @@ export type Database = {
           status?: string | null
           tester_id?: string | null
           user_query?: string
+        }
+        Relationships: []
+      }
+      consent_versions: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          effective_at: string
+          id: string
+          is_current: boolean
+          locale: string
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string
+          effective_at?: string
+          id: string
+          is_current?: boolean
+          locale?: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          effective_at?: string
+          id?: string
+          is_current?: boolean
+          locale?: string
         }
         Relationships: []
       }
@@ -584,6 +614,66 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "messages"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      expert_testimonials: {
+        Row: {
+          author_context: string | null
+          author_name: string
+          created_at: string
+          display_order: number
+          expert_id: string
+          id: string
+          published: boolean
+          quote: string
+          quote_es: string | null
+          quote_vi: string | null
+          testimonial_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          author_context?: string | null
+          author_name: string
+          created_at?: string
+          display_order?: number
+          expert_id: string
+          id?: string
+          published?: boolean
+          quote: string
+          quote_es?: string | null
+          quote_vi?: string | null
+          testimonial_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          author_context?: string | null
+          author_name?: string
+          created_at?: string
+          display_order?: number
+          expert_id?: string
+          id?: string
+          published?: boolean
+          quote?: string
+          quote_es?: string | null
+          quote_vi?: string | null
+          testimonial_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expert_testimonials_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expert_testimonials_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1130,6 +1220,11 @@ export type Database = {
           acquisition_source: string | null
           created_at: string | null
           custom_role: string | null
+          email_consent_version: string | null
+          email_opt_in: boolean
+          email_opt_in_at: string | null
+          email_opt_in_ip: unknown
+          email_opt_out_at: string | null
           expecting_status:
             | Database["public"]["Enums"]["expecting_status"]
             | null
@@ -1144,6 +1239,10 @@ export type Database = {
           expert_credentials: string[] | null
           expert_education: string[] | null
           expert_experience_years: number | null
+          expert_extended_bio: string | null
+          expert_extended_bio_es: string | null
+          expert_extended_bio_vi: string | null
+          expert_gallery_urls: string[] | null
           expert_languages: string[] | null
           expert_office_location: string | null
           expert_profile_visibility: boolean | null
@@ -1155,9 +1254,13 @@ export type Database = {
           expert_total_reviews: number | null
           expert_verification_documents: Json | null
           expert_verified: boolean | null
+          expert_video_enabled: boolean
+          expert_video_url: string | null
           expert_website_url: string | null
           first_name: string
           has_kids: boolean | null
+          hospital_affiliation: string | null
+          hospital_affiliation_at: string | null
           id: string
           inquiry_confirmation_message: string | null
           inquiry_prebook_message: string | null
@@ -1175,6 +1278,11 @@ export type Database = {
           signup_qr_anon_id: string | null
           signup_qr_at: string | null
           signup_qr_code_id: string | null
+          sms_consent_version: string | null
+          sms_opt_in: boolean
+          sms_opt_in_at: string | null
+          sms_opt_in_ip: unknown
+          sms_opt_out_at: string | null
           tenant_id: string | null
           topics_of_interest: string[]
           updated_at: string | null
@@ -1185,6 +1293,11 @@ export type Database = {
           acquisition_source?: string | null
           created_at?: string | null
           custom_role?: string | null
+          email_consent_version?: string | null
+          email_opt_in?: boolean
+          email_opt_in_at?: string | null
+          email_opt_in_ip?: unknown
+          email_opt_out_at?: string | null
           expecting_status?:
             | Database["public"]["Enums"]["expecting_status"]
             | null
@@ -1199,6 +1312,10 @@ export type Database = {
           expert_credentials?: string[] | null
           expert_education?: string[] | null
           expert_experience_years?: number | null
+          expert_extended_bio?: string | null
+          expert_extended_bio_es?: string | null
+          expert_extended_bio_vi?: string | null
+          expert_gallery_urls?: string[] | null
           expert_languages?: string[] | null
           expert_office_location?: string | null
           expert_profile_visibility?: boolean | null
@@ -1210,9 +1327,13 @@ export type Database = {
           expert_total_reviews?: number | null
           expert_verification_documents?: Json | null
           expert_verified?: boolean | null
+          expert_video_enabled?: boolean
+          expert_video_url?: string | null
           expert_website_url?: string | null
           first_name: string
           has_kids?: boolean | null
+          hospital_affiliation?: string | null
+          hospital_affiliation_at?: string | null
           id: string
           inquiry_confirmation_message?: string | null
           inquiry_prebook_message?: string | null
@@ -1230,6 +1351,11 @@ export type Database = {
           signup_qr_anon_id?: string | null
           signup_qr_at?: string | null
           signup_qr_code_id?: string | null
+          sms_consent_version?: string | null
+          sms_opt_in?: boolean
+          sms_opt_in_at?: string | null
+          sms_opt_in_ip?: unknown
+          sms_opt_out_at?: string | null
           tenant_id?: string | null
           topics_of_interest?: string[]
           updated_at?: string | null
@@ -1240,6 +1366,11 @@ export type Database = {
           acquisition_source?: string | null
           created_at?: string | null
           custom_role?: string | null
+          email_consent_version?: string | null
+          email_opt_in?: boolean
+          email_opt_in_at?: string | null
+          email_opt_in_ip?: unknown
+          email_opt_out_at?: string | null
           expecting_status?:
             | Database["public"]["Enums"]["expecting_status"]
             | null
@@ -1254,6 +1385,10 @@ export type Database = {
           expert_credentials?: string[] | null
           expert_education?: string[] | null
           expert_experience_years?: number | null
+          expert_extended_bio?: string | null
+          expert_extended_bio_es?: string | null
+          expert_extended_bio_vi?: string | null
+          expert_gallery_urls?: string[] | null
           expert_languages?: string[] | null
           expert_office_location?: string | null
           expert_profile_visibility?: boolean | null
@@ -1265,9 +1400,13 @@ export type Database = {
           expert_total_reviews?: number | null
           expert_verification_documents?: Json | null
           expert_verified?: boolean | null
+          expert_video_enabled?: boolean
+          expert_video_url?: string | null
           expert_website_url?: string | null
           first_name?: string
           has_kids?: boolean | null
+          hospital_affiliation?: string | null
+          hospital_affiliation_at?: string | null
           id?: string
           inquiry_confirmation_message?: string | null
           inquiry_prebook_message?: string | null
@@ -1285,16 +1424,35 @@ export type Database = {
           signup_qr_anon_id?: string | null
           signup_qr_at?: string | null
           signup_qr_code_id?: string | null
+          sms_consent_version?: string | null
+          sms_opt_in?: boolean
+          sms_opt_in_at?: string | null
+          sms_opt_in_ip?: unknown
+          sms_opt_out_at?: string | null
           tenant_id?: string | null
           topics_of_interest?: string[]
           updated_at?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "profiles_email_consent_version_fkey"
+            columns: ["email_consent_version"]
+            isOneToOne: false
+            referencedRelation: "consent_versions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "profiles_signup_qr_code_id_fkey"
             columns: ["signup_qr_code_id"]
             isOneToOne: false
             referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_sms_consent_version_fkey"
+            columns: ["sms_consent_version"]
+            isOneToOne: false
+            referencedRelation: "consent_versions"
             referencedColumns: ["id"]
           },
           {
@@ -1533,6 +1691,51 @@ export type Database = {
           },
         ]
       }
+      sms_consent_events: {
+        Row: {
+          event: string
+          id: string
+          phone_last4: string | null
+          provider_ref: string | null
+          received_at: string
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          event: string
+          id?: string
+          phone_last4?: string | null
+          provider_ref?: string | null
+          received_at?: string
+          source?: string
+          user_id?: string | null
+        }
+        Update: {
+          event?: string
+          id?: string
+          phone_last4?: string | null
+          provider_ref?: string | null
+          received_at?: string
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_consent_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_consent_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       specialty_categories: {
         Row: {
           created_at: string
@@ -1572,6 +1775,108 @@ export type Database = {
         }
         Relationships: []
       }
+      support_requests: {
+        Row: {
+          answers: Json
+          created_at: string
+          done_at: string | null
+          empathy_reply: string | null
+          handled_by: string | null
+          id: string
+          is_urgent: boolean
+          language: string
+          notify_log: string | null
+          parent_emailed_at: string | null
+          parent_texted_at: string | null
+          request_text: string
+          status: string
+          team_alerted_at: string | null
+          tenant_id: string | null
+          topic: string | null
+          updated_at: string
+          urgent_reason: string | null
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          done_at?: string | null
+          empathy_reply?: string | null
+          handled_by?: string | null
+          id?: string
+          is_urgent?: boolean
+          language?: string
+          notify_log?: string | null
+          parent_emailed_at?: string | null
+          parent_texted_at?: string | null
+          request_text: string
+          status?: string
+          team_alerted_at?: string | null
+          tenant_id?: string | null
+          topic?: string | null
+          updated_at?: string
+          urgent_reason?: string | null
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          done_at?: string | null
+          empathy_reply?: string | null
+          handled_by?: string | null
+          id?: string
+          is_urgent?: boolean
+          language?: string
+          notify_log?: string | null
+          parent_emailed_at?: string | null
+          parent_texted_at?: string | null
+          request_text?: string
+          status?: string
+          team_alerted_at?: string | null
+          tenant_id?: string | null
+          topic?: string | null
+          updated_at?: string
+          urgent_reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_requests_handled_by_fkey"
+            columns: ["handled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_requests_handled_by_fkey"
+            columns: ["handled_by"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "support_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           config: Json | null
@@ -1598,6 +1903,42 @@ export type Database = {
           slug?: string
         }
         Relationships: []
+      }
+      user_activity_log: {
+        Row: {
+          created_at: string
+          event: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activity_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_user_details"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       waitlist_signups: {
         Row: {
@@ -1860,6 +2201,62 @@ export type Database = {
           created_at: string
           first_name: string
           phone: string
+          user_id: string
+        }[]
+      }
+      fn_admin_list_support_requests: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_segment?: string
+          p_status?: string
+          p_tenant_id?: string
+        }
+        Returns: {
+          answers: Json
+          created_at: string
+          done_at: string
+          empathy_reply: string
+          first_name: string
+          id: string
+          is_urgent: boolean
+          language: string
+          parent_emailed_at: string
+          parent_texted_at: string
+          request_text: string
+          status: string
+          team_alerted_at: string
+          tenant_name: string
+          topic: string
+          total_count: number
+          urgent_reason: string
+          user_id: string
+        }[]
+      }
+      fn_admin_list_users: {
+        Args: {
+          p_end_date?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_segment?: string
+          p_start_date?: string
+          p_tenant_id?: string
+        }
+        Returns: {
+          account_type: string
+          acquisition_department: string
+          acquisition_source: string
+          created_at: string
+          first_name: string
+          hospital_affiliation: string
+          id: string
+          onboarded: boolean
+          preferred_language: string
+          segment: string
+          tenant_id: string
+          tenant_name: string
+          total_count: number
         }[]
       }
       fn_admin_qr_signup_export: {
@@ -1876,28 +2273,79 @@ export type Database = {
           phone: string
           qr_label: string
           tenant_name: string
+          user_id: string
         }[]
       }
       fn_admin_qr_signup_metrics: {
         Args: {
           p_end_date?: string
+          p_segment?: string
           p_start_date?: string
           p_tenant_id?: string
         }
         Returns: Json
+      }
+      fn_admin_set_support_request_status: {
+        Args: { p_id: string; p_status: string }
+        Returns: undefined
+      }
+      fn_admin_support_request_contact: {
+        Args: { p_id: string }
+        Returns: {
+          email: string
+          phone: string
+        }[]
+      }
+      fn_admin_user_activity_summary: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          bookings: number
+          chat_sessions: number
+          checklist_done: number
+          last_active_at: string
+          messages_sent: number
+          purchases: number
+          resources_downloaded: number
+          resources_saved: number
+          resources_viewed: number
+          user_id: string
+        }[]
+      }
+      fn_admin_user_timeline: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          detail: string
+          event_type: string
+          occurred_at: string
+        }[]
       }
       fn_caller_is_staff_admin: { Args: never; Returns: boolean }
       fn_get_admin_dashboard: {
         Args: {
           p_end_date?: string
+          p_segment?: string
           p_start_date?: string
           p_tenant_id?: string
         }
         Returns: Json
       }
+      fn_get_admin_funnel: {
+        Args: {
+          p_end_date?: string
+          p_segment?: string
+          p_start_date?: string
+          p_tenant_id?: string
+        }
+        Returns: {
+          stage: string
+          stage_order: number
+          users: number
+        }[]
+      }
       fn_get_appointment_booking_engagement_pct: {
         Args: {
           p_end_date?: string
+          p_segment?: string
           p_start_date?: string
           p_tenant_id?: string
         }
@@ -1906,6 +2354,7 @@ export type Database = {
       fn_get_resource_utilization: {
         Args: {
           p_end_date?: string
+          p_segment?: string
           p_start_date?: string
           p_tenant_id?: string
         }
@@ -1915,9 +2364,45 @@ export type Database = {
         Args: { p_department?: string; p_tenant_id: string }
         Returns: undefined
       }
+      fn_my_support_status: { Args: never; Returns: Json }
+      fn_profile_in_segment: {
+        Args: {
+          p_profile_tenant_id: string
+          p_segment: string
+          p_tenant_id: string
+        }
+        Returns: boolean
+      }
+      fn_record_activity: { Args: { p_event?: string }; Returns: undefined }
+      fn_record_messaging_consent: {
+        Args: { p_channel: string; p_opt_in: boolean; p_version: string }
+        Returns: undefined
+      }
       fn_save_nurse_referral: {
         Args: { p_nurse_name?: string; p_referral_hint?: string }
         Returns: undefined
+      }
+      fn_service_apply_sms_keyword: {
+        Args: { p_event: string; p_phone: string; p_provider_ref?: string }
+        Returns: number
+      }
+      fn_service_emails_for_users: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
+      fn_set_hospital_affiliation: {
+        Args: { p_value: string }
+        Returns: undefined
+      }
+      fn_support_visible_items: {
+        Args: { p_user_id: string }
+        Returns: {
+          item_id: string
+          kind: string
+        }[]
       }
       fn_update_own_profile: { Args: { updates: Json }; Returns: undefined }
       get_onboarding_progress: { Args: never; Returns: Json }
@@ -2021,12 +2506,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2050,11 +2535,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2075,11 +2560,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2100,11 +2585,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2117,11 +2602,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
