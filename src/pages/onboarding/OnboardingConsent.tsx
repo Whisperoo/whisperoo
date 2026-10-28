@@ -32,6 +32,39 @@ interface ConsentVersion {
   body: string;
 }
 
+/**
+ * Consent copy is stored verbatim (legal's text) and may reference the Terms and
+ * Privacy Policy as markdown-style links: [Terms](https://whisperoo.app/...). Render
+ * those as real links; everything else stays plain text (no HTML from the database).
+ * Only https links on whisperoo.app are honoured — anything else renders as text.
+ * A link inside the <label> doesn't toggle the checkbox: the label's activation
+ * behaviour skips interactive descendants.
+ */
+const CONSENT_LINK = /\[([^\]]+)\]\((https:\/\/(?:www\.)?whisperoo\.app\/[^\s)]*)\)/g;
+
+function renderConsentBody(body: string): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  for (const m of body.matchAll(CONSENT_LINK)) {
+    const at = m.index ?? 0;
+    if (at > last) out.push(body.slice(last, at));
+    out.push(
+      <a
+        key={at}
+        href={m[2]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2 text-indigo-600 hover:text-indigo-700"
+      >
+        {m[1]}
+      </a>,
+    );
+    last = at + m[0].length;
+  }
+  if (last < body.length) out.push(body.slice(last));
+  return out;
+}
+
 const OnboardingConsent: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -132,7 +165,7 @@ const OnboardingConsent: React.FC = () => {
             <span className="text-sm font-semibold text-gray-900">{title}</span>
           </div>
           {v ? (
-            <p className="text-xs text-gray-600 leading-relaxed">{v.body}</p>
+            <p className="text-xs text-gray-600 leading-relaxed">{renderConsentBody(v.body)}</p>
           ) : (
             <p className="text-xs text-gray-400 italic">{t('onboarding.consent.unavailable')}</p>
           )}

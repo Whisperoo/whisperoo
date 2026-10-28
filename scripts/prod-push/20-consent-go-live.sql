@@ -8,8 +8,8 @@
 -- Exactly one current row per (channel, locale) is enforced by a unique index.
 --
 -- HOW TO USE
---   1. Paste the final wording into the six $legal$ … $legal$ blocks below (en/es/vi
---      for email and sms). Use the exact text legal approved, verbatim.
+--   1. The $legal$ … $legal$ blocks hold the exact approved text, verbatim. Links use
+--      [label](https://whisperoo.app/...) — rendered as links by OnboardingConsent.
 --   2. For SMS, the wording must include: sender (Whisperoo), purpose, frequency,
 --      "Msg & data rates may apply", "Reply STOP to opt out, HELP for help".
 --   3. Run: psql ... -v ON_ERROR_STOP=1 -1 -f scripts/prod-push/20-consent-go-live.sql
@@ -20,13 +20,14 @@
 
 CREATE TEMP TABLE new_consent (id text, channel text, locale text, body text) ON COMMIT DROP;
 
+-- Approved by the client 2026-10-28 (English). es/vi to follow — until then the consent
+-- screen falls back to English for Spanish/Vietnamese users (OnboardingConsent picks
+-- the user's locale, else 'en'). Add es/vi rows here as a new version when approved.
 INSERT INTO new_consent VALUES
-  ('email-' || :'version_suffix' || '-en', 'email', 'en', $legal$TODO: final English email consent text$legal$),
-  ('email-' || :'version_suffix' || '-es', 'email', 'es', $legal$TODO: final Spanish email consent text$legal$),
-  ('email-' || :'version_suffix' || '-vi', 'email', 'vi', $legal$TODO: final Vietnamese email consent text$legal$),
-  ('sms-'   || :'version_suffix' || '-en', 'sms',   'en', $legal$TODO: final English SMS consent text$legal$),
-  ('sms-'   || :'version_suffix' || '-es', 'sms',   'es', $legal$TODO: final Spanish SMS consent text$legal$),
-  ('sms-'   || :'version_suffix' || '-vi', 'sms',   'vi', $legal$TODO: final Vietnamese SMS consent text$legal$);
+  ('email-' || :'version_suffix' || '-en', 'email', 'en',
+   $legal$Yes, email me updates about my support requests, plus helpful tips and resources from Whisperoo. You can unsubscribe at any time.$legal$),
+  ('sms-'   || :'version_suffix' || '-en', 'sms',   'en',
+   $legal$Yes, text me updates from Whisperoo about my support requests and account. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out or HELP for help. Consent is not a condition of using Whisperoo. See our [Terms](https://whisperoo.app/terms-and-conditions) and [Privacy Policy](https://whisperoo.app/privacy-policy).$legal$);
 
 DO $$
 BEGIN
