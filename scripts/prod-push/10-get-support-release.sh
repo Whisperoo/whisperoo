@@ -5,8 +5,14 @@
 # already live (chat_ai_rag_fixed v89), so it is not redeployed here.
 #
 # Run AFTER the prod secrets are set (step 0 below checks they exist):
-#   BREVO_API_KEY, SUPPORT_FROM_EMAIL, SUPPORT_TEAM_EMAIL, BREVO_SMS_SENDER,
+#   BREVO_API_KEY, SUPPORT_FROM_EMAIL, SUPPORT_TEAM_EMAIL,
 #   BREVO_WEBHOOK_SECRET (a NEW value, not staging's)
+# BREVO_SMS_SENDER is optional: until Brevo approves the US Sender ID, texts are
+# skipped and logged, email still goes out.
+#
+# The opt-in screen goes live with this release (client needs it public for the SMS
+# Sender ID review): approved consent wording is applied, and .env must have
+# VITE_CONSENT_STEP=true so the production build includes the screen.
 # APP_URL is optional on prod: support-intake defaults to https://app.whisperoo.app.
 #
 # Order matters: migrations → functions → frontend. The frontend calls the new RPCs
@@ -21,10 +27,11 @@ echo "== 0. preconditions =="
 git diff --quiet -- supabase src || { echo "STOP: uncommitted changes under supabase/ or src/"; exit 1; }
 flyctl auth whoami >/dev/null || { echo "STOP: run flyctl auth login"; exit 1; }
 SECRETS="$(SB secrets list --project-ref "$PROD_REF" 2>&1)"
-for s in BREVO_API_KEY SUPPORT_FROM_EMAIL SUPPORT_TEAM_EMAIL BREVO_SMS_SENDER BREVO_WEBHOOK_SECRET OPENAI_API_KEY; do
+for s in BREVO_API_KEY SUPPORT_FROM_EMAIL SUPPORT_TEAM_EMAIL BREVO_WEBHOOK_SECRET OPENAI_API_KEY; do
   echo "$SECRETS" | grep -qE "^\s*$s\s" || { echo "STOP: prod secret $s is not set"; exit 1; }
 done
 echo "secrets present"
+grep -qE '^VITE_CONSENT_STEP=true\s*$' .env || { echo "STOP: set VITE_CONSENT_STEP=true in .env (opt-in screen ships with this release)"; exit 1; }
 
 echo "== 1. backup =="
 mkdir -p "$HOME/whisperoo-backups"
@@ -60,6 +67,13 @@ done
 prod_psql -f scripts/prod-push/10-verify.sql
 echo "Expect: tracker=148, tables=2, video_col=1, rpcs=6, service_role_on_support_requests=true, anon_on_support_requests=false"
 
+echo "== 2b. approved consent wording =="
+if [ "$(prod_psql -c "select count(*) from consent_versions where id = 'sms-2026-11-v1-en'" | tr -d '\r')" = "0" ]; then
+  prod_psql -1 -f scripts/prod-push/20-consent-go-live.sql
+else
+  echo "already applied"
+fi
+
 echo "== 3. functions =="
 for fn in support-intake brevo-sms-webhook; do
   SB functions deploy "$fn" --project-ref "$PROD_REF" 2>&1 | grep -E "Deployed|status [0-9]{3}" \
@@ -73,7 +87,7 @@ echo "== 4. frontend =="
 bash scripts/prod-push/04-frontend.sh
 JS="$(curl -fsSL https://app.whisperoo.app/ | grep -o '/assets/index-[^"]*\.js' | head -1)"
 B="$(mktemp)"; curl -fsSL "https://app.whisperoo.app$JS" -o "$B"
-for p in support-intake fn_my_support_status fn_admin_list_support_requests expert_video_enabled 'VITE_CONSENT_STEP:""'; do
+for p in support-intake fn_my_support_status fn_admin_list_support_requests expert_video_enabled 'VITE_CONSENT_STEP:"true"'; do
   grep -qF "$p" "$B" && echo "PASS  $p" || { echo "FAIL  $p"; FAILED=1; }
 done
 rm -f "$B"
