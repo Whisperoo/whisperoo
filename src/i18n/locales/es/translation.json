@@ -617,7 +617,7 @@
     },
     "consent": {
       "emailTitle": "Novedades por correo",
-      "optional": "Puedes cambiar esto en cualquier momento en Configuración. Ninguna opción es necesaria para usar Whisperoo.",
+      "optional": "Ambas son opcionales y ninguna es necesaria para usar Whisperoo. Puedes dejar de recibir mensajes de texto en cualquier momento respondiendo STOP.",
       "smsTitle": "Mensajes de texto",
       "subtitle": "Elige cómo quieres que te contactemos. Ambas opciones son opcionales.",
       "title": "¿Seguimos en contacto?",

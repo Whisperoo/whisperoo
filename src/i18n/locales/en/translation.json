@@ -560,7 +560,7 @@
     },
     "consent": {
       "emailTitle": "Email updates",
-      "optional": "You can change these any time in Settings. Neither is required to use Whisperoo.",
+      "optional": "Both are optional and neither is required to use Whisperoo. You can stop texts at any time by replying STOP.",
       "smsTitle": "Text messages",
       "subtitle": "Choose how you would like to hear from us. Both are optional.",
       "title": "Stay in touch?",
