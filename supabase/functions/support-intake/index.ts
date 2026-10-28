@@ -212,9 +212,64 @@ const confirmText = (language: 'en' | 'es' | 'vi', name: string) => ({
 const escapeHtml = (v: string) =>
   v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
+// Footer lines for the parent email, in the parent's language. The 911 line follows
+// the project's over-escalation rule for anything a parent might read in a hurry.
+const PARENT_FOOTER: Record<'en' | 'es' | 'vi', string[]> = {
+  en: [
+    'If you have an urgent medical concern, contact your provider or call 911.',
+    'Questions? Email us at support@whisperoo.app.',
+  ],
+  es: [
+    'Si tienes una preocupación médica urgente, comunícate con tu proveedor de salud o llama al 911.',
+    '¿Preguntas? Escríbenos a support@whisperoo.app.',
+  ],
+  vi: [
+    'Nếu bạn có vấn đề y tế khẩn cấp, hãy liên hệ bác sĩ của bạn hoặc gọi 911.',
+    'Có câu hỏi? Gửi email cho chúng tôi tại support@whisperoo.app.',
+  ],
+}
+
+const LOGO_URL = 'https://app.whisperoo.app/lovable-uploads/96238edd-91f3-4ff1-87be-ac5d867fa98a.png'
+const FONT = 'Helvetica, Arial, sans-serif'
+
+/**
+ * Branded HTML matching supabase/templates/* (scripts/email/build-auth-templates.py):
+ * table layout + inline styles, which is what mail clients render reliably.
+ * Every dynamic string is escaped here; callers pass plain text.
+ */
+function brandedHtml(opts: {
+  lang: string
+  heading: string
+  paragraphs: string[]
+  button?: { label: string; url: string }
+  banner?: string
+  footer: string[]
+}): string {
+  const p = opts.paragraphs
+    .map((t) => `<p style="margin:0 0 12px 0;">${escapeHtml(t)}</p>`)
+    .join('')
+  const banner = opts.banner
+    ? `<tr><td style="padding:16px 32px 0 32px;"><div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:12px 14px;font-family:${FONT};font-size:14px;line-height:20px;font-weight:600;color:#991B1B;">${escapeHtml(opts.banner)}</div></td></tr>`
+    : ''
+  const button = opts.button
+    ? `<tr><td style="padding:4px 32px 8px 32px;"><a href="${escapeHtml(opts.button.url)}" style="display:inline-block;background:#2E54A5;color:#ffffff;text-decoration:none;font-family:${FONT};font-size:15px;font-weight:600;line-height:20px;padding:14px 28px;border-radius:10px;">${escapeHtml(opts.button.label)}</a></td></tr>`
+    : ''
+  const footer = opts.footer.map(escapeHtml).join('<br>')
+  return `<!DOCTYPE html><html lang="${escapeHtml(opts.lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>${escapeHtml(opts.heading)}</title></head>
+<body style="margin:0;padding:0;background:#F5F7FB;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F7FB;"><tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #E2E8F0;border-radius:16px;">
+<tr><td style="padding:32px 32px 8px 32px;"><img src="${LOGO_URL}" width="140" height="48" alt="Whisperoo" style="display:block;border:0;outline:none;text-decoration:none;"></td></tr>${banner}
+<tr><td style="padding:16px 32px 4px 32px;font-family:${FONT};"><h1 style="margin:0;font-size:22px;line-height:30px;font-weight:700;color:#1A202C;">${escapeHtml(opts.heading)}</h1></td></tr>
+<tr><td style="padding:8px 32px 8px 32px;font-family:${FONT};font-size:15px;line-height:24px;color:#4A5568;">${p}</td></tr>${button}
+<tr><td style="padding:24px 32px 32px 32px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid #E2E8F0;padding-top:16px;font-family:${FONT};font-size:12px;line-height:18px;color:#718096;">${footer}</td></tr></table></td></tr>
+</table></td></tr></table></body></html>`
+}
+
 // Brevo transactional email (client switched from SendGrid, 2026-10-16 — locked out
 // of their SendGrid account). POST /v3/smtp/email, `api-key` header, 201 on success.
-async function sendEmail(to: string, subject: string, text: string): Promise<string | null> {
+// `html` is the branded body; `text` is the plain-text alternative.
+async function sendEmail(to: string, subject: string, text: string, html: string): Promise<string | null> {
   const key = Deno.env.get('BREVO_API_KEY')
   const from = Deno.env.get('SUPPORT_FROM_EMAIL')
   if (!key || !from) return 'skipped: Brevo not configured'
@@ -226,7 +281,7 @@ async function sendEmail(to: string, subject: string, text: string): Promise<str
       to: [{ email: to }],
       subject,
       textContent: text,
-      htmlContent: `<html><body><p>${escapeHtml(text).replace(/\n/g, '<br>')}</p></body></html>`,
+      htmlContent: html,
     }),
   })
   if (res.ok) return null
@@ -307,7 +362,11 @@ async function notify(
   const text = confirmText(opts.language, name).replace('Hola .', 'Hola.')
 
   if (opts.email) {
-    await attempt('parent-email', 'parent_emailed_at', () => sendEmail(opts.email!, CONFIRM_SUBJECT[opts.language], text))
+    const subject = CONFIRM_SUBJECT[opts.language]
+    const footer = PARENT_FOOTER[opts.language]
+    const html = brandedHtml({ lang: opts.language, heading: subject, paragraphs: [text], footer })
+    await attempt('parent-email', 'parent_emailed_at', () =>
+      sendEmail(opts.email!, subject, `${text}\n\n${footer.join('\n')}`, html))
   } else {
     log.push('parent-email skipped: no email on account')
   }
@@ -322,16 +381,21 @@ async function notify(
   if (team) {
     const portal = `${Deno.env.get('APP_URL') ?? 'https://app.whisperoo.app'}/admin/super`
     const subject = opts.urgent ? 'URGENT: new Get Support request' : 'New Get Support request'
-    const body = [
-      opts.urgent
-        ? 'A parent submitted a request that tripped the safety checks. They were shown crisis resources. Please reach out first.'
-        : 'A parent submitted a new Get Support request.',
-      `From: ${opts.hospital ?? 'Direct signup'}`,
-      `Open the queue: ${portal} (Support Requests tab)`,
-      '',
-      'Request details are in the admin portal only. They are not included in this email.',
-    ].join('\n')
-    await attempt('team-alert', 'team_alerted_at', () => sendEmail(team, subject, body))
+    const lead = opts.urgent
+      ? 'A parent submitted a request that tripped the safety checks. They were shown crisis resources. Please reach out first.'
+      : 'A parent submitted a new Get Support request.'
+    const from = `From: ${opts.hospital ?? 'Direct signup'}`
+    const privacy = 'Request details are in the admin portal only. They are not included in this email.'
+    const body = [lead, from, `Open the queue: ${portal} (Support Requests tab)`, '', privacy].join('\n')
+    const html = brandedHtml({
+      lang: 'en',
+      heading: subject,
+      banner: opts.urgent ? 'Urgent: reach out to this parent first.' : undefined,
+      paragraphs: [lead, from],
+      button: { label: 'Open Support Requests', url: portal },
+      footer: [privacy, 'Sent by Whisperoo to the support team.'],
+    })
+    await attempt('team-alert', 'team_alerted_at', () => sendEmail(team, subject, body, html))
   } else {
     log.push('team-alert skipped: SUPPORT_TEAM_EMAIL not set')
   }
