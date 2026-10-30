@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Get Support release (client sign-off on staging, 2026-10-26).
 #
-# Ships: 3 migrations, 2 edge functions, the frontend. The chat escalation fix is
+# Ships: 4 migrations (incl. the appointment-KPI admin guard, 2026-10-31), 2 edge
+# functions, the frontend. The chat escalation fix is
 # already live (chat_ai_rag_fixed v89), so it is not redeployed here.
 #
 # Run AFTER the prod secrets are set (step 0 below checks they exist):
@@ -19,7 +20,7 @@
 # and support-intake, so it must not go out first. Each step stops on any mismatch.
 source "$(dirname "$0")/_common.sh"
 
-RELEASE_VERSIONS="20261003000001 20261003000002 20261021000001"
+RELEASE_VERSIONS="20261003000001 20261003000002 20261021000001 20261031000001"
 SB() { SUPABASE_ACCESS_TOKEN= "$HOME/scoop/shims/supabase.exe" "$@"; }
 
 echo "== 0. preconditions =="
@@ -44,8 +45,8 @@ echo "== 2. migrations =="
 PENDING="$(pending_versions)"
 printf '%s\n' "$PENDING"
 diff <(printf '%s\n' "$PENDING") <(printf '%s\n' $RELEASE_VERSIONS | sort) >/dev/null \
-  || { echo "STOP: prod pending set is not exactly the 3 release migrations"; exit 1; }
-read -r -p "Apply these 3 migrations to PRODUCTION? Type PUSH: " ans
+  || { echo "STOP: prod pending set is not exactly the 4 release migrations"; exit 1; }
+read -r -p "Apply these 4 migrations to PRODUCTION? Type PUSH: " ans
 [ "$ans" = "PUSH" ] || { echo "aborted"; exit 1; }
 for v in $RELEASE_VERSIONS; do
   FILE="$(ls supabase/migrations/${v}_*.sql)"
@@ -65,7 +66,7 @@ PY
   rm -f "$WRAP"
 done
 prod_psql -f scripts/prod-push/10-verify.sql
-echo "Expect: tracker=148, tables=2, video_col=1, rpcs=6, service_role_on_support_requests=true, anon_on_support_requests=false"
+echo "Expect: tracker=149, tables=2, video_col=1, rpcs=6, service_role_on_support_requests=true, anon_on_support_requests=false, kpi_anon_can_execute=false, kpi_has_admin_guard=true"
 
 echo "== 2b. approved consent wording =="
 if [ "$(prod_psql -c "select count(*) from consent_versions where id = 'sms-2026-11-v1-en'" | tr -d '\r')" = "0" ]; then

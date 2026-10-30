@@ -1575,3 +1575,28 @@ register Brevo SMS webhook → prod secrets (+ NEW BREVO_WEBHOOK_SECRET) → run
 - Final consent wording (en/es/vi) → then 20-consent-go-live.sql + VITE_CONSENT_STEP=true
   + frontend redeploy turns SMS on. (Correction to client draft: it is a redeploy.)
 - Bilingual review of our es/vi strings.
+
+# Pre-release work (2026-10-31) — after contract audit vs QUO-2026-004
+
+Audit result: contract delivered except **email sequences / auto-enrol** (3.x "sequenced
+email", "sequence triggers") — waiting on the client's legal answer re Brevo + HIPAA.
+Figma screen rebuild was explicitly out of scope in the quote.
+
+## Client decisions recorded 2026-10-31
+- **Expert self-edit of profiles — dropped by the client's pivot.** It was requested
+  alongside the Figma profile rebuild (Sept). On 2026-10-03 the client asked for "Get
+  Support" *instead of the profile page*, with only the intro video kept. If they ask
+  for expert self-edit later, point to that pivot: it is new scope.
+- **Staging OpenAI key:** client says staging can run without it. Not fixing.
+- **Stripe live webhook:** ask for it in the go-live follow-up message.
+- **Existing parents + SMS/email opt-in:** prompt them once, on their next login.
+- **es/vi translations:** verify with the Google Translate API key we already hold.
+
+## Plan
+- [x] KPI fix: admin guard on `fn_get_appointment_booking_engagement_pct` (anon could call
+      it on prod — aggregate % only). Migration + staging test; release script expects 4.
+- [ ] Translation check: back-translate our es/vi strings (Get Support, consent, emails)
+      with Google; flag meaning drift. Machine-translate the approved consent wording to
+      es/vi as new consent versions (client authorised).
+- [ ] One-time opt-in prompt for existing parents (next login), reusing the consent UI;
+      recorded so it shows once; new signups marked when they pass the onboarding step.

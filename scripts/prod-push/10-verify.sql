@@ -14,4 +14,8 @@ SELECT 'rpcs', count(*)::text FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pr
 UNION ALL
 SELECT 'service_role_on_support_requests', has_table_privilege('service_role', 'public.support_requests', 'INSERT')::text
 UNION ALL
-SELECT 'anon_on_support_requests', has_table_privilege('anon', 'public.support_requests', 'SELECT')::text;
+SELECT 'anon_on_support_requests', has_table_privilege('anon', 'public.support_requests', 'SELECT')::text
+UNION ALL
+SELECT 'kpi_anon_can_execute', has_function_privilege('anon', 'public.fn_get_appointment_booking_engagement_pct(uuid, date, date, text)', 'EXECUTE')::text
+UNION ALL
+SELECT 'kpi_has_admin_guard', (pg_get_functiondef('public.fn_get_appointment_booking_engagement_pct'::regproc) LIKE '%fn_caller_is_staff_admin%')::text;
