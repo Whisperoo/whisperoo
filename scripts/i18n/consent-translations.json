@@ -1,0 +1,28 @@
+{
+  "email-es": {
+    "text": "Sí, envíame actualizaciones por correo electrónico sobre mis solicitudes de soporte, además de consejos útiles y recursos de Whisperoo. Puedes darte de baja cuando quieras.",
+    "back_translation": "Yes, please send me email updates about my support requests, as well as helpful tips and Whisperoo resources. You can unsubscribe at any time.",
+    "missing_tokens": [
+      "STOP",
+      "HELP"
+    ]
+  },
+  "sms-es": {
+    "text": "Sí, envíame actualizaciones por SMS desde Whisperoo sobre mis solicitudes de soporte y mi cuenta. La frecuencia de los mensajes varía. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja o HELP para obtener ayuda. El consentimiento no es una condición para usar Whisperoo. Consulta nuestros [Términos](https://whisperoo.app/terms-and-conditions) y [Política de Privacidad](https://whisperoo.app/privacy-policy).",
+    "back_translation": "Yes, send me SMS updates from Whisperoo about my support requests and account. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe or HELP for help. Consent is not a condition of using Whisperoo. See our Terms and Privacy Policy.",
+    "missing_tokens": []
+  },
+  "email-vi": {
+    "text": "Vâng, hãy gửi email cho tôi các thông báo cập nhật về yêu cầu hỗ trợ của tôi, cùng với các mẹo và tài nguyên hữu ích từ Whisperoo. Bạn có thể hủy đăng ký bất cứ lúc nào.",
+    "back_translation": "Yes, please email me updates regarding my support request, along with helpful tips and resources from Whisperoo. You can unsubscribe at any time.",
+    "missing_tokens": [
+      "STOP",
+      "HELP"
+    ]
+  },
+  "sms-vi": {
+    "text": "Vâng, hãy gửi cho tôi tin nhắn cập nhật từ Whisperoo về các yêu cầu hỗ trợ và tài khoản của tôi. Tần suất tin nhắn có thể thay đổi. Cước phí tin nhắn và dữ liệu có thể được áp dụng. Trả lời STOP để hủy đăng ký hoặc HELP để được trợ giúp. Việc đồng ý không phải là điều kiện để sử dụng Whisperoo. Xem [Điều khoản](https://whisperoo.app/terms-and-conditions) và [Chính sách Quyền riêng tư](https://whisperoo.app/privacy-policy) của chúng tôi.",
+    "back_translation": "Yes, please send me updates from Whisperoo regarding my support requests and account. Message frequency may vary. Message and data charges may apply. Reply STOP to unsubscribe or HELP for assistance. Consent is not a condition of using Whisperoo. See our Terms and Privacy Policy.",
+    "missing_tokens": []
+  }
+}

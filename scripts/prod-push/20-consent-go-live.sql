@@ -20,14 +20,23 @@
 
 CREATE TEMP TABLE new_consent (id text, channel text, locale text, body text) ON COMMIT DROP;
 
--- Approved by the client 2026-10-28 (English). es/vi to follow — until then the consent
--- screen falls back to English for Spanish/Vietnamese users (OnboardingConsent picks
--- the user's locale, else 'en'). Add es/vi rows here as a new version when approved.
+-- English approved by the client 2026-10-28. es/vi machine-translated with Google on
+-- 2026-10-31 at the client's instruction (pending their bilingual review).
 INSERT INTO new_consent VALUES
   ('email-' || :'version_suffix' || '-en', 'email', 'en',
    $legal$Yes, email me updates about my support requests, plus helpful tips and resources from Whisperoo. You can unsubscribe at any time.$legal$),
   ('sms-'   || :'version_suffix' || '-en', 'sms',   'en',
-   $legal$Yes, text me updates from Whisperoo about my support requests and account. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out or HELP for help. Consent is not a condition of using Whisperoo. See our [Terms](https://whisperoo.app/terms-and-conditions) and [Privacy Policy](https://whisperoo.app/privacy-policy).$legal$);
+   $legal$Yes, text me updates from Whisperoo about my support requests and account. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out or HELP for help. Consent is not a condition of using Whisperoo. See our [Terms](https://whisperoo.app/terms-and-conditions) and [Privacy Policy](https://whisperoo.app/privacy-policy).$legal$),
+  -- es/vi: Google-translated from the approved English (client-authorised 2026-10-31),
+  -- STOP/HELP/Whisperoo/links protected. Back-translations: tasks/translation-check-2026-10-31.md
+  ('email-' || :'version_suffix' || '-es', 'email', 'es',
+   $legal$Sí, envíame actualizaciones por correo electrónico sobre mis solicitudes de soporte, además de consejos útiles y recursos de Whisperoo. Puedes darte de baja cuando quieras.$legal$),
+  ('sms-'   || :'version_suffix' || '-es', 'sms',  'es',
+   $legal$Sí, envíame actualizaciones por SMS desde Whisperoo sobre mis solicitudes de soporte y mi cuenta. La frecuencia de los mensajes varía. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja o HELP para obtener ayuda. El consentimiento no es una condición para usar Whisperoo. Consulta nuestros [Términos](https://whisperoo.app/terms-and-conditions) y [Política de Privacidad](https://whisperoo.app/privacy-policy).$legal$),
+  ('email-' || :'version_suffix' || '-vi', 'email', 'vi',
+   $legal$Vâng, hãy gửi email cho tôi các thông báo cập nhật về yêu cầu hỗ trợ của tôi, cùng với các mẹo và tài nguyên hữu ích từ Whisperoo. Bạn có thể hủy đăng ký bất cứ lúc nào.$legal$),
+  ('sms-'   || :'version_suffix' || '-vi', 'sms',  'vi',
+   $legal$Vâng, hãy gửi cho tôi tin nhắn cập nhật từ Whisperoo về các yêu cầu hỗ trợ và tài khoản của tôi. Tần suất tin nhắn có thể thay đổi. Cước phí tin nhắn và dữ liệu có thể được áp dụng. Trả lời STOP để hủy đăng ký hoặc HELP để được trợ giúp. Việc đồng ý không phải là điều kiện để sử dụng Whisperoo. Xem [Điều khoản](https://whisperoo.app/terms-and-conditions) và [Chính sách Quyền riêng tư](https://whisperoo.app/privacy-policy) của chúng tôi.$legal$);
 
 DO $$
 BEGIN
@@ -38,6 +47,10 @@ BEGIN
     RAISE EXCEPTION 'SMS consent text must mention STOP and HELP';
   END IF;
 END $$;
+
+-- Idempotent: versions already loaded are skipped, so re-running only adds what is new
+-- (e.g. es/vi added after en went live). Rows are never edited once loaded.
+DELETE FROM new_consent n USING public.consent_versions cv WHERE cv.id = n.id;
 
 -- Retire the current rows (placeholders included) for the channel/locales being replaced…
 UPDATE public.consent_versions cv

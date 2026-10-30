@@ -69,11 +69,8 @@ prod_psql -f scripts/prod-push/10-verify.sql
 echo "Expect: tracker=149, tables=2, video_col=1, rpcs=6, service_role_on_support_requests=true, anon_on_support_requests=false, kpi_anon_can_execute=false, kpi_has_admin_guard=true"
 
 echo "== 2b. approved consent wording =="
-if [ "$(prod_psql -c "select count(*) from consent_versions where id = 'sms-2026-11-v1-en'" | tr -d '\r')" = "0" ]; then
-  prod_psql -1 -f scripts/prod-push/20-consent-go-live.sql
-else
-  echo "already applied"
-fi
+# Idempotent: skips versions already present, adds any new ones (en + es/vi).
+prod_psql -1 -f scripts/prod-push/20-consent-go-live.sql
 
 echo "== 3. functions =="
 for fn in support-intake brevo-sms-webhook; do

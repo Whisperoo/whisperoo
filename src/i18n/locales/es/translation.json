@@ -1096,7 +1096,7 @@
       "labels": {
         "support_type": "Tipo de apoyo",
         "insurance": "Seguro",
-        "provider": "Compañía",
+        "provider": "Aseguradora",
         "notes": "Notas"
       },
       "again": "Preguntar sobre otra cosa"

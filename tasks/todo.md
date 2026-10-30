@@ -1595,7 +1595,7 @@ Figma screen rebuild was explicitly out of scope in the quote.
 ## Plan
 - [x] KPI fix: admin guard on `fn_get_appointment_booking_engagement_pct` (anon could call
       it on prod — aggregate % only). Migration + staging test; release script expects 4.
-- [ ] Translation check: back-translate our es/vi strings (Get Support, consent, emails)
+- [x] Translation check: back-translate our es/vi strings (Get Support, consent, emails)
       with Google; flag meaning drift. Machine-translate the approved consent wording to
       es/vi as new consent versions (client authorised).
 - [ ] One-time opt-in prompt for existing parents (next login), reusing the consent UI;
