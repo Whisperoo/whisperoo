@@ -4,7 +4,7 @@ Method: Google back-translation (es/vi → en) compared with our English source.
 Similarity below 0.55 is flagged for a human read. Not a substitute for a
 bilingual review — it finds drift, not tone.
 
-Checked **64 strings × 2 languages**. Flagged: **9**.
+Checked **68 strings × 2 languages**. Flagged: **10**.
 
 ## Flagged
 
@@ -32,10 +32,10 @@ Checked **64 strings × 2 languages**. Flagged: **9**.
   - EN source: Support type
   - vi: Loại hỗ trợ
   - back to EN: Type of support
-- `ui:support.done.labels.provider` (es, 0.43)
+- `ui:support.done.labels.provider` (es, 0.48)
   - EN source: Provider
-  - es: Compañía
-  - back to EN: Company
+  - es: Aseguradora
+  - back to EN: Insurance
 - `ui:support.done.labels.provider` (vi, 0.28)
   - EN source: Provider
   - vi: Công ty bảo hiểm
@@ -44,6 +44,10 @@ Checked **64 strings × 2 languages**. Flagged: **9**.
   - EN source: We're happy to keep talking with you through our AI Chat Genie anytime. Our team is working in the background to customize recommendations for you.
   - es: Puedes seguir hablando con nosotros cuando quieras a través de nuestro AI Chat Genie. Nuestro equipo está trabajando en segundo plano para personalizar recomendaciones para ti.
   - back to EN: You can continue chatting with us anytime through our AI Chat Genie. Our team is working behind the scenes to personalize recommendations for you.
+- `ui:consentPrompt.notNow` (vi, 0.34)
+  - EN source: Not now
+  - vi: Để sau
+  - back to EN: Let's talk about it later.
 
 ## Consent wording (machine-translated, client-authorised)
 
@@ -52,7 +56,7 @@ Checked **64 strings × 2 languages**. Flagged: **9**.
 Sí, envíame actualizaciones por correo electrónico sobre mis solicitudes de soporte, además de consejos útiles y recursos de Whisperoo. Puedes darte de baja cuando quieras.
 
 *Back to English:* Yes, please send me email updates about my support requests, as well as helpful tips and Whisperoo resources. You can unsubscribe at any time.
-*Protected tokens missing:* STOP, HELP
+*Protected tokens missing:* none
 
 ### sms-es
 
@@ -66,7 +70,7 @@ Sí, envíame actualizaciones por SMS desde Whisperoo sobre mis solicitudes de s
 Vâng, hãy gửi email cho tôi các thông báo cập nhật về yêu cầu hỗ trợ của tôi, cùng với các mẹo và tài nguyên hữu ích từ Whisperoo. Bạn có thể hủy đăng ký bất cứ lúc nào.
 
 *Back to English:* Yes, please email me updates regarding my support request, along with helpful tips and resources from Whisperoo. You can unsubscribe at any time.
-*Protected tokens missing:* STOP, HELP
+*Protected tokens missing:* none
 
 ### sms-vi
 
@@ -119,7 +123,7 @@ Vâng, hãy gửi cho tôi tin nhắn cập nhật từ Whisperoo về các yêu
 | `ui:support.done.lookingFor` | 0.83 | 0.56 |
 | `ui:support.done.labels.support_type` | 0.50 | 0.50 |
 | `ui:support.done.labels.insurance` | 0.76 | 1.00 |
-| `ui:support.done.labels.provider` | 0.43 | 0.28 |
+| `ui:support.done.labels.provider` | 0.48 | 0.28 |
 | `ui:support.done.labels.notes` | 0.63 | 0.94 |
 | `ui:support.done.again` | 1.00 | 0.81 |
 | `ui:support.status.title` | 0.77 | 0.65 |
@@ -137,6 +141,10 @@ Vâng, hãy gửi cho tôi tin nhắn cập nhật từ Whisperoo về các yêu
 | `ui:support.status.kind.resource` | 1.00 | 0.96 |
 | `ui:support.errors.create` | 0.87 | 0.87 |
 | `ui:support.errors.answers` | 0.87 | 0.87 |
+| `ui:consentPrompt.title` | 0.73 | 0.67 |
+| `ui:consentPrompt.description` | 0.82 | 0.79 |
+| `ui:consentPrompt.notNow` | 1.00 | 0.34 |
+| `ui:consentPrompt.save` | 0.78 | 0.77 |
 | `email:CRISIS_TEXT` | 0.72 | 0.67 |
 | `email:FALLBACK_EMPATHY` | 0.89 | 0.84 |
 | `email:CONFIRM_SUBJECT` | 0.83 | 0.83 |

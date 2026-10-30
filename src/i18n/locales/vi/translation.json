@@ -1122,5 +1122,11 @@
       "create": "Chúng tôi không thể gửi yêu cầu của bạn. Vui lòng thử lại.",
       "answers": "Chúng tôi không thể lưu câu trả lời của bạn. Vui lòng thử lại."
     }
+  },
+  "consentPrompt": {
+    "title": "Bạn có muốn nhận thông tin cập nhật từ Whisperoo?",
+    "description": "Chọn cách bạn muốn nhận tin từ chúng tôi. Cả hai đều không bắt buộc.",
+    "notNow": "Để sau",
+    "save": "Lưu lựa chọn của tôi"
   }
 }

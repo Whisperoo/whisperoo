@@ -1125,5 +1125,11 @@
       "create": "We could not send your request. Please try again.",
       "answers": "We could not save your answers. Please try again."
     }
+  },
+  "consentPrompt": {
+    "title": "Want updates from Whisperoo?",
+    "description": "Choose how you'd like to hear from us. Both are optional.",
+    "notNow": "Not now",
+    "save": "Save my choices"
   }
 }

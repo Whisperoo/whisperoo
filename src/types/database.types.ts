@@ -1218,6 +1218,7 @@ export type Database = {
           account_type: string | null
           acquisition_department: string | null
           acquisition_source: string | null
+          consent_prompted_at: string | null
           created_at: string | null
           custom_role: string | null
           email_consent_version: string | null
@@ -1291,6 +1292,7 @@ export type Database = {
           account_type?: string | null
           acquisition_department?: string | null
           acquisition_source?: string | null
+          consent_prompted_at?: string | null
           created_at?: string | null
           custom_role?: string | null
           email_consent_version?: string | null
@@ -1364,6 +1366,7 @@ export type Database = {
           account_type?: string | null
           acquisition_department?: string | null
           acquisition_source?: string | null
+          consent_prompted_at?: string | null
           created_at?: string | null
           custom_role?: string | null
           email_consent_version?: string | null
@@ -2364,6 +2367,7 @@ export type Database = {
         Args: { p_department?: string; p_tenant_id: string }
         Returns: undefined
       }
+      fn_mark_consent_prompted: { Args: never; Returns: undefined }
       fn_my_support_status: { Args: never; Returns: Json }
       fn_profile_in_segment: {
         Args: {

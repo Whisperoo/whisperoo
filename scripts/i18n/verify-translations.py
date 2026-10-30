@@ -69,7 +69,7 @@ locales = {
     for code in ("en", "es", "vi")
 }
 # The features built this sprint (Get Support, consent line, intro video).
-SCOPE = ("support.", "experts.introVideo.", "onboarding.consent.optional")
+SCOPE = ("support.", "experts.introVideo.", "onboarding.consent.optional", "consentPrompt.")
 strings: dict[str, dict[str, str]] = {}
 for key, en in locales["en"].items():
     if key.startswith(SCOPE) and key in locales["es"] and key in locales["vi"]:

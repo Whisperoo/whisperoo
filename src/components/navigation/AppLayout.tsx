@@ -8,6 +8,7 @@ import SideNavBar from './SideNavBar';
 import BottomNavBar from './BottomNavBar';
 import Breadcrumbs from './Breadcrumbs';
 import { cn } from '@/lib/utils';
+import ConsentPromptDialog from '@/components/consent/ConsentPromptDialog';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -30,6 +31,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({
 
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50 overflow-hidden">
+      {/* One-time email/SMS opt-in for parents who signed up before the consent step */}
+      <ConsentPromptDialog />
+
       {/* Top Navigation Bar */}
       <TopNavBar />
       

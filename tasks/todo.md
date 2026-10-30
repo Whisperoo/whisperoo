@@ -1598,5 +1598,5 @@ Figma screen rebuild was explicitly out of scope in the quote.
 - [x] Translation check: back-translate our es/vi strings (Get Support, consent, emails)
       with Google; flag meaning drift. Machine-translate the approved consent wording to
       es/vi as new consent versions (client authorised).
-- [ ] One-time opt-in prompt for existing parents (next login), reusing the consent UI;
+- [x] One-time opt-in prompt for existing parents (next login), reusing the consent UI;
       recorded so it shows once; new signups marked when they pass the onboarding step.

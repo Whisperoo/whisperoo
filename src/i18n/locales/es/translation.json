@@ -1122,5 +1122,11 @@
       "create": "No pudimos enviar tu solicitud. Inténtalo de nuevo.",
       "answers": "No pudimos guardar tus respuestas. Inténtalo de nuevo."
     }
+  },
+  "consentPrompt": {
+    "title": "¿Quieres recibir novedades de Whisperoo?",
+    "description": "Elige cómo quieres que te contactemos. Ambas opciones son opcionales.",
+    "notNow": "Ahora no",
+    "save": "Guardar mis preferencias"
   }
 }

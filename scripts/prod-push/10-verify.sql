@@ -18,4 +18,9 @@ SELECT 'anon_on_support_requests', has_table_privilege('anon', 'public.support_r
 UNION ALL
 SELECT 'kpi_anon_can_execute', has_function_privilege('anon', 'public.fn_get_appointment_booking_engagement_pct(uuid, date, date, text)', 'EXECUTE')::text
 UNION ALL
-SELECT 'kpi_has_admin_guard', (pg_get_functiondef('public.fn_get_appointment_booking_engagement_pct'::regproc) LIKE '%fn_caller_is_staff_admin%')::text;
+SELECT 'kpi_has_admin_guard', (pg_get_functiondef('public.fn_get_appointment_booking_engagement_pct'::regproc) LIKE '%fn_caller_is_staff_admin%')::text
+UNION ALL
+SELECT 'consent_prompt_col', count(*)::text FROM information_schema.columns
+ WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'consent_prompted_at'
+UNION ALL
+SELECT 'consent_prompt_fn', count(*)::text FROM pg_proc WHERE proname = 'fn_mark_consent_prompted';
