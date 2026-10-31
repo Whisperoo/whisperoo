@@ -1,9 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, Loader2, RefreshCw, X, Eye, Mail, MessageSquare, Users } from 'lucide-react';
+import { AlertTriangle, Loader2, RefreshCw, X, Eye, Mail, MessageSquare, Users, Inbox, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
 import type { AdminSegment } from './HospitalSelector';
+import StatusPill from '@/components/admin/StatusPill';
+import type { StatusTone } from '@/lib/statusTones';
+import { relativeTime, exactTime } from '@/lib/relativeTime';
+import { useInvalidateSupportCounts } from '@/hooks/useAdminSupportCounts';
 
 /**
  * Support Requests — the team's queue for the parent-side "Get Support" card.
@@ -52,10 +56,12 @@ interface Props {
 
 const PAGE_SIZE = 50;
 
-const STATUS_STYLE: Record<Status, string> = {
-  new: 'bg-blue-50 text-blue-700',
-  in_progress: 'bg-amber-50 text-amber-700',
-  done: 'bg-green-50 text-green-700',
+// Portal-wide palette (lib/statusTones): new = needs action, in progress = being
+// worked on, done = finished. Urgent is shown separately in red.
+const STATUS_TONE: Record<Status, StatusTone> = {
+  new: 'new',
+  in_progress: 'active',
+  done: 'done',
 };
 
 const ANSWER_LABEL: Record<string, string> = {
@@ -73,6 +79,12 @@ const SupportRequestsPanel: React.FC<Props> = ({ tenantId, segment }) => {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<RequestRow | null>(null);
+  // Bulk selection (ids on the current page). Cleared whenever the list reloads.
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<Status | null>(null);
+  const invalidateCounts = useInvalidateSupportCounts();
+  const { i18n } = useTranslation();
+  const locale = i18n.language;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,6 +105,7 @@ const SupportRequestsPanel: React.FC<Props> = ({ tenantId, segment }) => {
       setRows(list);
       setTotal(list[0]?.total_count ?? 0);
     }
+    setChecked(new Set());
     setLoading(false);
   }, [filter, tenantId, segment, page, t]);
 
@@ -104,6 +117,39 @@ const SupportRequestsPanel: React.FC<Props> = ({ tenantId, segment }) => {
     ['done', t('admin.support.filter.done', 'Done')],
     ['all', t('admin.support.filter.all', 'All')],
   ];
+
+  const toggle = (id: string) =>
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  const allChecked = rows.length > 0 && rows.every((r) => checked.has(r.id));
+  const toggleAll = () => setChecked(allChecked ? new Set() : new Set(rows.map((r) => r.id)));
+
+  const bulkSet = async (status: Status) => {
+    if (checked.size === 0) return;
+    setBulkBusy(status);
+    const { data, error } = await supabase.rpc('fn_admin_set_support_request_status_bulk', {
+      p_ids: Array.from(checked),
+      p_status: status,
+    });
+    setBulkBusy(null);
+    if (error) {
+      console.error('Bulk status update failed:', error);
+      toast.error(error.message);
+      return;
+    }
+    toast.success(t('admin.support.bulkDone', '{{count}} request(s) updated.', { count: Number(data ?? 0) }));
+    invalidateCounts();
+    load();
+  };
+
+  const emptyText: Record<Filter, string> = {
+    open: t('admin.support.emptyOpen', "All caught up — no open requests. New ones from the Get Support card will appear here, urgent first."),
+    done: t('admin.support.emptyDone', 'Nothing marked done yet. Requests you finish will move here.'),
+    all: t('admin.support.emptyAll', 'No support requests yet. When a parent uses Get Support, their request will appear here.'),
+  };
 
   const statusLabel = (s: Status) =>
     ({ new: t('admin.support.status.new', 'New'), in_progress: t('admin.support.status.inProgress', 'In progress'), done: t('admin.support.status.done', 'Done') })[s];
@@ -136,29 +182,74 @@ const SupportRequestsPanel: React.FC<Props> = ({ tenantId, segment }) => {
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex items-center gap-2 px-6 py-10 text-sm text-gray-400">
-            <Loader2 className="w-4 h-4 animate-spin" /> {t('admin.users.loading', 'Loading…')}
+        {checked.size > 0 && (
+          <div className="flex flex-wrap items-center gap-2 px-6 py-3 bg-blue-50/60 border-b border-blue-100 text-sm">
+            <span className="font-semibold text-gray-900">
+              {t('admin.support.selected', '{{count}} selected', { count: checked.size })}
+            </span>
+            <span className="flex-1" />
+            <button onClick={() => bulkSet('in_progress')} disabled={bulkBusy !== null}
+              className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-50 disabled:opacity-60 inline-flex items-center gap-1.5">
+              {bulkBusy === 'in_progress' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {t('admin.support.markInProgress', 'Mark in progress')}
+            </button>
+            <button onClick={() => bulkSet('done')} disabled={bulkBusy !== null}
+              className="px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold disabled:opacity-60 inline-flex items-center gap-1.5">
+              {bulkBusy === 'done' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {t('admin.support.markDone', 'Mark done')}
+            </button>
+            <button onClick={() => setChecked(new Set())} className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700">
+              {t('common.clear', 'Clear')}
+            </button>
           </div>
+        )}
+
+        {loading ? (
+          <ul className="divide-y divide-gray-100" aria-busy="true" aria-label={t('admin.users.loading', 'Loading…')}>
+            {[0, 1, 2].map((i) => (
+              <li key={i} className="px-6 py-4 flex gap-4 animate-pulse">
+                <div className="w-4 h-4 rounded bg-gray-100 mt-1" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-1/3 rounded bg-gray-100" />
+                  <div className="h-3 w-2/3 rounded bg-gray-100" />
+                </div>
+              </li>
+            ))}
+          </ul>
         ) : rows.length === 0 ? (
-          <p className="px-6 py-10 text-sm text-gray-400 text-center">{t('admin.support.empty', 'No requests here.')}</p>
+          <div className="px-6 py-12 text-center">
+            {filter === 'open'
+              ? <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
+              : <Inbox className="w-8 h-8 text-gray-300 mx-auto mb-3" />}
+            <p className="text-sm text-gray-500 max-w-sm mx-auto">{emptyText[filter]}</p>
+          </div>
         ) : (
           <ul className="divide-y divide-gray-100">
+            <li className="px-6 py-2 flex items-center gap-3 bg-gray-50/60 text-xs text-gray-500">
+              <input type="checkbox" checked={allChecked} onChange={toggleAll}
+                aria-label={t('admin.support.selectAll', 'Select all on this page')}
+                className="h-4 w-4 rounded border-gray-300" />
+              {t('admin.support.selectAll', 'Select all on this page')}
+            </li>
             {rows.map((r) => (
-              <li key={r.id}>
-                <button onClick={() => setSelected(r)} className="w-full text-left px-6 py-4 hover:bg-gray-50">
+              <li key={r.id} className={`flex items-start gap-3 px-6 py-4 hover:bg-gray-50 ${checked.has(r.id) ? 'bg-blue-50/40' : ''}`}>
+                <input type="checkbox" checked={checked.has(r.id)} onChange={() => toggle(r.id)}
+                  aria-label={t('admin.support.selectOne', 'Select request from {{name}}', { name: r.first_name || '—' })}
+                  className="h-4 w-4 rounded border-gray-300 mt-1" />
+                <button onClick={() => setSelected(r)} className="flex-1 min-w-0 text-left">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     {r.is_urgent && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 text-red-700 px-2 py-0.5 text-[11px] font-bold">
+                      <StatusPill tone="urgent">
                         <AlertTriangle className="w-3 h-3" /> {t('admin.support.urgent', 'Urgent')}
-                      </span>
+                      </StatusPill>
                     )}
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[r.status]}`}>
-                      {statusLabel(r.status)}
-                    </span>
+                    <StatusPill tone={STATUS_TONE[r.status]}>{statusLabel(r.status)}</StatusPill>
                     <span className="text-sm font-semibold text-gray-900">{r.first_name || '—'}</span>
                     <span className="text-xs text-gray-400">
-                      {r.tenant_name || t('admin.hospital.scope.directLabel', 'Direct')} · {r.topic || '—'} · {new Date(r.created_at).toLocaleString()}
+                      {r.tenant_name || t('admin.hospital.scope.directLabel', 'Direct')} · {r.topic || '—'} ·{' '}
+                      <time dateTime={r.created_at} title={exactTime(r.created_at, locale)}>
+                        {relativeTime(r.created_at, locale)}
+                      </time>
                     </span>
                   </div>
                   <p className="text-sm text-gray-700 line-clamp-2">{r.request_text}</p>
@@ -184,7 +275,7 @@ const SupportRequestsPanel: React.FC<Props> = ({ tenantId, segment }) => {
           request={selected}
           statusLabel={statusLabel}
           onClose={() => setSelected(null)}
-          onSaved={() => { setSelected(null); load(); }}
+          onSaved={() => { setSelected(null); invalidateCounts(); load(); }}
         />
       )}
     </div>
@@ -199,7 +290,7 @@ interface DrawerProps {
 }
 
 const RequestDrawer: React.FC<DrawerProps> = ({ request, statusLabel, onClose, onSaved }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [contact, setContact] = useState<{ email: string | null; phone: string | null } | null>(null);
   const [contactLoading, setContactLoading] = useState(false);
   const [saving, setSaving] = useState<Status | null>(null);
@@ -231,7 +322,7 @@ const RequestDrawer: React.FC<DrawerProps> = ({ request, statusLabel, onClose, o
   };
 
   const sent = (at: string | null) =>
-    at ? `${t('admin.support.sent', 'sent')} ${new Date(at).toLocaleString()}` : t('admin.support.notSent', 'not sent');
+    at ? `${t('admin.support.sent', 'sent')} ${relativeTime(at, i18n.language)} (${exactTime(at, i18n.language)})` : t('admin.support.notSent', 'not sent');
 
   const actions: Array<[Status, string]> = [
     ['in_progress', t('admin.support.markInProgress', 'Mark in progress')],
@@ -247,7 +338,11 @@ const RequestDrawer: React.FC<DrawerProps> = ({ request, statusLabel, onClose, o
           <div>
             <h3 className="text-lg font-semibold text-gray-900">{request.first_name || '—'}</h3>
             <p className="text-xs text-gray-500">
-              {statusLabel(request.status)} · {request.tenant_name || t('admin.hospital.scope.directLabel', 'Direct')} · {request.topic || '—'} · {request.language.toUpperCase()} · {new Date(request.created_at).toLocaleString()}
+              <StatusPill tone={STATUS_TONE[request.status]} className="mr-1.5">{statusLabel(request.status)}</StatusPill>
+              {request.tenant_name || t('admin.hospital.scope.directLabel', 'Direct')} · {request.topic || '—'} · {request.language.toUpperCase()} ·{' '}
+              <time dateTime={request.created_at} title={exactTime(request.created_at, i18n.language)}>
+                {relativeTime(request.created_at, i18n.language)}
+              </time>
             </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close"><X className="w-5 h-5" /></button>

@@ -17,6 +17,7 @@ import DiscountCodesPanel from './DiscountCodesPanel';
 import ConsultationBookingsPanel from './ConsultationBookingsPanel';
 import PhiAccessLogPanel from './PhiAccessLogPanel';
 import ChatTopicCategoriesPanel from './ChatTopicCategoriesPanel';
+import { useAdminSupportCounts } from '@/hooks/useAdminSupportCounts';
 
 /** Tabs whose data honours the audience segment. All others show a notice when a segment is active. */
 const SEGMENT_AWARE_TABS: ReadonlySet<string> = new Set(['metrics', 'users', 'support']);
@@ -36,6 +37,8 @@ const SuperAdminPortal: React.FC = () => {
   // Audience segment, chosen from the same control as the hospital. Only the
   // Metrics tab understands it today -- see the notice below.
   const [selectedSegment, setSelectedSegment] = useState<AdminSegment>('all');
+  // Support Requests tab badge: red dot = urgent open, number = new. Polls once authorized.
+  const { data: supportCounts } = useAdminSupportCounts(authorized);
 
   // Auth guard — wait for profile to load before making the authorization decision.
   // Checking before profile loads would redirect super_admins to /dashboard.
@@ -162,6 +165,7 @@ const SuperAdminPortal: React.FC = () => {
                   >
                     <Icon className="w-4 h-4" />
                     {label}
+                    {id === 'support' && <SupportTabBadge counts={supportCounts} />}
                   </button>
                 ))}
               </div>
@@ -199,6 +203,33 @@ const SuperAdminPortal: React.FC = () => {
         {activeTab === 'config'   && <TenantConfigEditor tenantId={selectedTenantId} />}
       </main>
     </div>
+  );
+};
+
+/**
+ * Attention marker on the Support Requests tab. Red dot when any open request is
+ * urgent; a count of new (not yet picked up) requests. Nothing when all clear.
+ */
+const SupportTabBadge: React.FC<{ counts?: { newCount: number; urgentOpenCount: number } }> = ({ counts }) => {
+  if (!counts || (counts.newCount === 0 && counts.urgentOpenCount === 0)) return null;
+  const label = [
+    counts.urgentOpenCount > 0 ? `${counts.urgentOpenCount} urgent` : null,
+    counts.newCount > 0 ? `${counts.newCount} new` : null,
+  ].filter(Boolean).join(', ');
+  return (
+    <span className="flex items-center gap-1" aria-label={label} title={label}>
+      {counts.urgentOpenCount > 0 && (
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping motion-reduce:animate-none" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+        </span>
+      )}
+      {counts.newCount > 0 && (
+        <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-blue-600 text-white text-[11px] font-bold leading-5 text-center">
+          {counts.newCount > 99 ? '99+' : counts.newCount}
+        </span>
+      )}
+    </span>
   );
 };
 

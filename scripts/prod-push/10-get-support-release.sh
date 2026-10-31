@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Get Support release (client sign-off on staging, 2026-10-26).
 #
-# Ships: 5 migrations (incl. the appointment-KPI admin guard and the one-time opt-in
-# prompt for existing parents, 2026-10-31), 2 edge
+# Ships: 6 migrations (incl. the appointment-KPI admin guard and the one-time opt-in
+# prompt for existing parents, plus Support Requests counts/bulk, 2026-10-31), 2 edge
 # functions, the frontend. The chat escalation fix is
 # already live (chat_ai_rag_fixed v89), so it is not redeployed here.
 #
@@ -21,7 +21,7 @@
 # and support-intake, so it must not go out first. Each step stops on any mismatch.
 source "$(dirname "$0")/_common.sh"
 
-RELEASE_VERSIONS="20261003000001 20261003000002 20261021000001 20261031000001 20261031000002"
+RELEASE_VERSIONS="20261003000001 20261003000002 20261021000001 20261031000001 20261031000002 20261031000003"
 SB() { SUPABASE_ACCESS_TOKEN= "$HOME/scoop/shims/supabase.exe" "$@"; }
 
 echo "== 0. preconditions =="
@@ -46,8 +46,8 @@ echo "== 2. migrations =="
 PENDING="$(pending_versions)"
 printf '%s\n' "$PENDING"
 diff <(printf '%s\n' "$PENDING") <(printf '%s\n' $RELEASE_VERSIONS | sort) >/dev/null \
-  || { echo "STOP: prod pending set is not exactly the 5 release migrations"; exit 1; }
-read -r -p "Apply these 5 migrations to PRODUCTION? Type PUSH: " ans
+  || { echo "STOP: prod pending set is not exactly the 6 release migrations"; exit 1; }
+read -r -p "Apply these 6 migrations to PRODUCTION? Type PUSH: " ans
 [ "$ans" = "PUSH" ] || { echo "aborted"; exit 1; }
 for v in $RELEASE_VERSIONS; do
   FILE="$(ls supabase/migrations/${v}_*.sql)"
@@ -67,7 +67,7 @@ PY
   rm -f "$WRAP"
 done
 prod_psql -f scripts/prod-push/10-verify.sql
-echo "Expect: tracker=150, tables=2, video_col=1, rpcs=6, service_role_on_support_requests=true, anon_on_support_requests=false, kpi_anon_can_execute=false, kpi_has_admin_guard=true, consent_prompt_col=1, consent_prompt_fn=1"
+echo "Expect: tracker=151, tables=2, video_col=1, rpcs=6, service_role_on_support_requests=true, anon_on_support_requests=false, kpi_anon_can_execute=false, kpi_has_admin_guard=true, consent_prompt_col=1, consent_prompt_fn=1, support_admin_rpcs=2"
 
 echo "== 2b. approved consent wording =="
 # Idempotent: skips versions already present, adds any new ones (en + es/vi).

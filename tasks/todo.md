@@ -1600,3 +1600,13 @@ Figma screen rebuild was explicitly out of scope in the quote.
       es/vi as new consent versions (client authorised).
 - [x] One-time opt-in prompt for existing parents (next login), reusing the consent UI;
       recorded so it shows once; new signups marked when they pass the onboarding step.
+
+# Super admin improvements (user-approved 2026-10-31)
+- [x] Notification dot on the Support Requests tab: red dot if any open request is urgent,
+      blue badge = count of status 'new'. Admin-only count RPC; refreshes every 60s and
+      after status changes.
+- [x] Bulk actions: select requests → Mark in progress / Mark done (admin-only bulk RPC).
+- [x] Relative times ("2 hours ago", exact time on hover).
+- [x] Empty + loading states that say what will appear.
+- [x] Consistent status colours: one shared palette (urgent red, new blue, in progress
+      amber, done green, cancelled gray) used by Support Requests and Appointments.

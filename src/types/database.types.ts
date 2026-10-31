@@ -2292,11 +2292,22 @@ export type Database = {
         Args: { p_id: string; p_status: string }
         Returns: undefined
       }
+      fn_admin_set_support_request_status_bulk: {
+        Args: { p_ids: string[]; p_status: string }
+        Returns: number
+      }
       fn_admin_support_request_contact: {
         Args: { p_id: string }
         Returns: {
           email: string
           phone: string
+        }[]
+      }
+      fn_admin_support_request_counts: {
+        Args: never
+        Returns: {
+          new_count: number
+          urgent_open_count: number
         }[]
       }
       fn_admin_user_activity_summary: {

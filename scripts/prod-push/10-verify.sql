@@ -23,4 +23,7 @@ UNION ALL
 SELECT 'consent_prompt_col', count(*)::text FROM information_schema.columns
  WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'consent_prompted_at'
 UNION ALL
-SELECT 'consent_prompt_fn', count(*)::text FROM pg_proc WHERE proname = 'fn_mark_consent_prompted';
+SELECT 'consent_prompt_fn', count(*)::text FROM pg_proc WHERE proname = 'fn_mark_consent_prompted'
+UNION ALL
+SELECT 'support_admin_rpcs', count(*)::text FROM pg_proc
+ WHERE proname IN ('fn_admin_support_request_counts', 'fn_admin_set_support_request_status_bulk');

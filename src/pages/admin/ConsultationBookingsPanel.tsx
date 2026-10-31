@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { TONE_CLASSES } from '@/lib/statusTones';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -232,25 +233,25 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
     switch (status) {
       case 'pending':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${TONE_CLASSES.new}`}>
             <Clock className="w-3 h-3" /> Pending
           </span>
         );
       case 'confirmed':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${TONE_CLASSES.active}`}>
             <CheckCircle2 className="w-3 h-3" /> Confirmed
           </span>
         );
       case 'completed':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${TONE_CLASSES.done}`}>
             <CheckCircle2 className="w-3 h-3" /> Done
           </span>
         );
       case 'cancelled':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${TONE_CLASSES.muted}`}>
             <XCircle className="w-3 h-3" /> Cancelled
           </span>
         );
@@ -273,25 +274,25 @@ const ConsultationBookingsPanel: React.FC<ConsultationBookingsPanelProps> = ({ t
     switch (status) {
       case 'paid':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${TONE_CLASSES.done}`}>
             💳 Paid {amount ? `$${Number(amount).toFixed(2)}` : ''}
           </span>
         );
       case 'free':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${TONE_CLASSES.muted}`}>
             🆓 Free
           </span>
         );
       case 'refunded':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-200">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${TONE_CLASSES.muted}`}>
             ↩️ Refunded
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600 border border-red-200">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${TONE_CLASSES.urgent}`}>
             ⏳ Unpaid
           </span>
         );
