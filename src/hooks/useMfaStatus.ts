@@ -43,13 +43,23 @@ export function useMfaStatus(): { mfaStatus: MfaStatus; recheckMfa: () => void }
     setTick((n) => n + 1);
   }, []);
 
+  // Re-check only when the identity or role actually changes. Supabase emits
+  // SIGNED_IN / TOKEN_REFRESHED when a tab regains focus and on every token refresh,
+  // and AuthContext then stores NEW user/profile objects for the same person.
+  // Keying this effect on those objects reset status to 'loading', which made
+  // ProtectedRoute swap the page for a spinner and unmount it — the super admin
+  // portal lost its tab, drawers and filters every time you came back to it.
+  const userId = user?.id ?? null;
+  const accountType = profile?.account_type ?? null;
+  const hasProfile = !!profile;
+
   useEffect(() => {
-    if (!user || !profile) {
+    if (!userId || !hasProfile) {
       setStatus('loading');
       return;
     }
 
-    const isStaff = (STAFF_ACCOUNT_TYPES as readonly string[]).includes(profile.account_type ?? '');
+    const isStaff = (STAFF_ACCOUNT_TYPES as readonly string[]).includes(accountType ?? '');
     if (!isStaff) {
       setStatus('not_required');
       return;
@@ -58,7 +68,10 @@ export function useMfaStatus(): { mfaStatus: MfaStatus; recheckMfa: () => void }
     let cancelled = false;
 
     (async () => {
-      setStatus('loading');
+      // The first check shows the spinner (initial state is 'loading'). Re-checks
+      // keep the current page mounted and only change status if the answer changes.
+      // A failed check still sets 'mfa_check_failed' — the gate stays fail-closed.
+      setStatus((prev) => (prev === 'not_required' ? 'loading' : prev));
       try {
         const [factorsRes, aalRes] = await Promise.all([
           supabase.auth.mfa.listFactors(),
@@ -89,7 +102,7 @@ export function useMfaStatus(): { mfaStatus: MfaStatus; recheckMfa: () => void }
     return () => {
       cancelled = true;
     };
-  }, [user, profile, tick]);
+  }, [userId, accountType, hasProfile, tick]);
 
   return { mfaStatus: status, recheckMfa };
 }
