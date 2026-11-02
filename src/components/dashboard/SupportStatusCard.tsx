@@ -6,8 +6,10 @@ import { useMySupportStatus } from '@/hooks/useSupportRequest';
 import type { SupportExpert, SupportProduct } from '@/services/support';
 
 /**
- * Shown under the Get Support card while a request is open (new / in progress).
- * Disappears when the team marks the request done in the admin portal.
+ * The "We've got you" part of the Get Support card, rendered INSIDE it, right under
+ * the request summary, so submitting and the reassurance read as one flow (client,
+ * 2026-11-03: "connect the two"). Shown while a request is open (new / in progress);
+ * gone when the team marks it done in the admin portal.
  *
  * Copy is the client's (2026-10-07). The team sources help off-platform, so the
  * experts/resources below are suggestions ranked by the request's topic — something
@@ -36,8 +38,8 @@ const SupportStatusCard: React.FC = () => {
   if (!status) return null;
 
   return (
-    <section className="rounded-xl border border-indigo-100 bg-indigo-50/60 shadow-card py-4 sm:py-5 animate-in fade-in duration-300">
-      <div className="px-4 sm:px-5 flex flex-col gap-2">
+    <div className="animate-in fade-in duration-300">
+      <div className="rounded-lg bg-indigo-50/60 border border-indigo-100 p-4 flex flex-col gap-2">
         <h3 className="flex items-center gap-2 text-lg font-bold leading-snug text-gray-900">
           {t('support.status.title', "We've got you")}
           <Heart className="w-5 h-5 fill-amber-400 text-amber-400" aria-hidden />
@@ -55,11 +57,10 @@ const SupportStatusCard: React.FC = () => {
 
       {status.experts.length > 0 && (
         <>
-          <div className="h-px bg-indigo-100 mx-4 sm:mx-5 my-4" />
-          <h4 className="px-4 sm:px-5 pb-2.5 text-sm font-bold text-gray-900">
+          <h4 className="pt-5 pb-2.5 text-sm font-bold text-gray-900">
             {t('support.status.featuredExperts', 'Featured Experts')}
           </h4>
-          <div className="flex gap-2.5 overflow-x-auto px-4 sm:px-5 pb-1.5 [scrollbar-width:none]">
+          <div className="flex gap-2.5 overflow-x-auto pb-1.5 [scrollbar-width:none]">
             {status.experts.map((e) => (
               <ExpertChip key={e.id} expert={e} onOpen={() => navigate(`/experts/${e.id}`)} />
             ))}
@@ -69,10 +70,10 @@ const SupportStatusCard: React.FC = () => {
 
       {status.products.length > 0 && (
         <>
-          <h4 className="px-4 sm:px-5 pt-3 pb-2 text-sm font-bold text-gray-900">
+          <h4 className="pt-3 pb-2 text-sm font-bold text-gray-900">
             {t('support.status.resources', 'Resources for You')}
           </h4>
-          <div className="px-4 sm:px-5 flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             {status.products.map((p) => (
               <button
                 key={p.id}
@@ -93,14 +94,13 @@ const SupportStatusCard: React.FC = () => {
         </>
       )}
 
-      <div className="h-px bg-indigo-100 mx-4 sm:mx-5 my-4" />
-      <p className="px-4 sm:px-5 text-[13px] leading-relaxed text-gray-800">
+      <p className="pt-4 text-[13px] leading-relaxed text-gray-600">
         {t(
           'support.status.genie',
           "We're happy to keep talking with you through our AI Chat Genie anytime. Our team is working in the background to customize recommendations for you.",
         )}
       </p>
-    </section>
+    </div>
   );
 };
 

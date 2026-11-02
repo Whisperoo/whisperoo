@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useMySupportStatus, useSupportMutations } from '@/hooks/useSupportRequest';
 import type { SupportAnswers } from '@/services/support';
+import SupportStatusCard from './SupportStatusCard';
 
 /**
  * "Get Support" — the client's intake card (Sprint 2 pivot, 2026-10-03).
@@ -404,10 +405,17 @@ const GetSupportCard: React.FC = () => {
                 />
               ))}
 
+            {/* The reassurance + suggested experts/resources continue the same card. */}
+            {status && (
+              <div className="border-t border-indigo-100 mt-3 pt-4">
+                <SupportStatusCard />
+              </div>
+            )}
+
             <button
               type="button"
               onClick={reset}
-              className="self-start pt-2.5 text-sm font-bold text-gray-800 underline"
+              className="self-start pt-4 text-sm font-bold text-gray-800 underline"
             >
               {t('support.done.again', 'Ask About Something Else')}
             </button>

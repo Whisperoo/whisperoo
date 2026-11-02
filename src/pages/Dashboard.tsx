@@ -11,7 +11,6 @@ import AppointmentReminders from "@/components/dashboard/AppointmentReminders";
 import RecommendedProducts from "@/components/dashboard/RecommendedProducts";
 import RecentBookings from "@/components/dashboard/RecentBookings";
 import GetSupportCard from "@/components/dashboard/GetSupportCard";
-import SupportStatusCard from "@/components/dashboard/SupportStatusCard";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -65,10 +64,9 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
-      {/* Get Support intake + request status (client request 2026-10-03: top of the dashboard) */}
-      <div className="flex flex-col gap-4 mb-6">
+      {/* Get Support: request + "We've got you" status in one card (client, 2026-11-03) */}
+      <div className="mb-6">
         <GetSupportCard />
-        <SupportStatusCard />
       </div>
 
       {/* 24/7 Support Card - Featured (Start Chat Genie) */}
