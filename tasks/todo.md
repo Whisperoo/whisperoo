@@ -1610,3 +1610,34 @@ Figma screen rebuild was explicitly out of scope in the quote.
 - [x] Empty + loading states that say what will appear.
 - [x] Consistent status colours: one shared palette (urgent red, new blue, in progress
       amber, done green, cancelled gray) used by Support Requests and Appointments.
+
+---
+
+# Brevo contact sync — opted-in parents → Brevo list (2026-11-03)
+
+Last open contract item ("sequenced email / auto-enroll"). Client gave the go-ahead on
+the safeguards: contact basics only, opted-in parents only, neutral list name.
+
+What goes to Brevo, per parent: email, FIRSTNAME, LANGUAGE (en/es/vi), and SMS (phone)
+ONLY if they also opted in to texts. Nothing else: no hospital/tenant, department, due
+date, children, support requests. Who: account_type 'user', email_opt_in true, no
+email_opt_out_at. Experts/admins never.
+
+Staging and prod share one Brevo account, so each gets its own list:
+"Whisperoo parents" (prod) and "Whisperoo parents (staging test)".
+
+- [ ] Brevo setup (API): LANGUAGE contact attribute; the two lists in one folder.
+- [ ] Edge function `brevo-contact-sync`:
+      - parent JWT → sync the caller (add/update if opted in, else remove from the list)
+      - service-role bearer + {"mode":"all"} → full reconcile: upsert every opted-in
+        parent, remove list members who no longer qualify (opt-out, deleted account,
+        no longer a parent). Used for the one-time import and re-runnable any time.
+      - removes from OUR list only, never deletes the Brevo contact (the client may
+        have them in other lists). Brevo's own unsubscribe/STOP keep working on top.
+      - no PII in logs (safeLogError pattern).
+- [ ] Frontend: after the consent prompt / onboarding step saves an email opt-in, call
+      the function for the caller (fire-and-forget; never blocks the parent).
+- [ ] Secret BREVO_PARENTS_LIST_ID per project.
+- [ ] Staging test: opt in with a catherine+N account → appears in staging list with
+      the right fields; SMS only when texts opted in; reconcile removes a revoked one.
+- [ ] Prod (with go-ahead): set secret, deploy function + frontend, run reconcile once.

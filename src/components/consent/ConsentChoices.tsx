@@ -129,6 +129,13 @@ export function useConsentForm(): ConsentForm {
     }
     writes.push(markPrompted());
     await Promise.all(writes);
+    // Add the parent to the Brevo list for email sequences. Runs after the consent
+    // write so the function reads the saved opt-in. Never blocks the parent.
+    if (emailOptIn && versions.email) {
+      supabase.functions.invoke('brevo-contact-sync', { body: {} })
+        .then(({ error }) => { if (error) console.warn('Brevo contact sync failed:', error); })
+        .catch((e) => console.warn('Brevo contact sync failed:', e));
+    }
   };
 
   return { versions, loading, emailOptIn, setEmailOptIn, smsOptIn, setSmsOptIn, save, dismiss: markPrompted };
