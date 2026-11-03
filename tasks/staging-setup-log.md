@@ -1745,3 +1745,15 @@ escalated; the live chat used the same list, so the gap was in front of real par
   Brevo payload shapes, batched array, Bearer form, 400 bad JSON). End-to-end STOP on a QA
   profile flipped consent and logged (provider_ref 777); profile restored exactly. The 777
   log row remains (append-only).
+
+### 2026-11-03 — Get Support release (PRODUCTION)
+- Client go-ahead received. Prod secrets set: BREVO_API_KEY, SUPPORT_FROM_EMAIL, SUPPORT_TEAM_EMAIL,
+  new BREVO_WEBHOOK_SECRET (prod-only, never printed; temp file deleted).
+- `10-get-support-release.sh`: backup `prod-public-20261103-172601-pre-get-support.sql`; 6 migrations
+  applied (tracker=151, all verify checks pass); consent go-live (en/es/vi current; vi text checked
+  as valid UTF-8 matching consent-translations.json; the terminal garbling was console encoding);
+  support-intake + brevo-sms-webhook deployed (401 without auth); frontend bundle audit 9/9 + 5/5,
+  `VITE_CONSENT_STEP:"true"`.
+- Brevo SMS webhook registered (id 2656220): channel sms, events `unsubscribe`,`subscribe`
+  (Brevo's SMS names; `unsubscribed`/`reply` are rejected), X-Webhook-Secret header. Prod check: right
+  secret + bad JSON → 400, wrong secret → 401.
