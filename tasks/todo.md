@@ -1626,8 +1626,8 @@ email_opt_out_at. Experts/admins never.
 Staging and prod share one Brevo account, so each gets its own list:
 "Whisperoo parents" (prod) and "Whisperoo parents (staging test)".
 
-- [ ] Brevo setup (API): LANGUAGE contact attribute; the two lists in one folder.
-- [ ] Edge function `brevo-contact-sync`:
+- [x] Brevo setup (API): LANGUAGE contact attribute; the two lists in one folder.
+- [x] Edge function `brevo-contact-sync`:
       - parent JWT → sync the caller (add/update if opted in, else remove from the list)
       - service-role bearer + {"mode":"all"} → full reconcile: upsert every opted-in
         parent, remove list members who no longer qualify (opt-out, deleted account,
@@ -1635,9 +1635,17 @@ Staging and prod share one Brevo account, so each gets its own list:
       - removes from OUR list only, never deletes the Brevo contact (the client may
         have them in other lists). Brevo's own unsubscribe/STOP keep working on top.
       - no PII in logs (safeLogError pattern).
-- [ ] Frontend: after the consent prompt / onboarding step saves an email opt-in, call
+- [x] Frontend: after the consent prompt / onboarding step saves an email opt-in, call
       the function for the caller (fire-and-forget; never blocks the parent).
-- [ ] Secret BREVO_PARENTS_LIST_ID per project.
+- [x] Secret BREVO_PARENTS_LIST_ID per project.
 - [ ] Staging test: opt in with a catherine+N account → appears in staging list with
       the right fields; SMS only when texts opted in; reconcile removes a revoked one.
-- [ ] Prod (with go-ahead): set secret, deploy function + frontend, run reconcile once.
+- [x] Prod (with go-ahead): set secret, deploy function + frontend, run reconcile once.
+
+**Review (2026-11-04).** Live on prod: list 6, function + frontend deployed, reconcile 0
+eligible / 0 failures. Staging reconcile verified fields and removal. NOT yet verified: the
+parent-JWT path (opt-in in the app → contact appears), on staging or prod; check list 6 count
+against opted-in parents after the first real opt-ins, then tick the staging test item.
+Found: auth.admin.listUsers returns 500 on prod because 4 auth.users rows have NULL token
+columns (no parent profile, never signed in). Function now uses fn_service_emails_for_users.
+Those rows were left alone.

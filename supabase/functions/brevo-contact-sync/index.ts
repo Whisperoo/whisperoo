@@ -149,14 +149,14 @@ function jwtRole(token: string): string | null {
   }
 }
 
-async function emailsById(db: SupabaseClient): Promise<Map<string, string>> {
-  const map = new Map<string, string>()
-  for (let page = 1; ; page++) {
-    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 })
-    if (error) throw new Error(`listUsers: ${error.message}`)
-    for (const u of data.users) if (u.email) map.set(u.id, u.email.toLowerCase())
-    if (data.users.length < 1000) return map
-  }
+// Not auth.admin.listUsers: it returns 500 on prod ("Database error finding users")
+// because a few auth.users rows have NULL token columns. Same lookup as admin-signup-export.
+async function emailsById(db: SupabaseClient, ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map()
+  const { data, error } = await db.rpc('fn_service_emails_for_users', { p_user_ids: ids })
+  if (error) throw new Error(`email lookup: ${error.code}`)
+  const rows = (data ?? []) as { user_id: string; email: string | null }[]
+  return new Map(rows.filter((r) => r.email).map((r) => [r.user_id, r.email!.toLowerCase()]))
 }
 
 async function syncOne(db: SupabaseClient, brevo: Brevo, userId: string, email: string) {
@@ -172,7 +172,6 @@ async function syncOne(db: SupabaseClient, brevo: Brevo, userId: string, email: 
 }
 
 async function reconcile(db: SupabaseClient, brevo: Brevo) {
-  const emails = await emailsById(db)
   const { data, error } = await db
     .from('profiles')
     .select(PROFILE_COLS)
@@ -180,11 +179,13 @@ async function reconcile(db: SupabaseClient, brevo: Brevo) {
     .eq('email_opt_in', true)
     .is('email_opt_out_at', null)
   if (error) throw new Error(`profiles read: ${error.code}`)
+  const parents = (data ?? []) as ParentRow[]
+  const emails = await emailsById(db, parents.map((p) => p.id))
 
   const keep = new Set<string>()
   let added = 0
   const failures: string[] = []
-  for (const p of (data ?? []) as ParentRow[]) {
+  for (const p of parents) {
     const email = emails.get(p.id)
     if (!email) continue
     keep.add(email)

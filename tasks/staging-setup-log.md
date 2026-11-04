@@ -1757,3 +1757,10 @@ escalated; the live chat used the same list, so the gap was in front of real par
 - Brevo SMS webhook registered (id 2656220): channel sms, events `unsubscribe`,`subscribe`
   (Brevo's SMS names; `unsubscribed`/`reply` are rejected), X-Webhook-Secret header. Prod check: right
   secret + bad JSON → 400, wrong secret → 401.
+
+### 2026-11-04 — Brevo contact sync (PRODUCTION)
+- Secret BREVO_PARENTS_LIST_ID=6 (staging: 7). `brevo-contact-sync` deployed; 401 without auth,
+  403 for full sync with the anon key. Frontend deployed (`index-BS2SZMLf.js`), bundle audit 9/9.
+- First full sync returned 500: auth listUsers fails on prod (4 auth.users rows with NULL token
+  columns). Switched to fn_service_emails_for_users, redeployed both projects. Prod full sync:
+  eligible 0, failures 0. No migration in this release.
