@@ -9,7 +9,7 @@
  */
 import { supabase } from '@/lib/supabase';
 
-export type SupportStatus = 'new' | 'in_progress' | 'done';
+export type SupportStatus = 'new' | 'in_progress' | 'done' | 'no_response';
 
 /** Canonical (English) answer values are stored; the UI translates them for display. */
 export interface SupportAnswers {

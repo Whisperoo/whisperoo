@@ -1649,3 +1649,27 @@ against opted-in parents after the first real opt-ins, then tick the staging tes
 Found: auth.admin.listUsers returns 500 on prod because 4 auth.users rows have NULL token
 columns (no parent profile, never signed in). Function now uses fn_service_emails_for_users.
 Those rows were left alone.
+
+---
+
+# Support Requests: "No response" status (2026-11-20)
+
+Client (Neha): track parents who submitted a request but didn't respond when the team
+reached out. Option A agreed: "No response" is a CLOSED state like Done, so the parent's
+"We've got you" section disappears. Moving it back to In progress reopens it.
+
+- [x] Migration: status CHECK gains 'no_response'; fn_my_support_status treats it as
+      closed; set-status (single + bulk) accept it and stamp done_at (closed time);
+      list sorts it with Done at the bottom. Counts/badge unchanged (open = new + in_progress).
+- [x] Admin panel: "Mark no response" button (drawer + bulk bar), "No response" filter
+      tab, pill colour (muted gray, distinct from Done green). en/es/vi labels.
+- [x] Staging: apply, test mark / filter / bulk / reopen, parent card hides.
+- [ ] Prod with go-ahead.
+
+Staging (2026-11-20): migration applied + tracker row (definitions matched the originals
+first). SQL test in a rolled-back transaction: mark → in the No response filter, out of
+Open, new count −1, done_at stamped; reopen clears done_at; bulk works; bad status and
+non-admin rejected. Parent card hides once ALL their open requests are closed (same rule
+as Done; a parent with two open requests keeps the card for the other one). Types
+regenerated, no change. Frontend deployed. Admin strings are English-only like the rest
+of this panel.

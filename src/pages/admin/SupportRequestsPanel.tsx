@@ -25,8 +25,8 @@ import { useInvalidateSupportCounts } from '@/hooks/useAdminSupportCounts';
  * writes a phi_access_log row each time.
  */
 
-type Status = 'new' | 'in_progress' | 'done';
-type Filter = 'open' | 'done' | 'all';
+type Status = 'new' | 'in_progress' | 'done' | 'no_response';
+type Filter = 'open' | 'done' | 'no_response' | 'all';
 
 interface RequestRow {
   id: string;
@@ -57,11 +57,13 @@ interface Props {
 const PAGE_SIZE = 50;
 
 // Portal-wide palette (lib/statusTones): new = needs action, in progress = being
-// worked on, done = finished. Urgent is shown separately in red.
+// worked on, done = finished, no response = closed without hearing back (client,
+// 2026-11-20; gray so it reads apart from Done). Urgent is shown separately in red.
 const STATUS_TONE: Record<Status, StatusTone> = {
   new: 'new',
   in_progress: 'active',
   done: 'done',
+  no_response: 'muted',
 };
 
 const ANSWER_LABEL: Record<string, string> = {
@@ -115,6 +117,7 @@ const SupportRequestsPanel: React.FC<Props> = ({ tenantId, segment }) => {
   const filters: Array<[Filter, string]> = [
     ['open', t('admin.support.filter.open', 'Open')],
     ['done', t('admin.support.filter.done', 'Done')],
+    ['no_response', t('admin.support.filter.noResponse', 'No response')],
     ['all', t('admin.support.filter.all', 'All')],
   ];
 
@@ -148,11 +151,12 @@ const SupportRequestsPanel: React.FC<Props> = ({ tenantId, segment }) => {
   const emptyText: Record<Filter, string> = {
     open: t('admin.support.emptyOpen', "All caught up — no open requests. New ones from the Get Support card will appear here, urgent first."),
     done: t('admin.support.emptyDone', 'Nothing marked done yet. Requests you finish will move here.'),
+    no_response: t('admin.support.emptyNoResponse', "No requests marked \"No response\". Use it for parents who didn't reply when the team reached out."),
     all: t('admin.support.emptyAll', 'No support requests yet. When a parent uses Get Support, their request will appear here.'),
   };
 
   const statusLabel = (s: Status) =>
-    ({ new: t('admin.support.status.new', 'New'), in_progress: t('admin.support.status.inProgress', 'In progress'), done: t('admin.support.status.done', 'Done') })[s];
+    ({ new: t('admin.support.status.new', 'New'), in_progress: t('admin.support.status.inProgress', 'In progress'), done: t('admin.support.status.done', 'Done'), no_response: t('admin.support.status.noResponse', 'No response') })[s];
 
   return (
     <div className="space-y-4">
@@ -192,6 +196,11 @@ const SupportRequestsPanel: React.FC<Props> = ({ tenantId, segment }) => {
               className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-50 disabled:opacity-60 inline-flex items-center gap-1.5">
               {bulkBusy === 'in_progress' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               {t('admin.support.markInProgress', 'Mark in progress')}
+            </button>
+            <button onClick={() => bulkSet('no_response')} disabled={bulkBusy !== null}
+              className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-50 disabled:opacity-60 inline-flex items-center gap-1.5">
+              {bulkBusy === 'no_response' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {t('admin.support.markNoResponse', 'Mark no response')}
             </button>
             <button onClick={() => bulkSet('done')} disabled={bulkBusy !== null}
               className="px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold disabled:opacity-60 inline-flex items-center gap-1.5">
@@ -327,6 +336,7 @@ const RequestDrawer: React.FC<DrawerProps> = ({ request, statusLabel, onClose, o
   const actions: Array<[Status, string]> = [
     ['in_progress', t('admin.support.markInProgress', 'Mark in progress')],
     ['done', t('admin.support.markDone', 'Mark done')],
+    ['no_response', t('admin.support.markNoResponse', 'Mark no response')],
     ['new', t('admin.support.markNew', 'Move back to new')],
   ];
 
