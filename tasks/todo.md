@@ -1664,7 +1664,7 @@ reached out. Option A agreed: "No response" is a CLOSED state like Done, so the 
 - [x] Admin panel: "Mark no response" button (drawer + bulk bar), "No response" filter
       tab, pill colour (muted gray, distinct from Done green). en/es/vi labels.
 - [x] Staging: apply, test mark / filter / bulk / reopen, parent card hides.
-- [ ] Prod with go-ahead.
+- [x] Prod with go-ahead (2026-11-20, client-tested on staging).
 
 Staging (2026-11-20): migration applied + tracker row (definitions matched the originals
 first). SQL test in a rolled-back transaction: mark → in the No response filter, out of

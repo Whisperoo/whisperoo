@@ -1764,3 +1764,8 @@ escalated; the live chat used the same list, so the gap was in front of real par
 - First full sync returned 500: auth listUsers fails on prod (4 auth.users rows with NULL token
   columns). Switched to fn_service_emails_for_users, redeployed both projects. Prod full sync:
   eligible 0, failures 0. No migration in this release.
+
+### 2026-11-20 — "No response" status (PRODUCTION)
+- `11-no-response-release.sh`: backup `prod-public-20261120-055105-pre-no-response.sql`; drift check
+  passed; migration 20261120000001 applied (tracker=152, CHECK includes no_response, 4/4 functions).
+  Frontend deployed; bundle audit 9/9 + markNoResponse, brevo-contact-sync, VITE_CONSENT_STEP:"true".
